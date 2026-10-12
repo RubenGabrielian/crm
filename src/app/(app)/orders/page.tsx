@@ -81,7 +81,7 @@ export default async function OrdersPage() {
           />
         ))}
       <div
-        className="overflow-hidden rounded-xl border bg-card shadow-soft"
+        className="overflow-hidden rounded-3xl bg-card p-3 shadow-soft"
         hidden={orders.length === 0}
       >
         <Table>

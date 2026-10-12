@@ -89,8 +89,8 @@ export function CheckoutForm({ product }: { product: CheckoutProduct }) {
 
   if (state.ok) {
     return (
-      <div role="status" className="rounded-xl bg-muted px-5 py-6">
-        <CircleCheck className="size-7 text-apricot" strokeWidth={1.75} aria-hidden />
+      <div role="status" className="rounded-2xl bg-muted px-5 py-6">
+        <CircleCheck className="size-7 text-violet-600" strokeWidth={1.75} aria-hidden />
         <h2 className="mt-3 text-base font-semibold">{copy.doneTitle}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{copy.doneText}</p>
       </div>
@@ -101,7 +101,7 @@ export function CheckoutForm({ product }: { product: CheckoutProduct }) {
   // with stock = 0, and that buyer must still see the confirmation.
   if (product.stock === 0) {
     return (
-      <p className="rounded-xl bg-muted px-5 py-4 text-sm font-medium">
+      <p className="rounded-2xl bg-muted px-5 py-4 text-sm font-medium">
         Ցավոք, ապրանքը սպառվել է։
       </p>
     );
@@ -183,7 +183,7 @@ export function CheckoutForm({ product }: { product: CheckoutProduct }) {
         })}
       </FieldGroup>
 
-      <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-xl bg-muted px-4 py-3 text-sm tabular-nums">
+      <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-2xl bg-muted px-4 py-3 text-sm tabular-nums">
         <dt className="text-muted-foreground">
           {formatMoney(product.price)} × {qty}
         </dt>

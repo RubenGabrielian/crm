@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Armenian } from "next/font/google";
+import { Noto_Sans_Armenian, Outfit } from "next/font/google";
 import "./globals.css";
 
 const notoArmenian = Noto_Sans_Armenian({
   variable: "--font-noto-armenian",
   subsets: ["armenian", "latin"],
+});
+
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -14,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="hy" className={`${notoArmenian.variable} h-full antialiased`}>
+    <html lang="hy" className={`${outfit.variable} ${notoArmenian.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">{children}</body>
     </html>
   );

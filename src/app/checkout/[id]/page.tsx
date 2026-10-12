@@ -22,7 +22,7 @@ export default async function CheckoutPage({ params }: PageProps<"/checkout/[id]
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-4xl items-center px-4 py-6 sm:px-6 sm:py-10">
-      <div className="grid w-full overflow-hidden rounded-2xl border bg-card shadow-soft md:grid-cols-2">
+      <div className="grid w-full overflow-hidden rounded-3xl bg-card shadow-soft md:grid-cols-2">
         <div className="relative flex aspect-square items-center justify-center bg-muted text-muted-foreground md:aspect-auto md:min-h-[32rem]">
           {product.imageUrl ? (
             <Image

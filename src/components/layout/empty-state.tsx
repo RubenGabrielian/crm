@@ -10,10 +10,12 @@ export function EmptyState({
   description: string;
 }) {
   return (
-    <section className="rounded-xl border bg-card px-6 py-14 shadow-soft sm:px-10">
-      <Icon className="size-7 text-apricot" strokeWidth={1.75} aria-hidden />
-      <h2 className="mt-4 text-base font-semibold">{title}</h2>
-      <p className="mt-1 max-w-prose text-sm text-muted-foreground">{description}</p>
+    <section className="flex flex-col items-center rounded-3xl bg-card px-6 py-16 text-center shadow-soft sm:px-10">
+      <span className="flex size-14 items-center justify-center rounded-full bg-apricot text-primary">
+        <Icon className="size-6" strokeWidth={1.75} aria-hidden />
+      </span>
+      <h2 className="mt-5 text-lg font-semibold">{title}</h2>
+      <p className="mt-1.5 max-w-md text-sm text-balance text-muted-foreground">{description}</p>
     </section>
   );
 }

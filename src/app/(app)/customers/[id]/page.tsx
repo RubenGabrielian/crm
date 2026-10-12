@@ -44,7 +44,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
         Բոլոր հաճախորդները
       </Link>
 
-      <section className="rounded-xl border bg-card p-6 shadow-soft">
+      <section className="rounded-3xl bg-card p-6 shadow-soft">
         <div className="flex items-start justify-between gap-4">
           <h2 className="text-xl font-semibold tracking-tight">{customer.name}</h2>
           <EditCustomerDialog customer={customer} />
@@ -108,14 +108,14 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
         />
       </dl>
 
-      <section className="overflow-hidden rounded-xl border bg-card shadow-soft">
-        <h2 className="px-5 pt-4 pb-3 text-sm font-semibold">{ordersLabel}</h2>
+      <section className="overflow-hidden rounded-3xl bg-card p-3 shadow-soft">
+        <h2 className="px-2 pt-2 pb-3 text-base font-semibold">{ordersLabel}</h2>
         {orders.length === 0 ? (
-          <p className="border-t px-5 py-6 text-sm text-muted-foreground">
+          <p className="px-2 py-6 text-sm text-muted-foreground">
             {error ? "Չհաջողվեց բեռնել տվյալները։" : "Տվյալներ չկան։"}
           </p>
         ) : (
-          <div className="border-t">
+          <div>
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -193,9 +193,9 @@ function Detail({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border bg-card px-5 py-4 shadow-soft">
+    <div className="rounded-3xl bg-card p-5 shadow-soft">
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{value}</dd>
+      <dd className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">{value}</dd>
     </div>
   );
 }

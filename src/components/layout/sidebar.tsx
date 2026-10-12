@@ -23,14 +23,14 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground",
+        "flex h-full w-60 flex-col bg-sidebar text-sidebar-foreground",
         className,
       )}
     >
-      <div className="flex items-center gap-3 px-5 pt-6 pb-5">
+      <div className="mx-4 mb-3 flex items-center gap-3 border-b px-1 pt-6 pb-5">
         <span
           aria-hidden
-          className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-apricot text-lg font-semibold text-primary"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-apricot text-base font-semibold text-primary"
         >
           {tenant.name.charAt(0)}
         </span>
@@ -44,8 +44,8 @@ export function Sidebar({
         </div>
       </div>
 
-      <nav aria-label="Հիմնական մենյու" className="flex-1 overflow-y-auto px-3 py-2">
-        <ul className="flex flex-col gap-1">
+      <nav aria-label="Հիմնական մենյու" className="flex-1 overflow-y-auto px-3 pb-4">
+        <ul className="flex flex-col gap-0.5">
           {items.map(({ href, label, icon: Icon, showsNewOrders }) => {
             const active = isActivePath(pathname, href);
             return (
@@ -55,19 +55,15 @@ export function Sidebar({
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium outline-none transition-colors",
-                    "hover:bg-sidebar-hover hover:text-sidebar-strong focus-visible:ring-2 focus-visible:ring-apricot",
-                    active && "bg-sidebar-hover text-sidebar-strong",
+                    "flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium outline-none transition-colors",
+                    "hover:bg-sidebar-hover hover:text-sidebar-strong focus-visible:ring-2 focus-visible:ring-ring",
+                    // The current page is a solid black pill.
+                    active &&
+                      "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
                   )}
                 >
-                  {active && (
-                    <span
-                      aria-hidden
-                      className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-apricot"
-                    />
-                  )}
                   <Icon
-                    className={cn("size-[18px] shrink-0", active && "text-apricot")}
+                    className="size-[18px] shrink-0"
                     strokeWidth={1.75}
                   />
                   {label}
@@ -83,7 +79,6 @@ export function Sidebar({
           })}
         </ul>
       </nav>
-
     </aside>
   );
 }

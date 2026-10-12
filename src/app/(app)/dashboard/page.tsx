@@ -100,6 +100,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
               value={formatMoney(analytics.cashIn)}
               note={`${formatNumber(analytics.deliveredOrders)} ${deliveredLabel}`}
               emphasis
+              tone="accent"
             />
             <KpiCard
               icon={TrendingUp}
@@ -113,6 +114,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
               label="Միջին պատվերի արժեք"
               value={formatMoney(analytics.averageOrder)}
               emphasis
+              tone="peach"
             />
             <KpiCard
               icon={Percent}
@@ -122,6 +124,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
               }
               negative={(analytics.profitMargin ?? 0) < 0}
               emphasis
+              tone="sky"
             />
           </dl>
 
@@ -170,16 +173,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="px-5">{isShop ? "Ապրանք" : "Դասընթաց"}</TableHead>
+                      <TableHead className="px-4">{isShop ? "Ապրանք" : "Դասընթաց"}</TableHead>
                       <TableHead className="px-3 text-right">Քանակ</TableHead>
                       <TableHead className="px-3 text-right">Հասույթ</TableHead>
-                      <TableHead className="px-5 text-right">Համախառն շահույթ</TableHead>
+                      <TableHead className="px-4 text-right">Համախառն շահույթ</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {analytics.products.map((row) => (
                       <TableRow key={row.title}>
-                        <TableCell className="max-w-48 px-5 font-medium whitespace-normal">
+                        <TableCell className="max-w-48 px-4 font-medium whitespace-normal">
                           {row.title}
                         </TableCell>
                         <TableCell className="px-3 text-right tabular-nums">
@@ -190,7 +193,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                         </TableCell>
                         <TableCell
                           className={cn(
-                            "px-5 text-right font-semibold tabular-nums",
+                            "px-4 text-right font-semibold tabular-nums",
                             row.grossProfit < 0 && "text-destructive",
                           )}
                         >
@@ -209,11 +212,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                   {inventory.rows.length === 0 ? (
                     <Empty />
                   ) : (
-                    <ul className="divide-y text-sm">
+                    <ul className="divide-y divide-border/70 px-2 text-sm">
                       {inventory.rows.map((row) => (
                         <li
                           key={row.productId}
-                          className="flex items-center justify-between gap-4 px-5 py-2.5"
+                          className="flex items-center justify-between gap-4 py-3"
                         >
                           <span className="min-w-0 truncate">{row.title}</span>
                           <span
@@ -235,11 +238,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                 {analytics.marketingByCategory.length === 0 ? (
                   <Empty text="Այս ժամանակահատվածում մարքեթինգի ծախս չկա։" />
                 ) : (
-                  <ul className="divide-y text-sm">
+                  <ul className="divide-y divide-border/70 px-2 text-sm">
                     {analytics.marketingByCategory.map((row) => (
                       <li
                         key={row.category}
-                        className="flex items-center justify-between gap-4 px-5 py-2.5"
+                        className="flex items-center justify-between gap-4 py-3"
                       >
                         <span>{expenseCategoryLabel(row.category)}</span>
                         <span className="flex items-baseline gap-3 tabular-nums">
@@ -284,9 +287,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="px-5">Աղբյուր</TableHead>
+                      <TableHead className="px-4">Աղբյուր</TableHead>
                       <TableHead className="px-3 text-right">{ordersLabel}</TableHead>
-                      <TableHead className="px-5 text-right">Մուտք</TableHead>
+                      <TableHead className="px-4 text-right">Մուտք</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -294,7 +297,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                       <TableRow key={row.name ?? ""}>
                         <TableCell
                           className={cn(
-                            "px-5",
+                            "px-4",
                             row.name === null ? "text-muted-foreground" : "font-medium",
                           )}
                         >
@@ -303,7 +306,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                         <TableCell className="px-3 text-right tabular-nums">
                           {formatNumber(row.orders)}
                         </TableCell>
-                        <TableCell className="px-5 text-right tabular-nums">
+                        <TableCell className="px-4 text-right tabular-nums">
                           {formatMoney(row.revenue)}
                         </TableCell>
                       </TableRow>
@@ -334,6 +337,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   );
 }
 
+const TONES = {
+  accent: "bg-apricot",
+  peach: "bg-[#fde8cd]",
+  sky: "bg-[#d5f0e3]",
+  plain: "bg-card",
+};
+
 function KpiCard({
   icon: Icon,
   label,
@@ -341,6 +351,7 @@ function KpiCard({
   note,
   negative,
   emphasis,
+  tone = "plain",
 }: {
   icon: LucideIcon;
   label: string;
@@ -349,23 +360,42 @@ function KpiCard({
   negative?: boolean;
   /** Larger figure, for the top row. */
   emphasis?: boolean;
+  /** Background tint of the tile. */
+  tone?: keyof typeof TONES;
 }) {
   return (
-    <div className="flex flex-col rounded-xl border bg-card px-5 py-4 shadow-soft">
-      <dt className="flex items-start justify-between gap-3 text-sm text-muted-foreground">
+    <div
+      className={cn(
+        "flex flex-col rounded-3xl p-5 shadow-soft",
+        emphasis && "min-h-36",
+        TONES[tone],
+      )}
+    >
+      <dt className="flex items-start justify-between gap-3 text-sm font-medium">
         {label}
-        <Icon className="size-4 shrink-0 text-apricot" strokeWidth={1.75} aria-hidden />
+        <span
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-full",
+            tone === "plain" ? "bg-muted" : "bg-primary text-primary-foreground",
+          )}
+        >
+          <Icon className="size-4" strokeWidth={1.75} aria-hidden />
+        </span>
       </dt>
       <dd
         className={cn(
-          "mt-auto pt-2 font-semibold tracking-tight whitespace-nowrap tabular-nums",
-          emphasis ? "text-2xl" : "text-xl",
+          "mt-auto pt-3 font-semibold tracking-tight whitespace-nowrap tabular-nums",
+          emphasis ? "text-3xl" : "text-2xl",
           negative && "text-destructive",
         )}
       >
         {value}
       </dd>
-      {note && <dd className="mt-0.5 text-xs text-muted-foreground">{note}</dd>}
+      {note && (
+        <dd className={cn("mt-1 text-xs", tone === "plain" ? "text-muted-foreground" : "opacity-70")}>
+          {note}
+        </dd>
+      )}
     </div>
   );
 }
@@ -383,15 +413,15 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cn("overflow-hidden rounded-xl border bg-card shadow-soft", className)}>
-      <h2 className="px-5 pt-4 pb-3 text-sm font-semibold">{title}</h2>
-      <div className={flush ? "border-t" : "px-5 pb-5"}>{children}</div>
+    <section className={cn("overflow-hidden rounded-3xl bg-card shadow-soft", className)}>
+      <h2 className="px-5 pt-5 pb-3 text-base font-semibold">{title}</h2>
+      <div className={flush ? "px-3 pb-3" : "px-5 pb-5"}>{children}</div>
     </section>
   );
 }
 
 function Empty({ text = "Տվյալներ չկան։" }: { text?: string }) {
-  return <p className="px-5 py-6 text-sm text-muted-foreground">{text}</p>;
+  return <p className="px-2 py-6 text-sm text-muted-foreground">{text}</p>;
 }
 
 function Line({

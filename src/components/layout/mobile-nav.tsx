@@ -31,7 +31,7 @@ export function MobileNav() {
       <SheetContent
         side="left"
         showCloseButton={false}
-        className="w-64 gap-0 border-0 bg-sidebar p-0 data-[side=left]:w-64"
+        className="w-60 gap-0 border-0 bg-card p-0 data-[side=left]:w-60"
       >
         <SheetTitle className="sr-only">Մենյու</SheetTitle>
         <Sidebar onNavigate={() => setOpen(false)} />

@@ -78,12 +78,12 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
         />
       ) : (
         <>
-          <dl className="rounded-xl border bg-card px-5 py-4 shadow-soft sm:max-w-xs">
-            <dt className="text-sm text-muted-foreground">Ընդհանուր ծախսեր</dt>
-            <dd className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+          <dl className="rounded-3xl bg-apricot p-5 shadow-soft sm:max-w-xs">
+            <dt className="text-sm font-medium">Ընդհանուր ծախսեր</dt>
+            <dd className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
               {formatMoney(total)}
             </dd>
-            <dd className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+            <dd className="mt-1 text-xs tabular-nums opacity-70">
               {formatNumber(expenses.length)} գրառում
             </dd>
           </dl>
@@ -95,7 +95,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
               description="Ավելացրեք մարքեթինգի, նյութերի, փաթեթավորման և այլ ծախսերը, որպեսզի մաքուր շահույթը ճիշտ հաշվարկվի։"
             />
           ) : (
-            <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
+            <div className="overflow-hidden rounded-3xl bg-card p-3 shadow-soft">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
@@ -147,9 +147,9 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
           )}
 
           {recurring.length > 0 && (
-            <section className="overflow-hidden rounded-xl border bg-card shadow-soft">
-              <h2 className="px-4 pt-4 pb-3 text-sm font-semibold">Ամսական ծախսեր</h2>
-              <div className="border-t">
+            <section className="overflow-hidden rounded-3xl bg-card p-3 shadow-soft">
+              <h2 className="px-2 pt-2 pb-3 text-base font-semibold">Ամսական ծախսեր</h2>
+              <div>
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">

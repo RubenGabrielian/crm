@@ -28,7 +28,7 @@ export function DailyRevenueChart({
       <p className="mb-2 text-xs tabular-nums text-muted-foreground">
         Առավելագույնը՝ {formatMoney(max)}
       </p>
-      <ol className="flex h-44 items-end gap-0.5 border-b" aria-label="Հասույթն ըստ օրերի">
+      <ol className="flex h-44 items-end gap-1" aria-label="Հասույթն ըստ օրերի">
         {days.map((day) => (
           <li
             key={day.date}
@@ -40,8 +40,8 @@ export function DailyRevenueChart({
             </span>
             <span
               aria-hidden
-              className="w-full max-w-10 rounded-t bg-primary transition-opacity group-hover:opacity-80 group-focus-visible:opacity-80"
-              style={{ height: `${(day.revenue / max) * 100}%`, minHeight: day.revenue > 0 ? 2 : 0 }}
+              className="w-full max-w-9 rounded-full bg-apricot transition-colors group-hover:bg-primary group-focus-visible:bg-primary"
+              style={{ height: `${(day.revenue / max) * 100}%`, minHeight: day.revenue > 0 ? 12 : 0 }}
             />
             <span
               aria-hidden

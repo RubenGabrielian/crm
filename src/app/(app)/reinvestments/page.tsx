@@ -68,16 +68,16 @@ export default async function ReinvestmentsPage() {
       ) : (
         <>
           <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <div className="rounded-xl border bg-card px-5 py-4 shadow-soft">
-              <dt className="text-sm text-muted-foreground">Ընդհանուր ներդրված</dt>
-              <dd className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+            <div className="rounded-3xl bg-apricot p-5 shadow-soft">
+              <dt className="text-sm font-medium">Ընդհանուր ներդրված</dt>
+              <dd className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">
                 {formatMoney(total)}
               </dd>
             </div>
             {REINVESTMENT_STATUSES.map((status) => {
               const items = reinvestments.filter((item) => item.status === status);
               return (
-                <div key={status} className="rounded-xl border bg-card px-5 py-4 shadow-soft">
+                <div key={status} className="rounded-3xl bg-card p-5 shadow-soft">
                   <dt className="text-sm text-muted-foreground">
                     {REINVESTMENT_STATUS_LABELS[status]}
                   </dt>
@@ -92,7 +92,7 @@ export default async function ReinvestmentsPage() {
             })}
           </dl>
 
-          <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
+          <div className="overflow-hidden rounded-3xl bg-card p-3 shadow-soft">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

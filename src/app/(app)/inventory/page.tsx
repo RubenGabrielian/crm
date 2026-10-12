@@ -54,7 +54,7 @@ export default async function InventoryPage() {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-muted-foreground">Ընդամենը՝ {rows.length}</p>
-      <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
+      <div className="overflow-hidden rounded-3xl bg-card p-3 shadow-soft">
         <Table className="min-w-[52rem] table-fixed">
           <colgroup>
             <col />

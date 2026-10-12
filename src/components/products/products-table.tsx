@@ -32,7 +32,7 @@ export function ProductsTable({
   const fields = PRODUCT_FIELDS[businessType];
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
+    <div className="overflow-hidden rounded-3xl bg-card p-3 shadow-soft">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">

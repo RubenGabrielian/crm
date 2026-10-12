@@ -21,15 +21,15 @@ export function RangeFilter({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-      <nav aria-label="Ժամանակահատված" className="flex rounded-lg bg-muted p-0.5 text-sm font-medium">
+      <nav aria-label="Ժամանակահատված" className="flex rounded-full bg-card p-1 text-sm font-medium shadow-soft">
         {RANGE_PRESETS.map((preset) => (
           <Link
             key={preset}
             href={`${path}?range=${preset}`}
             aria-current={range.key === preset ? "true" : undefined}
             className={cn(
-              "rounded-md px-3 py-1.5 whitespace-nowrap text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
-              range.key === preset && "bg-card text-foreground shadow-sm",
+              "rounded-full px-3.5 py-1.5 whitespace-nowrap text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+              range.key === preset && "bg-primary text-primary-foreground hover:text-primary-foreground",
             )}
           >
             {RANGE_LABELS[preset]}

@@ -142,7 +142,7 @@ function EditOrderForm({ order, onSaved }: { order: Order; onSaved: () => void }
             name="status"
             value={status}
             onChange={(event) => setStatus(event.currentTarget.value as typeof status)}
-            className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-10 w-full rounded-xl border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             {ORDER_STATUSES.map((value) => (
               <option key={value} value={value}>
@@ -220,7 +220,7 @@ function EditOrderForm({ order, onSaved }: { order: Order; onSaved: () => void }
 
       <dl
         aria-live="polite"
-        className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-xl bg-muted px-4 py-3 text-sm tabular-nums"
+        className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-2xl bg-muted px-4 py-3 text-sm tabular-nums"
       >
         <dt className="text-muted-foreground">
           {formatMoney(order.unitPrice)} × {Math.max(Math.trunc(toNumber(qty)), 0)}

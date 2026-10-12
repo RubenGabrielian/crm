@@ -108,7 +108,7 @@ export function EmailAuthForm({
   }
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border bg-card p-6 shadow-soft sm:p-8">
+    <div className="w-full max-w-sm rounded-3xl bg-card p-6 shadow-soft sm:p-8">
       <h1 className="text-2xl font-semibold tracking-tight">{copy.title}</h1>
 
       {sentTo === null ? (

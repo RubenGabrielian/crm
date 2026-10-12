@@ -2,13 +2,17 @@ import type { ReactNode } from "react";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 
+/**
+ * A floating white sidebar card on a neutral canvas; pages are made of
+ * white rounded cards that sit directly on the same canvas.
+ */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh">
-      <Sidebar className="fixed inset-y-0 left-0 z-40 hidden lg:flex" />
-      <div className="flex min-h-dvh flex-col lg:pl-64">
+      <Sidebar className="fixed inset-y-3 left-3 z-40 hidden rounded-3xl shadow-soft lg:flex" />
+      <div className="flex min-h-dvh flex-col lg:pl-[16.75rem]">
         <Header />
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main className="flex-1 px-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>

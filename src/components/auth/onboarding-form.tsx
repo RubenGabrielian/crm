@@ -50,7 +50,7 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
             <label
               key={value}
               className={cn(
-                "relative flex cursor-pointer flex-col gap-3 rounded-2xl border bg-card p-6 shadow-soft transition-colors",
+                "relative flex cursor-pointer flex-col gap-3 rounded-3xl bg-card p-6 shadow-soft transition-colors",
                 "has-focus-visible:ring-2 has-focus-visible:ring-ring",
                 type === value ? "border-primary ring-1 ring-primary" : "hover:border-foreground/30",
               )}

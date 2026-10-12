@@ -3,15 +3,17 @@
 
 /* Palette: plum ink + apricot (ծիրան). Light theme only for now. */
 :root {
-  --paper: #f8f7fa;
-  --ink: #1f1729;
-  --plum: #2b1f3a;
-  --plum-soft: #3b2c4e;
-  --apricot: #f29a4a;
-  --mist: #6f6780;
-  --line: #e7e3ee;
+  /* Neutral canvas, white cards, near-black ink and one soft violet accent. */
+  --paper: #eef0f3;
+  --ink: #141416;
+  --plum: #141416;
+  --plum-soft: #2a2a2e;
+  --apricot: #c9bcff;
+  --mist: #72747d;
+  --line: #e6e7eb;
+  --surface: var(--paper);
 
-  --radius: 0.75rem;
+  --radius: 1rem;
   --background: var(--paper);
   --foreground: var(--ink);
   --card: #ffffff;
@@ -20,26 +22,28 @@
   --popover-foreground: var(--ink);
   --primary: var(--plum);
   --primary-foreground: #ffffff;
-  --secondary: #efecf4;
+  --secondary: #f2f3f5;
   --secondary-foreground: var(--ink);
-  --muted: #efecf4;
+  --muted: #f2f3f5;
   --muted-foreground: var(--mist);
-  --accent: #f1eef6;
+  --accent: #f2f3f5;
   --accent-foreground: var(--ink);
-  --destructive: #c4314b;
+  --destructive: #d1344b;
   --border: var(--line);
   --input: var(--line);
-  --ring: var(--apricot);
+  --ring: #8b6ff7;
 
-  --sidebar: var(--plum);
-  --sidebar-foreground: #cfc6dc;
-  --sidebar-strong: #ffffff;
-  --sidebar-hover: var(--plum-soft);
-  --sidebar-line: rgb(255 255 255 / 0.08);
+  /* The sidebar is a floating white card. */
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--mist);
+  --sidebar-strong: var(--ink);
+  --sidebar-hover: #f2f3f5;
+  --sidebar-line: var(--line);
 }
 
 @theme inline {
-  --font-sans: var(--font-noto-armenian), ui-sans-serif, system-ui, sans-serif;
+  /* Outfit draws Latin letters and digits; Armenian falls through to Noto. */
+  --font-sans: var(--font-outfit), var(--font-noto-armenian), ui-sans-serif, system-ui, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -60,6 +64,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-apricot: var(--apricot);
+  --color-surface: var(--surface);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-strong: var(--sidebar-strong);
@@ -71,7 +76,8 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --shadow-soft: 0 1px 2px rgb(43 31 58 / 0.04), 0 8px 24px -12px rgb(43 31 58 / 0.12);
+  --shadow-soft: 0 1px 2px rgb(20 20 22 / 0.03), 0 8px 24px -20px rgb(20 20 22 / 0.12);
+  --shadow-panel: 0 1px 2px rgb(20 20 22 / 0.04), 0 24px 48px -32px rgb(20 20 22 / 0.2);
 }
 
 @layer base {
@@ -82,3 +88,4 @@
     @apply bg-background text-foreground;
   }
 }
+

@@ -37,7 +37,7 @@ const INITIAL_STATE: OrderFormState = {
 };
 
 const SELECT_CLASS =
-  "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive";
+  "h-10 w-full rounded-xl border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive";
 
 export function AddOrderDialog({
   products,
@@ -200,7 +200,7 @@ function AddOrderForm({
       {product && (
         <dl
           aria-live="polite"
-          className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-xl bg-muted px-4 py-3 text-sm tabular-nums"
+          className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-2xl bg-muted px-4 py-3 text-sm tabular-nums"
         >
           <dt className="text-muted-foreground">
             {formatMoney(product.price)} × {quantity}

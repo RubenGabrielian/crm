@@ -51,7 +51,7 @@ export default async function CustomersPage() {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-muted-foreground">Ընդամենը՝ {customers.length}</p>
-      <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
+      <div className="overflow-hidden rounded-3xl bg-card p-3 shadow-soft">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
