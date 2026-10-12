@@ -1,0 +1,83 @@
+import "server-only";
+
+import type { DateRange } from "@/lib/analytics/range";
+import { supabase } from "@/lib/supabase";
+import { chargeDates, type RecurringExpense } from "./recurring";
+
+export type Expense = {
+  id: string;
+  date: string;
+  category: string;
+  description: string | null;
+  amount: number;
+  /** True for a charge that comes from a monthly expense. */
+  monthly: boolean;
+};
+
+export async function listExpenses(
+  tenantId: string,
+  range: DateRange,
+): Promise<{ expenses: Expense[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("id, expense_date, expense_category, description, amount")
+    .eq("tenant_id", tenantId)
+    .gte("expense_date", range.from)
+    .lte("expense_date", range.to)
+    .order("expense_date", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) return { expenses: [], error: error.message };
+
+  return {
+    expenses: data.map((row) => ({
+      id: row.id,
+      date: row.expense_date,
+      category: row.expense_category,
+      description: row.description,
+      amount: Number(row.amount),
+      monthly: false,
+    })),
+    error: null,
+  };
+}
+
+/** Monthly expenses of the tenant. Empty (with a log line) if they can't be read. */
+export async function listRecurringExpenses(tenantId: string): Promise<RecurringExpense[]> {
+  const { data, error } = await supabase
+    .from("recurring_expenses")
+    .select("id, expense_category, description, amount, start_date, end_date")
+    .eq("tenant_id", tenantId)
+    .order("created_at");
+
+  if (error) {
+    console.error("listRecurringExpenses failed:", error);
+    return [];
+  }
+  return data.map((row) => ({
+    id: row.id,
+    category: row.expense_category,
+    description: row.description,
+    amount: Number(row.amount),
+    startDate: row.start_date,
+    endDate: row.end_date,
+  }));
+}
+
+/** Each monthly expense expanded into one charge per month inside the range. */
+export function monthlyCharges(
+  recurring: RecurringExpense[],
+  range: DateRange,
+  today: string,
+): Expense[] {
+  return recurring.flatMap((expense) =>
+    chargeDates(expense, range.from, range.to, today).map((date) => ({
+      id: `${expense.id}:${date}`,
+      date,
+      category: expense.category,
+      description: expense.description,
+      amount: expense.amount,
+      monthly: true,
+    })),
+  );
+}
