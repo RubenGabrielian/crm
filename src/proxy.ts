@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Runs before every admin page: keeps the Supabase session fresh and sends
- * signed-out visitors to the login page. The public checkout is not matched.
+ * signed-out visitors to the login page. The landing page stays public and the
+ * public checkout is not matched.
  */
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -31,6 +32,9 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
+  // The landing page and the promo video page are public for everyone.
+  const isLandingPage =
+    request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/promo";
 
   const redirectTo = (pathname: string) => {
     const url = request.nextUrl.clone();
@@ -42,7 +46,7 @@ export async function proxy(request: NextRequest) {
     return redirect;
   };
 
-  if (!user && !isAuthPage) return redirectTo("/auth/login");
+  if (!user && !isAuthPage && !isLandingPage) return redirectTo("/auth/login");
   if (user && isAuthPage) return redirectTo("/dashboard");
   return response;
 }

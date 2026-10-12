@@ -89,3 +89,128 @@
   }
 }
 
+
+/* ── Landing page motion ─────────────────────────────────────
+   One entrance sequence in the hero, and a single fade-up as each
+   section scrolls into view. Nothing moves for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+  }
+
+  .animate-rise {
+    animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--delay, 0ms);
+  }
+
+  @keyframes float {
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .reveal[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+
+/* ── Promo video page (/promo) ───────────────────────────────
+   These run for everyone because the page exists to be recorded;
+   the player has a pause button for anyone who needs stillness. */
+@keyframes promo-scene {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes promo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.2em);
+  }
+}
+
+@keyframes promo-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes promo-slide {
+  from {
+    opacity: 0;
+    transform: translateX(-2em);
+  }
+}
+
+@keyframes promo-grow {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes promo-strike {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes promo-fade-out {
+  to {
+    opacity: 0.35;
+  }
+}
+
+.promo-scene {
+  animation: promo-scene 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.promo-rise {
+  animation: promo-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.promo-pop {
+  animation: promo-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.promo-slide {
+  animation: promo-slide 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.promo-grow {
+  animation: promo-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.promo-strike {
+  transform-origin: left;
+  animation: promo-strike 0.35s ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+.promo-dim {
+  animation: promo-fade-out 0.35s ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+.promo-paused * {
+  animation-play-state: paused !important;
+}
