@@ -20,7 +20,19 @@ export async function notifyOrderStatusChange(
   orderId: string,
   status: OrderStatus,
 ): Promise<void> {
-  if (!emailConfigured) return;
+  try {
+    await sendStatusEmail(tenant, orderId, status);
+  } catch (cause) {
+    console.error("order status email crashed:", cause);
+  }
+}
+
+async function sendStatusEmail(tenant: Tenant, orderId: string, status: OrderStatus) {
+  const shortId = `#${orderId.slice(0, 8).toUpperCase()}`;
+  if (!emailConfigured) {
+    console.warn(`order status email skipped for ${shortId}: RESEND_API_KEY is not set`);
+    return;
+  }
 
   const { data: order, error } = await supabase
     .from("orders")
@@ -34,12 +46,14 @@ export async function notifyOrderStatusChange(
   }
 
   const customer = one(order.customers);
-  if (!customer?.email) return;
+  if (!customer?.email) {
+    console.log(`order status email skipped for ${shortId}: customer has no email`);
+    return;
+  }
 
   const isShop = tenant.businessType === "ecommerce";
   const statusLabel = ORDER_STATUS_LABELS[tenant.businessType][status];
   const orderWord = isShop ? "պատվերի" : "գրանցման";
-  const shortId = `#${order.id.slice(0, 8).toUpperCase()}`;
   const product = one(order.products)?.title ?? "";
   const item = product ? `«${product}»${order.qty > 1 ? ` × ${order.qty}` : ""}` : shortId;
 
@@ -62,5 +76,6 @@ export async function notifyOrderStatusChange(
 </div>`,
   });
 
-  if (!result.ok) console.error("order status email failed:", result.error);
+  if (result.ok) console.log(`order status email sent for ${shortId} (${status})`);
+  else console.error(`order status email failed for ${shortId}:`, result.error);
 }

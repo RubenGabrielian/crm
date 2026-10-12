@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { isOrderStatus, type OrderStatus } from "@/config/orders";
 import { notifyOrderStatusChange } from "./notify";
 import { getCheckoutProduct } from "@/lib/products/queries";
@@ -213,9 +212,8 @@ export async function updateOrder(
   }
 
   if (previousStatus !== null && previousStatus !== values.status) {
-    // Sent after the response, so saving doesn't wait for the email.
-    const status = values.status as OrderStatus;
-    after(() => notifyOrderStatusChange(tenant, orderId, status));
+    // Awaited on purpose: background sending did not run reliably on the host.
+    await notifyOrderStatusChange(tenant, orderId, values.status as OrderStatus);
   }
 
   revalidateOrderPages();
@@ -245,8 +243,8 @@ export async function updateOrderStatus(
   }
 
   if (previousStatus !== status) {
-    // Sent after the response, so the status change feels instant.
-    after(() => notifyOrderStatusChange(tenant, orderId, status));
+    // Awaited on purpose: background sending did not run reliably on the host.
+    await notifyOrderStatusChange(tenant, orderId, status);
   }
 
   revalidatePath("/orders");
