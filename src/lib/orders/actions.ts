@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isOrderStatus } from "@/config/orders";
+import { after } from "next/server";
+import { isOrderStatus, type OrderStatus } from "@/config/orders";
+import { notifyOrderStatusChange } from "./notify";
 import { getCheckoutProduct } from "@/lib/products/queries";
 import { supabase } from "@/lib/supabase";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
@@ -33,6 +35,17 @@ function revalidateOrderPages() {
   revalidatePath("/customers", "layout");
   revalidatePath("/inventory");
   revalidatePath("/catalog");
+}
+
+/** The order's status right now, or null if it isn't this tenant's order. */
+async function currentStatus(tenantId: string, orderId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("orders")
+    .select("status")
+    .eq("id", orderId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  return data?.status ?? null;
 }
 
 // ── Public checkout ──────────────────────────────────────────
@@ -159,6 +172,8 @@ export async function updateOrder(
     return { ok: false, values, errors, formError: null };
   }
 
+  const previousStatus = await currentStatus(tenant.id, orderId);
+
   // Totals are recalculated by the database; stock moves by the qty difference.
   const { error } = await supabase.rpc("update_order", {
     p_order_id: orderId,
@@ -197,6 +212,12 @@ export async function updateOrder(
     return fail("Չհաջողվեց պահպանել։ Փորձեք կրկին։");
   }
 
+  if (previousStatus !== null && previousStatus !== values.status) {
+    // Sent after the response, so saving doesn't wait for the email.
+    const status = values.status as OrderStatus;
+    after(() => notifyOrderStatusChange(tenant, orderId, status));
+  }
+
   revalidateOrderPages();
   return { ok: true, values: {}, errors: {}, formError: null };
 }
@@ -209,6 +230,8 @@ export async function updateOrderStatus(
   const tenant = await getCurrentTenant();
   if (!isOrderStatus(status)) return { ok: false, error: "Անհայտ կարգավիճակ" };
 
+  const previousStatus = await currentStatus(tenant.id, orderId);
+
   const { data, error } = await supabase
     .from("orders")
     .update({ status })
@@ -219,6 +242,11 @@ export async function updateOrderStatus(
   if (error || data.length === 0) {
     if (error) console.error("updating order status failed:", error);
     return { ok: false, error: "Չհաջողվեց փոխել կարգավիճակը։ Փորձեք կրկին։" };
+  }
+
+  if (previousStatus !== status) {
+    // Sent after the response, so the status change feels instant.
+    after(() => notifyOrderStatusChange(tenant, orderId, status));
   }
 
   revalidatePath("/orders");

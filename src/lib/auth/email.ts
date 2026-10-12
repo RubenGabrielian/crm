@@ -1,23 +1,12 @@
 import "server-only";
 
-import { Resend } from "resend";
+import { emailConfigured, sendEmail } from "@/lib/email/send";
 
-const apiKey = process.env.RESEND_API_KEY;
-const from = process.env.RESEND_FROM || "onboarding@resend.dev";
-
-export const resendConfigured = Boolean(apiKey);
+export const resendConfigured = emailConfigured;
 
 /** Emails the one-time code, with a button for people who prefer to click. */
-export async function sendCodeEmail(input: {
-  to: string;
-  code: string;
-  link: string;
-}): Promise<{ ok: boolean; error: string | null }> {
-  if (!apiKey) return { ok: false, error: "RESEND_API_KEY is not set" };
-
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from,
+export function sendCodeEmail(input: { to: string; code: string; link: string }) {
+  return sendEmail({
     to: input.to,
     subject: `${input.code} – ձեր հաստատման կոդը`,
     text: `Ձեր հաստատման կոդը՝ ${input.code}\n\nԿամ բացեք այս հղումը՝ ${input.link}\n\nԵթե դուք չեք փորձել մուտք գործել, պարզապես անտեսեք այս նամակը։`,
@@ -31,7 +20,4 @@ export async function sendCodeEmail(input: {
   <p style="margin:0;font-size:13px;color:#6f6780">Կոդը վավեր է սահմանափակ ժամանակ։ Եթե դուք չեք փորձել մուտք գործել, պարզապես անտեսեք այս նամակը։</p>
 </div>`,
   });
-
-  if (error) return { ok: false, error: `${error.name}: ${error.message}` };
-  return { ok: true, error: null };
 }
