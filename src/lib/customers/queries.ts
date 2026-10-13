@@ -7,6 +7,7 @@ export type Customer = {
   name: string;
   phone: string | null;
   email: string | null;
+  comment: string | null;
   /** Delivery address from the most recent order that has one. */
   lastAddress: string | null;
   orderCount: number;
@@ -19,7 +20,7 @@ export async function listCustomers(
 ): Promise<{ customers: Customer[]; error: string | null }> {
   const { data, error } = await supabase
     .from("customers")
-    .select("id, name, phone, email, created_at, orders(order_total, created_at, metadata)")
+    .select("id, name, phone, email, comment, created_at, orders(order_total, created_at, metadata)")
     .eq("tenant_id", tenantId);
 
   if (error) return { customers: [], error: error.message };
@@ -37,6 +38,7 @@ export async function listCustomers(
       name: row.name,
       phone: row.phone,
       email: row.email,
+      comment: row.comment,
       lastAddress: withAddress
         ? ((withAddress.metadata as Record<string, unknown>).delivery_address as string)
         : null,
@@ -61,6 +63,7 @@ export type CustomerProfile = {
   phone: string | null;
   email: string | null;
   socialHandle: string | null;
+  comment: string | null;
   createdAt: string;
 };
 
@@ -75,7 +78,7 @@ export async function getCustomer(
 
   const { data, error } = await supabase
     .from("customers")
-    .select("id, name, phone, email, social_handle, created_at")
+    .select("id, name, phone, email, social_handle, comment, created_at")
     .eq("id", customerId)
     .eq("tenant_id", tenantId)
     .maybeSingle();
@@ -89,6 +92,7 @@ export async function getCustomer(
     phone: data.phone,
     email: data.email,
     socialHandle: data.social_handle,
+    comment: data.comment,
     createdAt: data.created_at,
   };
 }

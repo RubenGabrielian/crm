@@ -31,6 +31,7 @@ export async function addExpense(
     category: read("category"),
     description: read("description"),
     amount: read("amount"),
+    status: read("status"),
   };
   const errors: Record<string, string> = {};
 
@@ -68,6 +69,7 @@ export async function addExpense(
         expense_category: values.category,
         description: values.description || null,
         amount,
+        is_paid: values.status !== "unpaid",
       });
 
   if (error) {
@@ -82,6 +84,28 @@ export async function addExpense(
 
   revalidateExpensePages();
   return { ok: true, values: {}, errors: {}, formError: null };
+}
+
+export async function setExpensePaid(
+  expenseId: string,
+  paid: boolean,
+): Promise<{ ok: boolean; error: string | null }> {
+  const tenant = await getCurrentTenant();
+
+  const { data, error } = await supabase
+    .from("expenses")
+    .update({ is_paid: paid })
+    .eq("id", expenseId)
+    .eq("tenant_id", tenant.id)
+    .select("id");
+
+  if (error || data.length === 0) {
+    if (error) console.error("changing expense status failed:", error);
+    return { ok: false, error: "Չհաջողվեց փոխել կարգավիճակը։ Փորձեք կրկին։" };
+  }
+
+  revalidateExpensePages();
+  return { ok: true, error: null };
 }
 
 export async function deleteExpense(

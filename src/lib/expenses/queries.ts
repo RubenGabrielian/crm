@@ -12,6 +12,8 @@ export type Expense = {
   amount: number;
   /** True for a charge that comes from a monthly expense. */
   monthly: boolean;
+  /** Unpaid expenses are listed but left out of every total. */
+  paid: boolean;
 };
 
 export async function listExpenses(
@@ -20,7 +22,7 @@ export async function listExpenses(
 ): Promise<{ expenses: Expense[]; error: string | null }> {
   const { data, error } = await supabase
     .from("expenses")
-    .select("id, expense_date, expense_category, description, amount")
+    .select("id, expense_date, expense_category, description, amount, is_paid")
     .eq("tenant_id", tenantId)
     .gte("expense_date", range.from)
     .lte("expense_date", range.to)
@@ -37,6 +39,7 @@ export async function listExpenses(
       description: row.description,
       amount: Number(row.amount),
       monthly: false,
+      paid: row.is_paid,
     })),
     error: null,
   };
@@ -78,6 +81,7 @@ export function monthlyCharges(
       description: expense.description,
       amount: expense.amount,
       monthly: true,
+      paid: true,
     })),
   );
 }

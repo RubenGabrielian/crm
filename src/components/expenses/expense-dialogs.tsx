@@ -28,6 +28,9 @@ import {
   type ExpenseFormState,
 } from "@/lib/expenses/actions";
 
+const SELECT_CLASS =
+  "h-10 w-full rounded-xl border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50";
+
 const INITIAL_STATE: ExpenseFormState = {
   ok: false,
   values: {},
@@ -65,6 +68,8 @@ function ExpenseForm({ today, onSaved }: { today: string; onSaved: () => void })
     INITIAL_STATE,
   );
   const { values, errors } = state;
+  // Monthly expenses have no paid/unpaid status: each month's charge is counted.
+  const [monthly, setMonthly] = useState(false);
 
   return (
     <form action={formAction} noValidate className="grid gap-4">
@@ -100,23 +105,42 @@ function ExpenseForm({ today, onSaved }: { today: string; onSaved: () => void })
           </Field>
         </div>
 
-        <Field data-invalid={errors.category ? true : undefined}>
-          <FieldLabel htmlFor="expense-category">Կատեգորիա</FieldLabel>
-          <select
-            id="expense-category"
-            name="category"
-            required
-            defaultValue={values.category ?? EXPENSE_CATEGORIES[0]}
-            className="h-10 w-full rounded-xl border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            {EXPENSE_CATEGORIES.map((category) => (
-              <option key={category} value={category}>
-                {EXPENSE_CATEGORY_LABELS[category]}
-              </option>
-            ))}
-          </select>
-          {errors.category && <FieldError>{errors.category}</FieldError>}
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field data-invalid={errors.category ? true : undefined}>
+            <FieldLabel htmlFor="expense-category">Կատեգորիա</FieldLabel>
+            <select
+              id="expense-category"
+              name="category"
+              required
+              defaultValue={values.category ?? EXPENSE_CATEGORIES[0]}
+              className={SELECT_CLASS}
+            >
+              {EXPENSE_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {EXPENSE_CATEGORY_LABELS[category]}
+                </option>
+              ))}
+            </select>
+            {errors.category && <FieldError>{errors.category}</FieldError>}
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="expense-status">Կարգավիճակ</FieldLabel>
+            <select
+              id="expense-status"
+              name="status"
+              defaultValue={values.status ?? "paid"}
+              disabled={monthly}
+              aria-describedby="expense-status-hint"
+              className={SELECT_CLASS}
+            >
+              <option value="paid">Վճարված</option>
+              <option value="unpaid">Չվճարված</option>
+            </select>
+          </Field>
+        </div>
+        <p id="expense-status-hint" className="-mt-2 text-xs text-muted-foreground">
+          Չվճարված ծախսը չի հաշվարկվում ընդհանուր ծախսերում և շահույթում, մինչև չնշեք վճարված։
+        </p>
 
         <Field data-invalid={errors.description ? true : undefined}>
           <FieldLabel htmlFor="expense-description">
@@ -139,6 +163,8 @@ function ExpenseForm({ today, onSaved }: { today: string; onSaved: () => void })
           <input
             type="checkbox"
             name="monthly"
+            checked={monthly}
+            onChange={(event) => setMonthly(event.currentTarget.checked)}
             className="mt-0.5 size-4 accent-[var(--primary)]"
           />
           <span>

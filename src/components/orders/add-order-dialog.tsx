@@ -101,13 +101,14 @@ function AddOrderForm({
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [source, setSource] = useState("");
+  const [discount, setDiscount] = useState("");
 
   const product = products.find((item) => item.id === productId);
   const quantity = Math.max(Math.trunc(Number(qty)) || 0, 0);
   const totals = computeOrderTotals({
     qty: quantity,
     unitPrice: product?.price ?? 0,
-    discountPercent: 0,
+    discountPercent: Math.min(Math.max(Number(discount) || 0, 0), 100),
     discountAmount: 0,
     deliveryFee: product?.deliveryFee ?? 0,
   });
@@ -169,9 +170,23 @@ function AddOrderForm({
         <TextField name="phone" label="Հեռախոս" type="tel" value={phone} onChange={setPhone} error={errors.phone} />
       </div>
 
-      {isShop && (
-        <TextField name="address" label="Հասցե" optional value={address} onChange={setAddress} error={errors.address} />
-      )}
+      <div className={isShop ? "grid gap-4 sm:grid-cols-[1fr_7rem]" : undefined}>
+        {isShop && (
+          <TextField name="address" label="Հասցե" optional value={address} onChange={setAddress} error={errors.address} />
+        )}
+        <TextField
+          name="discount_percent"
+          label="Զեղչ, %"
+          type="number"
+          inputMode="decimal"
+          min={0}
+          max={100}
+          placeholder="0"
+          value={discount}
+          onChange={setDiscount}
+          error={errors.discount_percent}
+        />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField name="email" label="Էլ. հասցե" type="email" optional value={email} onChange={setEmail} error={errors.email} />
@@ -205,7 +220,13 @@ function AddOrderForm({
           <dt className="text-muted-foreground">
             {formatMoney(product.price)} × {quantity}
           </dt>
-          <dd className="text-right">{formatMoney(totals.productTotal)}</dd>
+          <dd className="text-right">{formatMoney(totals.subtotal)}</dd>
+          {totals.discount > 0 && (
+            <>
+              <dt className="text-muted-foreground">Զեղչ</dt>
+              <dd className="text-right">−{formatMoney(totals.discount)}</dd>
+            </>
+          )}
           {isShop && (
             <>
               <dt className="text-muted-foreground">Առաքում</dt>

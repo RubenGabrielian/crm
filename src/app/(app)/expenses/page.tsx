@@ -6,6 +6,7 @@ import {
   DeleteExpenseDialog,
   RemoveMonthlyExpenseDialog,
 } from "@/components/expenses/expense-dialogs";
+import { ExpensePaidSelect } from "@/components/expenses/expense-paid-select";
 import { EmptyState } from "@/components/layout/empty-state";
 import {
   Table,
@@ -54,7 +55,10 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
   const expenses = [...oneOff, ...monthlyCharges(recurring, range, today)].sort((a, b) =>
     b.date.localeCompare(a.date),
   );
-  const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  // Unpaid expenses stay in the list but are not money spent yet.
+  const sum = (items: typeof expenses) => items.reduce((all, item) => all + item.amount, 0);
+  const unpaid = expenses.filter((expense) => !expense.paid);
+  const total = sum(expenses) - sum(unpaid);
 
   return (
     <div className="flex flex-col gap-6">
@@ -84,8 +88,14 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
               {formatMoney(total)}
             </dd>
             <dd className="mt-1 text-xs tabular-nums opacity-70">
-              {formatNumber(expenses.length)} գրառում
+              {formatNumber(expenses.length - unpaid.length)} գրառում
             </dd>
+            {unpaid.length > 0 && (
+              <dd className="mt-3 border-t border-primary/15 pt-3 text-sm tabular-nums">
+                Չվճարված՝ {formatMoney(sum(unpaid))}
+                <span className="block text-xs opacity-70">Չի հաշվարկվում ընդհանուրում</span>
+              </dd>
+            )}
           </dl>
 
           {expenses.length === 0 ? (
@@ -103,6 +113,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
                     <TableHead className="px-4">Կատեգորիա</TableHead>
                     <TableHead className="px-4">Նկարագրություն</TableHead>
                     <TableHead className="px-4 text-right">Գումար</TableHead>
+                    <TableHead className="px-4">Կարգավիճակ</TableHead>
                     <TableHead className="px-4">
                       <span className="sr-only">Գործողություններ</span>
                     </TableHead>
@@ -127,8 +138,21 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
                         <TableCell className="max-w-80 px-4 whitespace-normal text-muted-foreground">
                           {expense.description ?? "—"}
                         </TableCell>
-                        <TableCell className="px-4 text-right font-semibold tabular-nums">
+                        <TableCell
+                          className={`px-4 text-right font-semibold tabular-nums ${expense.paid ? "" : "text-muted-foreground"}`}
+                        >
                           {formatMoney(expense.amount)}
+                        </TableCell>
+                        <TableCell className="px-4">
+                          {expense.monthly ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : (
+                            <ExpensePaidSelect
+                              expenseId={expense.id}
+                              paid={expense.paid}
+                              label={`${category}, ${formatMoney(expense.amount)}`}
+                            />
+                          )}
                         </TableCell>
                         <TableCell className="px-4 text-right">
                           {!expense.monthly && (

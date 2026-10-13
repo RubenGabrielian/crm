@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { formatMoney } from "@/lib/format";
 import { placeOrder, type OrderFormState } from "@/lib/orders/actions";
 import { computeOrderTotals } from "@/lib/orders/totals";
+import type { LinkSale } from "@/lib/orders/sale-link";
 import type { CheckoutProduct } from "@/lib/products/queries";
 import type { BusinessType } from "@/lib/tenant/features";
 
@@ -51,9 +52,16 @@ type CheckoutField = {
   required: boolean;
 };
 
-export function CheckoutForm({ product }: { product: CheckoutProduct }) {
+export function CheckoutForm({
+  product,
+  sale,
+}: {
+  product: CheckoutProduct;
+  /** Already verified by the page; the server checks it again on submit. */
+  sale: LinkSale | null;
+}) {
   const [state, formAction, pending] = useActionState(
-    placeOrder.bind(null, product.id),
+    placeOrder.bind(null, product.id, sale),
     INITIAL_STATE,
   );
   const [qty, setQty] = useState(1);
@@ -67,7 +75,7 @@ export function CheckoutForm({ product }: { product: CheckoutProduct }) {
   const totals = computeOrderTotals({
     qty,
     unitPrice: product.price,
-    discountPercent: 0,
+    discountPercent: sale?.percent ?? 0,
     discountAmount: 0,
     deliveryFee: product.deliveryFee,
   });
@@ -187,7 +195,13 @@ export function CheckoutForm({ product }: { product: CheckoutProduct }) {
         <dt className="text-muted-foreground">
           {formatMoney(product.price)} × {qty}
         </dt>
-        <dd className="text-right">{formatMoney(totals.productTotal)}</dd>
+        <dd className="text-right">{formatMoney(totals.subtotal)}</dd>
+        {sale && (
+          <>
+            <dt className="text-muted-foreground">Զեղչ {sale.percent}%</dt>
+            <dd className="text-right">−{formatMoney(totals.discount)}</dd>
+          </>
+        )}
         {isShop && (
           <>
             <dt className="text-muted-foreground">Առաքում</dt>

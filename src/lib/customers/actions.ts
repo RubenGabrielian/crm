@@ -90,3 +90,30 @@ export async function updateCustomer(
   revalidatePath("/orders");
   return { ok: true, values: {}, errors: {}, formError: null };
 }
+
+/** Admin's private note about a customer; an empty comment clears it. */
+export async function updateCustomerComment(
+  customerId: string,
+  comment: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const tenant = await getCurrentTenant();
+  const text = comment.trim();
+  if (text.length > 2000) {
+    return { ok: false, error: "Մեկնաբանությունը չափազանց երկար է (առավելագույնը 2000 նիշ)" };
+  }
+
+  const { data, error } = await supabase
+    .from("customers")
+    .update({ comment: text || null })
+    .eq("id", customerId)
+    .eq("tenant_id", tenant.id)
+    .select("id");
+
+  if (error || data.length === 0) {
+    if (error) console.error("updating customer comment failed:", error);
+    return { ok: false, error: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
+  }
+
+  revalidatePath("/customers", "layout");
+  return { ok: true, error: null };
+}

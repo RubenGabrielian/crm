@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { CustomerCommentDialog } from "@/components/customers/customer-comment-dialog";
 import { EditCustomerDialog } from "@/components/customers/edit-customer-dialog";
 import { OrderStatusSelect } from "@/components/orders/order-status-select";
 import {
@@ -96,6 +97,13 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
               )}
             </Detail>
           )}
+          <Detail label="Մեկնաբանություն" wide>
+            <CustomerCommentDialog
+              customerId={customer.id}
+              customerName={customer.name}
+              comment={customer.comment}
+            />
+          </Detail>
         </dl>
       </section>
 

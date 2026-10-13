@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isOrderStatus, type OrderStatus } from "@/config/orders";
 import { notifyOrderStatusChange } from "./notify";
+import { verifySale, type LinkSale } from "./sale-link";
 import { getCheckoutProduct } from "@/lib/products/queries";
 import { supabase } from "@/lib/supabase";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
@@ -50,6 +51,8 @@ async function currentStatus(tenantId: string, orderId: string): Promise<string 
 // ── Public checkout ──────────────────────────────────────────
 export async function placeOrder(
   productId: string,
+  /** From a signed sale link; ignored unless the signature is genuine. */
+  sale: LinkSale | null,
   _prev: OrderFormState,
   formData: FormData,
 ): Promise<OrderFormState> {
@@ -102,6 +105,7 @@ export async function placeOrder(
     p_phone: phone,
     p_address: needsAddress ? values.address : "",
     p_qty: qty,
+    p_discount_percent: verifySale(productId, sale),
   });
 
   if (error) {
@@ -268,6 +272,7 @@ export async function createManualOrder(
     email: read("email"),
     address: read("address"),
     source: read("source"),
+    discount_percent: read("discount_percent"),
   };
   const fail = (formError: string): OrderFormState => ({
     ok: false,
@@ -290,6 +295,11 @@ export async function createManualOrder(
 
   const qty = parseQty(values.qty);
   if (!qty) errors.qty = "Մուտքագրեք 1 կամ ավելի";
+
+  const discountPercent = values.discount_percent === "" ? 0 : Number(values.discount_percent);
+  if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+    errors.discount_percent = "Մուտքագրեք 0-ից 100";
+  }
 
   if (Object.keys(errors).length > 0) {
     return { ok: false, values, errors, formError: null };
@@ -316,6 +326,7 @@ export async function createManualOrder(
     p_phone: phone,
     p_address: isShop ? values.address : "",
     p_qty: qty,
+    p_discount_percent: discountPercent,
   });
 
   if (error) {

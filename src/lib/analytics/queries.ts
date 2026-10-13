@@ -69,6 +69,8 @@ export async function getAnalytics(
       .from("expenses")
       .select("amount, expense_category")
       .eq("tenant_id", tenantId)
+      // Unpaid expenses are not money spent yet.
+      .eq("is_paid", true)
       .gte("expense_date", range.from)
       .lte("expense_date", range.to),
     listRecurringExpenses(tenantId),

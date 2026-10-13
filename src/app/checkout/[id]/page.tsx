@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ImageOff } from "lucide-react";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
 import { formatMoney } from "@/lib/format";
+import { verifySale, type LinkSale } from "@/lib/orders/sale-link";
 import { getCheckoutProduct } from "@/lib/products/queries";
 
 // Public page: no sign-in. Product, price and stock are read per request.
@@ -16,9 +17,20 @@ export async function generateMetadata({
   return { title: product ? `${product.title} | ${product.tenantName}` : "Էջը չի գտնվել" };
 }
 
-export default async function CheckoutPage({ params }: PageProps<"/checkout/[id]">) {
+export default async function CheckoutPage({
+  params,
+  searchParams,
+}: PageProps<"/checkout/[id]">) {
   const product = await getCheckoutProduct((await params).id);
   if (!product) notFound();
+
+  // A sale only applies when the link's signature matches; otherwise full price.
+  const query = await searchParams;
+  const claimed: LinkSale = { percent: Number(query.sale), sig: String(query.sig ?? "") };
+  const sale = verifySale(product.id, claimed) > 0 ? claimed : null;
+  const salePrice = sale
+    ? Math.round(product.price * (100 - sale.percent)) / 100
+    : product.price;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-4xl items-center px-4 py-6 sm:px-6 sm:py-10">
@@ -44,12 +56,22 @@ export default async function CheckoutPage({ params }: PageProps<"/checkout/[id]
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-balance">
               {product.title}
             </h1>
-            <p className="mt-3 text-3xl font-semibold tabular-nums">
-              {formatMoney(product.price)}
+            <p className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-3xl font-semibold tabular-nums">
+              {formatMoney(salePrice)}
+              {sale && (
+                <>
+                  <s className="text-lg font-normal text-muted-foreground">
+                    {formatMoney(product.price)}
+                  </s>
+                  <span className="rounded-full bg-apricot px-2.5 py-0.5 text-sm font-semibold text-primary">
+                    −{sale.percent}%
+                  </span>
+                </>
+              )}
             </p>
           </header>
 
-          <CheckoutForm product={product} />
+          <CheckoutForm product={product} sale={sale} />
         </div>
       </div>
     </main>
