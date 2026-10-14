@@ -214,3 +214,61 @@
 .promo-paused * {
   animation-play-state: paused !important;
 }
+
+/* ── Loading states ──────────────────────────────────────────
+   A thin bar at the top while a page or filter loads, and skeletons
+   shaped like the page. One shimmer sweeps across every skeleton block
+   at once (fixed background), and the cards fade up one after another. */
+.nav-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: 3px;
+  pointer-events: none;
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--ring), var(--apricot));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--ring) 70%, transparent);
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease 0.15s;
+}
+
+.skeleton {
+  border-radius: 0.75rem;
+  background-color: color-mix(in srgb, var(--primary) 9%, var(--card));
+  background-image: linear-gradient(
+    105deg,
+    transparent 35%,
+    color-mix(in srgb, var(--apricot) 55%, white) 50%,
+    transparent 65%
+  );
+  background-size: 160vw 100%;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-position: 130vw 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes shimmer {
+    from {
+      background-position: 130vw 0;
+    }
+    to {
+      background-position: -130vw 0;
+    }
+  }
+  .skeleton {
+    animation: shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  @keyframes sk-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.99);
+    }
+  }
+  .sk-in {
+    animation: sk-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--i, 0) * 45ms);
+  }
+}

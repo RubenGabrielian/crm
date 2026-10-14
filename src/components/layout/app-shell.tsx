@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Header } from "./header";
+import { NavigationProvider, PageContent } from "./navigation-progress";
 import { Sidebar } from "./sidebar";
 
 /**
@@ -8,14 +9,18 @@ import { Sidebar } from "./sidebar";
  */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-dvh">
-      <Sidebar className="fixed inset-y-3 left-3 z-40 hidden rounded-3xl shadow-soft lg:flex" />
-      <div className="flex min-h-dvh flex-col lg:pl-[16.75rem]">
-        <Header />
-        <main className="flex-1 px-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
-          <div className="mx-auto w-full max-w-6xl">{children}</div>
-        </main>
+    <NavigationProvider>
+      <div className="min-h-dvh">
+        <Sidebar className="fixed inset-y-3 left-3 z-40 hidden rounded-3xl shadow-soft lg:flex" />
+        <div className="flex min-h-dvh flex-col lg:pl-[16.75rem]">
+          <Header />
+          <main className="flex-1 px-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
+            <div className="mx-auto w-full max-w-6xl">
+              <PageContent>{children}</PageContent>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </NavigationProvider>
   );
 }
