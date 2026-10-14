@@ -27,10 +27,16 @@ export async function notifyOrderStatusChange(
   }
 }
 
-async function sendStatusEmail(tenant: Tenant, orderId: string, status: OrderStatus) {
+async function sendStatusEmail(
+  tenant: Tenant,
+  orderId: string,
+  status: OrderStatus,
+) {
   const shortId = `#${orderId.slice(0, 8).toUpperCase()}`;
   if (!emailConfigured) {
-    console.warn(`order status email skipped for ${shortId}: RESEND_API_KEY is not set`);
+    console.warn(
+      `order status email skipped for ${shortId}: RESEND_API_KEY is not set`,
+    );
     return;
   }
 
@@ -47,7 +53,9 @@ async function sendStatusEmail(tenant: Tenant, orderId: string, status: OrderSta
 
   const customer = one(order.customers);
   if (!customer?.email) {
-    console.log(`order status email skipped for ${shortId}: customer has no email`);
+    console.log(
+      `order status email skipped for ${shortId}: customer has no email`,
+    );
     return;
   }
 
@@ -55,7 +63,9 @@ async function sendStatusEmail(tenant: Tenant, orderId: string, status: OrderSta
   const statusLabel = ORDER_STATUS_LABELS[tenant.businessType][status];
   const orderWord = isShop ? "պատվերի" : "գրանցման";
   const product = one(order.products)?.title ?? "";
-  const item = product ? `«${product}»${order.qty > 1 ? ` × ${order.qty}` : ""}` : shortId;
+  const item = product
+    ? `«${product}»${order.qty > 1 ? ` × ${order.qty}` : ""}`
+    : shortId;
 
   const greeting = `Բարև, ${customer.name}։`;
   const line = `Ձեր ${item} ${orderWord} կարգավիճակը փոխվել է։`;
@@ -76,6 +86,7 @@ async function sendStatusEmail(tenant: Tenant, orderId: string, status: OrderSta
 </div>`,
   });
 
-  if (result.ok) console.log(`order status email sent for ${shortId} (${status})`);
+  if (result.ok)
+    console.log(`order status email sent for ${shortId} (${status})`);
   else console.error(`order status email failed for ${shortId}:`, result.error);
 }

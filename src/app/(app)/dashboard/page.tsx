@@ -1,7 +1,6 @@
 import { connection } from "next/server";
 import {
   Megaphone,
-  PackageCheck,
   Percent,
   Receipt,
   ShoppingCart,
@@ -14,6 +13,7 @@ import {
 import { cn } from "cn";
 import { DailyRevenueChart } from "@/components/dashboard/daily-revenue-chart";
 import { RangeFilter } from "@/components/dashboard/range-filter";
+import { SourceBreakdown } from "@/components/dashboard/source-breakdown";
 import { EmptyState } from "@/components/layout/empty-state";
 import {
   Table,
@@ -45,7 +45,9 @@ function oneDecimal(value: number) {
   return formatNumber(Math.round(value * 10) / 10);
 }
 
-export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
+export default async function DashboardPage({
+  searchParams,
+}: PageProps<"/dashboard">) {
   // The period depends on today's date, so this page is always rendered per request.
   await connection();
   const params = await searchParams;
@@ -64,11 +66,12 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
   const [{ analytics, error }, inventory] = await Promise.all([
     getAnalytics(tenant.id, range),
-    tracksStock ? listInventory(tenant.id) : Promise.resolve({ rows: [], error: null }),
+    tracksStock
+      ? listInventory(tenant.id)
+      : Promise.resolve({ rows: [], error: null }),
   ]);
 
   const ordersLabel = isShop ? "Պատվերներ" : "Գրանցումներ";
-  const deliveredLabel = isShop ? "առաքված" : "ավարտված";
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,8 +82,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             ? displayDate(range.from)
             : `${displayDate(range.from)} – ${displayDate(range.to)}`}
           {isShop
-            ? "։ Գումարները հաշվվում են միայն առաքված պատվերներից։"
-            : "։ Գումարները հաշվվում են միայն ավարտված գրանցումներից։"}
+            ? "։ Վաճառքը՝ բոլոր պատվերների ապրանքների գումարն է՝ առանց առաքման։"
+            : "։ Վաճառքը՝ բոլոր գրանցումների գումարն է։"}
         </p>
       </div>
 
@@ -96,9 +99,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <KpiCard
               icon={Wallet}
-              label="Ընդհանուր մուտք"
-              value={formatMoney(analytics.cashIn)}
-              note={`${formatNumber(analytics.deliveredOrders)} ${deliveredLabel}`}
+              label="Վաճառք"
+              value={formatMoney(analytics.sales)}
+              note={`${formatNumber(analytics.totalOrders)} ${isShop ? "պատվեր" : "գրանցում"}${isShop ? `, ${formatNumber(analytics.unitsSold)} հատ` : ""}`}
               emphasis
               tone="accent"
             />
@@ -106,6 +109,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
               icon={TrendingUp}
               label="Մաքուր շահույթ"
               value={formatMoney(analytics.netProfit)}
+              note="Մարժինալ շահույթ − ֆիքսված ծախսեր"
               negative={analytics.netProfit < 0}
               emphasis
             />
@@ -120,7 +124,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
               icon={Percent}
               label="Շահութաբերություն"
               value={
-                analytics.profitMargin === null ? "—" : `${oneDecimal(analytics.profitMargin)}%`
+                analytics.profitMargin === null
+                  ? "—"
+                  : `${oneDecimal(analytics.profitMargin)}%`
               }
               negative={(analytics.profitMargin ?? 0) < 0}
               emphasis
@@ -141,7 +147,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
               note={
                 analytics.roas === null
                   ? "Մարքեթինգի ծախս չկա"
-                  : "Մուտքը՝ մարքեթինգի 1 ֏-ի դիմաց"
+                  : "Վաճառքը՝ մարքեթինգի 1 ֏-ի դիմաց"
               }
             />
             <KpiCard
@@ -151,32 +157,55 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
               note={`Մարքեթինգի ծախսը՝ 1 ${isShop ? "պատվերի" : "գրանցման"} համար`}
             />
             <KpiCard
-              icon={PackageCheck}
-              label={ordersLabel}
-              value={`${formatNumber(analytics.deliveredOrders)} / ${formatNumber(analytics.totalOrders)}`}
-              note={`${deliveredLabel} / ընդամենը`}
+              icon={Receipt}
+              label="Փոփոխական ծախսեր"
+              value={formatMoney(analytics.variableCosts)}
+              note={
+                analytics.contributionMargin === null
+                  ? "Աճում են ամեն վաճառքի հետ"
+                  : `Մարժինալ շահույթ՝ ${oneDecimal(analytics.contributionMargin)}%`
+              }
             />
             <KpiCard
               icon={Receipt}
-              label="Ընդհանուր ծախսեր"
-              value={formatMoney(analytics.totalExpenses)}
-              note={`Մարքեթինգ՝ ${formatMoney(analytics.marketingSpend)}, այլ՝ ${formatMoney(analytics.operatingExpenses)}`}
+              label="Ֆիքսված ծախսեր"
+              value={formatMoney(analytics.fixedCosts)}
+              note={
+                analytics.personalExpenses > 0
+                  ? `Անձնական՝ ${formatMoney(analytics.personalExpenses)} (առանձին)`
+                  : `Մարքեթինգ՝ ${formatMoney(analytics.marketingSpend)}`
+              }
             />
           </dl>
 
+          <BreakEvenCard
+            breakEven={analytics.breakEven}
+            fixedCosts={analytics.fixedCosts}
+            contribution={analytics.contribution}
+            unitsSold={analytics.unitsSold}
+            unitLabel={isShop ? "հատ" : "գրանցում"}
+          />
+
           {/* Row 3: product performance | stock and marketing */}
           <div className="grid gap-4 lg:grid-cols-2">
-            <Panel title={isShop ? "Ապրանքների արդյունքը" : "Դասընթացների արդյունքը"} flush>
+            <Panel
+              title={isShop ? "Ապրանքների արդյունքը" : "Դասընթացների արդյունքը"}
+              flush
+            >
               {analytics.products.length === 0 ? (
                 <Empty />
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="px-4">{isShop ? "Ապրանք" : "Դասընթաց"}</TableHead>
+                      <TableHead className="px-4">
+                        {isShop ? "Ապրանք" : "Դասընթաց"}
+                      </TableHead>
                       <TableHead className="px-3 text-right">Քանակ</TableHead>
                       <TableHead className="px-3 text-right">Հասույթ</TableHead>
-                      <TableHead className="px-4 text-right">Համախառն շահույթ</TableHead>
+                      <TableHead className="px-4 text-right">
+                        Համախառն շահույթ
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -225,7 +254,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                               row.available === 0 && "text-destructive",
                             )}
                           >
-                            {row.available === 0 ? "Սպառված է" : formatNumber(row.available)}
+                            {row.available === 0
+                              ? "Սպառված է"
+                              : formatNumber(row.available)}
                           </span>
                         </li>
                       ))}
@@ -234,7 +265,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                 </Panel>
               )}
 
-              <Panel title={`Մարքեթինգի ծախս՝ ${formatMoney(analytics.marketingSpend)}`} flush>
+              <Panel
+                title={`Մարքեթինգի ծախս՝ ${formatMoney(analytics.marketingSpend)}`}
+                flush
+              >
                 {analytics.marketingByCategory.length === 0 ? (
                   <Empty text="Այս ժամանակահատվածում մարքեթինգի ծախս չկա։" />
                 ) : (
@@ -247,9 +281,14 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                         <span>{expenseCategoryLabel(row.category)}</span>
                         <span className="flex items-baseline gap-3 tabular-nums">
                           <span className="text-xs text-muted-foreground">
-                            {oneDecimal((row.amount / analytics.marketingSpend) * 100)}%
+                            {oneDecimal(
+                              (row.amount / analytics.marketingSpend) * 100,
+                            )}
+                            %
                           </span>
-                          <span className="font-semibold">{formatMoney(row.amount)}</span>
+                          <span className="font-semibold">
+                            {formatMoney(row.amount)}
+                          </span>
                         </span>
                       </li>
                     ))}
@@ -261,58 +300,86 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
           {/* Row 4: trend and the full path to net profit */}
           <div className="grid gap-4 lg:grid-cols-5">
-            <Panel title="Մուտքն ըստ օրերի" className="lg:col-span-3">
-              <DailyRevenueChart days={analytics.daily} ordersLabel={ordersLabel} />
+            <Panel title="Վաճառքի դինամիկա" className="lg:col-span-3">
+              <DailyRevenueChart
+                days={analytics.daily}
+                ordersLabel={ordersLabel}
+              />
             </Panel>
 
-            <Panel title="Ինչպես է ստացվում մաքուր շահույթը" className="lg:col-span-2">
+            <Panel
+              title="Ինչպես է ստացվում մաքուր շահույթը"
+              className="lg:col-span-2"
+            >
               <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm tabular-nums">
-                <Line label="Ընդհանուր մուտք" amount={analytics.cashIn} />
-                {isShop && <Line label="Ապրանքների ինքնարժեք" amount={-analytics.cogs} />}
-                {isShop && <Line label="Առաքման ծախս" amount={-analytics.deliveryCosts} />}
-                <Line label="Համախառն շահույթ" amount={analytics.grossProfit} total />
-                <Line label="Մարքեթինգ" amount={-analytics.marketingSpend} />
-                <Line label="Գործառնական ծախսեր" amount={-analytics.operatingExpenses} />
-                <Line label="Մաքուր շահույթ" amount={analytics.netProfit} total strong />
+                <Line label="Վաճառք" amount={analytics.sales} />
+                {isShop && (
+                  <Line label="Ապրանքների ինքնարժեք" amount={-analytics.cogs} />
+                )}
+                {analytics.materialsCost > 0 && (
+                  <Line
+                    label="Նյութեր և փաթեթավորում"
+                    amount={-analytics.materialsCost}
+                  />
+                )}
+                {analytics.variableExpenses > 0 && (
+                  <Line
+                    label="Այլ փոփոխական ծախսեր"
+                    amount={-analytics.variableExpenses}
+                  />
+                )}
+                <Line
+                  label="Մարժինալ շահույթ"
+                  amount={analytics.contribution}
+                  total
+                />
+                <Line label="Ֆիքսված ծախսեր" amount={-analytics.fixedCosts} />
+                <Line
+                  label="Մաքուր շահույթ"
+                  amount={analytics.netProfit}
+                  total
+                  strong
+                />
+                {analytics.personalExpenses > 0 && (
+                  <>
+                    <Line
+                      label="Անձնական ծախսեր"
+                      amount={-analytics.personalExpenses}
+                    />
+                    <Line
+                      label="Մնացորդ անձնականից հետո"
+                      amount={analytics.remainingAfterExpenses}
+                      total
+                    />
+                  </>
+                )}
               </dl>
+              {isShop && analytics.deliveryCollected > 0 && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Առաքման վճարները ({formatMoney(analytics.deliveryCollected)})
+                  վաճառքում և շահույթում չեն հաշվվում։
+                </p>
+              )}
             </Panel>
           </div>
 
           {/* Row 5: where orders come from, and where they stand */}
           <div className="grid gap-4 lg:grid-cols-5">
-            <Panel title="Աղբյուրներ" className="lg:col-span-3" flush>
+            <Panel
+              title={
+                isShop
+                  ? "Որտեղից են գալիս պատվերները"
+                  : "Որտեղից են գալիս գրանցումները"
+              }
+              className="lg:col-span-3"
+            >
               {analytics.sources.length === 0 ? (
                 <Empty />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="px-4">Աղբյուր</TableHead>
-                      <TableHead className="px-3 text-right">{ordersLabel}</TableHead>
-                      <TableHead className="px-4 text-right">Մուտք</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {analytics.sources.map((row) => (
-                      <TableRow key={row.name ?? ""}>
-                        <TableCell
-                          className={cn(
-                            "px-4",
-                            row.name === null ? "text-muted-foreground" : "font-medium",
-                          )}
-                        >
-                          {row.name ?? "Աղբյուր չկա"}
-                        </TableCell>
-                        <TableCell className="px-3 text-right tabular-nums">
-                          {formatNumber(row.orders)}
-                        </TableCell>
-                        <TableCell className="px-4 text-right tabular-nums">
-                          {formatMoney(row.revenue)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <SourceBreakdown
+                  sources={analytics.sources}
+                  ordersLabel={ordersLabel}
+                />
               )}
             </Panel>
 
@@ -334,6 +401,130 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </>
       )}
     </div>
+  );
+}
+
+function displayShortDate(date: string) {
+  const [, month, day] = date.split("-");
+  return `${day}.${month}`;
+}
+
+/**
+ * Break-even: how much of the period's fixed costs the contribution margin
+ * has covered, and the day it reached zero (or what is still missing).
+ */
+function BreakEvenCard({
+  breakEven,
+  fixedCosts,
+  contribution,
+  unitsSold,
+  unitLabel,
+}: {
+  breakEven: {
+    date: string | null;
+    contributionPerUnit: number | null;
+    unitsNeeded: number | null;
+    remaining: number;
+    progress: number;
+  };
+  fixedCosts: number;
+  contribution: number;
+  unitsSold: number;
+  unitLabel: string;
+}) {
+  const reached = fixedCosts > 0 && contribution >= fixedCosts;
+  const unitsLeft =
+    !reached &&
+    breakEven.contributionPerUnit &&
+    breakEven.contributionPerUnit > 0
+      ? Math.ceil(breakEven.remaining / breakEven.contributionPerUnit)
+      : null;
+
+  return (
+    <section className="rounded-3xl bg-card p-5 shadow-soft">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold">Զրոյական կետ</h2>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+            Երբ մարժինալ շահույթը ծածկում է ֆիքսված ծախսերը, բիզնեսը դուրս է
+            գալիս զրոյի, և ամեն հաջորդ վաճառքը արդեն մաքուր շահույթ է։
+          </p>
+        </div>
+        <p
+          className={cn(
+            "rounded-full px-3 py-1.5 text-sm font-semibold",
+            fixedCosts === 0
+              ? "bg-muted text-muted-foreground"
+              : reached
+                ? "bg-emerald-100 text-emerald-900"
+                : "bg-amber-100 text-amber-900",
+          )}
+        >
+          {fixedCosts === 0
+            ? "Ֆիքսված ծախսեր չկան"
+            : reached
+              ? breakEven.date
+                ? `Հասավ ${displayShortDate(breakEven.date)}-ին`
+                : "Հասավ"
+              : "Դեռ չի հասել"}
+        </p>
+      </div>
+
+      {fixedCosts > 0 && (
+        <>
+          <div className="mt-5 h-3 overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn(
+                "source-bar h-full rounded-full",
+                reached ? "bg-emerald-500" : "bg-ring",
+              )}
+              style={{ width: `${breakEven.progress * 100}%` }}
+            />
+          </div>
+          <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+            <div>
+              <dt className="text-muted-foreground">Ֆիքսված ծախսեր</dt>
+              <dd className="mt-0.5 font-semibold tabular-nums">
+                {formatMoney(fixedCosts)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Ծածկված</dt>
+              <dd className="mt-0.5 font-semibold tabular-nums">
+                {formatMoney(Math.max(Math.min(contribution, fixedCosts), 0))} (
+                {Math.round(breakEven.progress * 100)}%)
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                {reached ? "Զրոյից վեր" : "Մնում է"}
+              </dt>
+              <dd
+                className={cn(
+                  "mt-0.5 font-semibold tabular-nums",
+                  reached && "text-emerald-700",
+                )}
+              >
+                {reached
+                  ? formatMoney(contribution - fixedCosts)
+                  : `${formatMoney(breakEven.remaining)}${unitsLeft !== null ? ` · ≈${formatNumber(unitsLeft)} ${unitLabel}` : ""}`}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Պետք է վաճառել</dt>
+              <dd className="mt-0.5 font-semibold tabular-nums">
+                {breakEven.unitsNeeded === null
+                  ? "—"
+                  : `${formatNumber(breakEven.unitsNeeded)} ${unitLabel}`}
+                <span className="ml-1 font-normal text-muted-foreground">
+                  (վաճառված՝ {formatNumber(unitsSold)})
+                </span>
+              </dd>
+            </div>
+          </dl>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -376,7 +567,9 @@ function KpiCard({
         <span
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-full",
-            tone === "plain" ? "bg-muted" : "bg-primary text-primary-foreground",
+            tone === "plain"
+              ? "bg-muted"
+              : "bg-primary text-primary-foreground",
           )}
         >
           <Icon className="size-4" strokeWidth={1.75} aria-hidden />
@@ -392,7 +585,12 @@ function KpiCard({
         {value}
       </dd>
       {note && (
-        <dd className={cn("mt-1 text-xs", tone === "plain" ? "text-muted-foreground" : "opacity-70")}>
+        <dd
+          className={cn(
+            "mt-1 text-xs",
+            tone === "plain" ? "text-muted-foreground" : "opacity-70",
+          )}
+        >
           {note}
         </dd>
       )}
@@ -413,7 +611,12 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cn("overflow-hidden rounded-3xl bg-card shadow-soft", className)}>
+    <section
+      className={cn(
+        "overflow-hidden rounded-3xl bg-card shadow-soft",
+        className,
+      )}
+    >
       <h2 className="px-5 pt-5 pb-3 text-base font-semibold">{title}</h2>
       <div className={flush ? "px-3 pb-3" : "px-5 pb-5"}>{children}</div>
     </section>

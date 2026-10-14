@@ -24,7 +24,9 @@ export async function listInventory(
 ): Promise<{ rows: InventoryRow[]; error: string | null }> {
   const { data, error } = await supabase
     .from("products")
-    .select("id, title, image_url, inventory(stock_quantity, gift_quantity), orders(qty)")
+    .select(
+      "id, title, image_url, inventory(stock_quantity, gift_quantity, sold_adjustment), orders(qty)",
+    )
     .eq("tenant_id", tenantId)
     .eq("is_active", true)
     .order("created_at", { ascending: false });
@@ -37,7 +39,10 @@ export async function listInventory(
     if (!inventory) continue; // stock is not tracked for this product
 
     // Stock is taken at the moment an order is placed, so every order counts.
-    const sold = (product.orders ?? []).reduce((sum, order) => sum + order.qty, 0);
+    // Plus the admin's correction from the warehouse page.
+    const sold =
+      (product.orders ?? []).reduce((sum, order) => sum + order.qty, 0) +
+      (inventory.sold_adjustment ?? 0);
     const gifted = inventory.gift_quantity;
     const available = inventory.stock_quantity;
     rows.push({

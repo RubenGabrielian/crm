@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { CircleStop, Plus, Trash2 } from "lucide-react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,7 +21,13 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from "@/config/expenses";
+import {
+  COST_TYPES,
+  COST_TYPE_LABELS,
+  EXPENSE_CATEGORIES,
+  EXPENSE_CATEGORY_LABELS,
+  defaultCostType,
+} from "@/config/expenses";
 import {
   addExpense,
   deleteExpense,
@@ -58,7 +65,13 @@ export function AddExpenseDialog({ today }: { today: string }) {
   );
 }
 
-function ExpenseForm({ today, onSaved }: { today: string; onSaved: () => void }) {
+function ExpenseForm({
+  today,
+  onSaved,
+}: {
+  today: string;
+  onSaved: () => void;
+}) {
   const [state, formAction, pending] = useActionState(
     async (prev: ExpenseFormState, formData: FormData) => {
       const next = await addExpense(prev, formData);
@@ -70,6 +83,14 @@ function ExpenseForm({ today, onSaved }: { today: string; onSaved: () => void })
   const { values, errors } = state;
   // Monthly expenses have no paid/unpaid status: each month's charge is counted.
   const [monthly, setMonthly] = useState(false);
+  // The type follows the category until the admin picks one by hand.
+  const [category, setCategory] = useState<string>(
+    values.category ?? EXPENSE_CATEGORIES[0],
+  );
+  const [costType, setCostType] = useState<string>(
+    values.cost_type ??
+      defaultCostType(values.category ?? EXPENSE_CATEGORIES[0]),
+  );
 
   return (
     <form action={formAction} noValidate className="grid gap-4">
@@ -112,7 +133,12 @@ function ExpenseForm({ today, onSaved }: { today: string; onSaved: () => void })
               id="expense-category"
               name="category"
               required
-              defaultValue={values.category ?? EXPENSE_CATEGORIES[0]}
+              value={category}
+              onChange={(event) => {
+                const next = event.currentTarget.value;
+                setCategory(next);
+                setCostType(defaultCostType(next));
+              }}
               className={SELECT_CLASS}
             >
               {EXPENSE_CATEGORIES.map((category) => (
@@ -138,14 +164,55 @@ function ExpenseForm({ today, onSaved }: { today: string; onSaved: () => void })
             </select>
           </Field>
         </div>
-        <p id="expense-status-hint" className="-mt-2 text-xs text-muted-foreground">
-          Չվճարված ծախսը չի հաշվարկվում ընդհանուր ծախսերում և շահույթում, մինչև չնշեք վճարված։
+        <p
+          id="expense-status-hint"
+          className="-mt-2 text-xs text-muted-foreground"
+        >
+          Չվճարված ծախսը չի հաշվարկվում ընդհանուր ծախսերում և շահույթում, մինչև
+          չնշեք վճարված։
         </p>
+
+        <Field>
+          <FieldLabel id="expense-cost-type-label">Ծախսի տեսակ</FieldLabel>
+          <input type="hidden" name="cost_type" value={costType} />
+          <div
+            role="radiogroup"
+            aria-labelledby="expense-cost-type-label"
+            className="grid grid-cols-2 gap-2"
+          >
+            {COST_TYPES.map((type) => (
+              <button
+                key={type}
+                type="button"
+                role="radio"
+                aria-checked={costType === type}
+                onClick={() => setCostType(type)}
+                className={cn(
+                  "rounded-2xl border px-3 py-2.5 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+                  costType === type
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-input hover:bg-muted",
+                )}
+              >
+                <span className="block font-medium">
+                  {COST_TYPE_LABELS[type]}
+                </span>
+                <span className="block text-xs opacity-75">
+                  {type === "fixed"
+                    ? "Վճարվում է՝ վաճառք լինի թե ոչ (գովազդ, վարձ)"
+                    : "Աճում է ամեն վաճառքի հետ (նյութեր, փաթեթ)"}
+                </span>
+              </button>
+            ))}
+          </div>
+        </Field>
 
         <Field data-invalid={errors.description ? true : undefined}>
           <FieldLabel htmlFor="expense-description">
             Նկարագրություն
-            <span className="font-normal text-muted-foreground">(ոչ պարտադիր)</span>
+            <span className="font-normal text-muted-foreground">
+              (ոչ պարտադիր)
+            </span>
           </FieldLabel>
           <Input
             id="expense-description"
@@ -170,7 +237,8 @@ function ExpenseForm({ today, onSaved }: { today: string; onSaved: () => void })
           <span>
             <span className="font-medium">Կրկնել ամեն ամիս</span>
             <span className="block text-muted-foreground">
-              Օրինակ՝ վարձակալություն։ Կհաշվվի ամեն ամիս նույն օրը՝ սկսած ընտրված ամսաթվից։
+              Օրինակ՝ վարձակալություն։ Կհաշվվի ամեն ամիս նույն օրը՝ սկսած
+              ընտրված ամսաթվից։
             </span>
           </span>
         </label>
@@ -240,7 +308,11 @@ export function DeleteExpenseDialog({
           <DialogClose render={<Button type="button" variant="outline" />}>
             Չեղարկել
           </DialogClose>
-          <Button variant="destructive" disabled={pending} onClick={confirmDelete}>
+          <Button
+            variant="destructive"
+            disabled={pending}
+            onClick={confirmDelete}
+          >
             {pending ? "Ջնջվում է…" : "Ջնջել"}
           </Button>
         </DialogFooter>
@@ -295,7 +367,9 @@ export function RemoveMonthlyExpenseDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{stopped ? "Ջնջե՞լ ամսական ծախսը" : "Դադարեցնե՞լ ամսական ծախսը"}</DialogTitle>
+          <DialogTitle>
+            {stopped ? "Ջնջե՞լ ամսական ծախսը" : "Դադարեցնե՞լ ամսական ծախսը"}
+          </DialogTitle>
           <DialogDescription>
             {summary}։{" "}
             {stopped
@@ -308,7 +382,11 @@ export function RemoveMonthlyExpenseDialog({
           <DialogClose render={<Button type="button" variant="outline" />}>
             Չեղարկել
           </DialogClose>
-          <Button variant="destructive" disabled={pending} onClick={() => run("delete")}>
+          <Button
+            variant="destructive"
+            disabled={pending}
+            onClick={() => run("delete")}
+          >
             Ջնջել ամբողջությամբ
           </Button>
           {!stopped && (

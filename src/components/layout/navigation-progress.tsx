@@ -87,7 +87,7 @@ function Progress({
         !target.pathname.startsWith("/auth")
       ) {
         onPendingChange(target.pathname);
-        if (target.pathname !== here.pathname) window.scrollTo({ top: 0 });
+        window.scrollTo({ top: 0 });
       }
       clearTimers();
       setProgress(0.12);

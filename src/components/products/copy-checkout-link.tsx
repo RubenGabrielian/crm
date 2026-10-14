@@ -40,21 +40,38 @@ export function CopyCheckoutLink({ product }: { product: Product }) {
 }
 
 function CopyLinkForm({ product }: { product: Product }) {
+  const productDelivery = Number(product.metadata.delivery_cost);
+  const defaultDelivery =
+    Number.isFinite(productDelivery) && productDelivery > 0
+      ? productDelivery
+      : 0;
   const [percent, setPercent] = useState("");
+  const [deliveryText, setDeliveryText] = useState(String(defaultDelivery));
   const [pending, setPending] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sale = percent.trim() === "" ? 0 : Number(percent);
   const invalid = !Number.isInteger(sale) || sale < 0 || sale > 100;
-  const salePrice = invalid ? product.price : Math.round(product.price * (100 - sale)) / 100;
+  const salePrice = invalid
+    ? product.price
+    : Math.round(product.price * (100 - sale)) / 100;
+  const delivery = deliveryText.trim() === "" ? 0 : Number(deliveryText);
+  const deliveryInvalid = !Number.isFinite(delivery) || delivery < 0;
+  // Only put the fee in the link when it differs from the product's own.
+  const deliveryOverride =
+    !deliveryInvalid && delivery !== defaultDelivery ? delivery : null;
 
   async function copy() {
     setError(null);
     let url = `${window.location.origin}/checkout/${product.id}`;
-    if (sale > 0) {
+    if (sale > 0 || deliveryOverride !== null) {
       setPending(true);
-      const result = await createSaleLinkQuery(product.id, sale);
+      const result = await createSaleLinkQuery(
+        product.id,
+        sale,
+        deliveryOverride,
+      );
       setPending(false);
       if (!result.query) {
         setError(result.error);
@@ -76,7 +93,10 @@ function CopyLinkForm({ product }: { product: Product }) {
     <div className="grid gap-4">
       <Field data-invalid={invalid ? true : undefined}>
         <FieldLabel htmlFor="link-sale">
-          Զեղչ, %<span className="font-normal text-muted-foreground">(ոչ պարտադիր)</span>
+          Զեղչ, %
+          <span className="font-normal text-muted-foreground">
+            (ոչ պարտադիր)
+          </span>
         </FieldLabel>
         <Input
           id="link-sale"
@@ -96,20 +116,57 @@ function CopyLinkForm({ product }: { product: Product }) {
         {invalid && <FieldError>Մուտքագրեք 0-ից 100 ամբողջ թիվ</FieldError>}
       </Field>
 
-      <p className="flex items-baseline justify-between gap-3 rounded-2xl bg-muted px-4 py-3 text-sm">
-        <span className="text-muted-foreground">Գինը հղումով</span>
-        <span className="tabular-nums">
+      <Field data-invalid={deliveryInvalid ? true : undefined}>
+        <FieldLabel htmlFor="link-delivery">Առաքման արժեք (֏)</FieldLabel>
+        <Input
+          id="link-delivery"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          step="any"
+          value={deliveryText}
+          onChange={(event) => {
+            setDeliveryText(event.currentTarget.value);
+            setCopied(false);
+          }}
+          aria-invalid={deliveryInvalid ? true : undefined}
+          aria-describedby="link-delivery-hint"
+        />
+        <p id="link-delivery-hint" className="text-xs text-muted-foreground">
+          0՝ անվճար առաքում։ Ապրանքի առաքման արժեքը՝{" "}
+          {formatMoney(defaultDelivery)}։
+        </p>
+        {deliveryInvalid && <FieldError>Մուտքագրեք 0 կամ ավելի</FieldError>}
+      </Field>
+
+      <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-2xl bg-muted px-4 py-3 text-sm tabular-nums">
+        <dt className="text-muted-foreground">Գինը հղումով</dt>
+        <dd className="text-right">
           {sale > 0 && !invalid && (
-            <s className="mr-2 text-muted-foreground">{formatMoney(product.price)}</s>
+            <s className="mr-2 text-muted-foreground">
+              {formatMoney(product.price)}
+            </s>
           )}
-          <span className="text-base font-semibold">{formatMoney(salePrice)}</span>
-        </span>
-      </p>
+          {formatMoney(salePrice)}
+        </dd>
+        <dt className="text-muted-foreground">Առաքում</dt>
+        <dd className="text-right">
+          {deliveryInvalid
+            ? "—"
+            : delivery > 0
+              ? formatMoney(delivery)
+              : "Անվճար"}
+        </dd>
+        <dt className="mt-1 border-t pt-2 font-semibold">Ընդամենը (1 հատ)</dt>
+        <dd className="mt-1 border-t pt-2 text-right text-base font-semibold">
+          {formatMoney(salePrice + (deliveryInvalid ? 0 : delivery))}
+        </dd>
+      </dl>
 
       {error && <FieldError>{error}</FieldError>}
 
       <DialogFooter>
-        <Button onClick={copy} disabled={pending || invalid}>
+        <Button onClick={copy} disabled={pending || invalid || deliveryInvalid}>
           {copied ? <Check /> : <LinkIcon />}
           {copied ? "Պատճենվեց" : "Պատճենել հղումը"}
         </Button>

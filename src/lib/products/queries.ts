@@ -11,6 +11,8 @@ export type Product = {
   imageUrl: string | null;
   metadata: Record<string, unknown>;
   stock: number | null;
+  /** Materials one unit uses, taken from the warehouse on every sale. */
+  materials: { materialId: string; quantity: number }[];
 };
 
 export type CheckoutProduct = {
@@ -40,7 +42,9 @@ export async function listProducts(
 ): Promise<{ products: Product[]; error: string | null }> {
   const { data, error } = await supabase
     .from("products")
-    .select("id, title, price, is_active, image_url, metadata, inventory(stock_quantity)")
+    .select(
+      "id, title, price, is_active, image_url, metadata, inventory(stock_quantity), product_materials(material_id, quantity)",
+    )
     .eq("tenant_id", tenantId)
     // Deleted products that have orders are kept as inactive rows.
     .eq("is_active", true)
@@ -56,13 +60,19 @@ export async function listProducts(
     imageUrl: row.image_url,
     metadata: (row.metadata ?? {}) as Record<string, unknown>,
     stock: one(row.inventory)?.stock_quantity ?? null,
+    materials: (row.product_materials ?? []).map((item) => ({
+      materialId: item.material_id,
+      quantity: Number(item.quantity),
+    })),
   }));
 
   return { products, error: null };
 }
 
 /** Product as shown on the public checkout page. Null if missing or inactive. */
-export async function getCheckoutProduct(id: string): Promise<CheckoutProduct | null> {
+export async function getCheckoutProduct(
+  id: string,
+): Promise<CheckoutProduct | null> {
   if (!UUID.test(id)) return null;
 
   const { data, error } = await supabase
@@ -78,7 +88,9 @@ export async function getCheckoutProduct(id: string): Promise<CheckoutProduct | 
   const tenant = one(data?.tenants);
   if (!data || !tenant) return null;
 
-  const deliveryFee = Number((data.metadata as Record<string, unknown>)?.delivery_cost);
+  const deliveryFee = Number(
+    (data.metadata as Record<string, unknown>)?.delivery_cost,
+  );
 
   return {
     id: data.id,
@@ -86,7 +98,8 @@ export async function getCheckoutProduct(id: string): Promise<CheckoutProduct | 
     price: Number(data.price),
     imageUrl: data.image_url,
     stock: one(data.inventory)?.stock_quantity ?? null,
-    deliveryFee: Number.isFinite(deliveryFee) && deliveryFee > 0 ? deliveryFee : 0,
+    deliveryFee:
+      Number.isFinite(deliveryFee) && deliveryFee > 0 ? deliveryFee : 0,
     tenantName: tenant.name,
     businessType: tenant.business_type as BusinessType,
   };

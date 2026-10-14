@@ -9,10 +9,16 @@ type Result = { ok: boolean; error: string | null };
 const MAX_NAME_LENGTH = 40;
 
 /** Set (or clear, with an empty string) where one order came from. */
-export async function updateOrderSource(orderId: string, source: string): Promise<Result> {
+export async function updateOrderSource(
+  orderId: string,
+  source: string,
+): Promise<Result> {
   const tenant = await getCurrentTenant();
   const name = source.trim();
-  const failed = { ok: false, error: "Չհաջողվեց փոխել աղբյուրը։ Փորձեք կրկին։" };
+  const failed = {
+    ok: false,
+    error: "Չհաջողվեց փոխել աղբյուրը։ Փորձեք կրկին։",
+  };
 
   if (name) {
     // Only names from the tenant's own list are accepted.
@@ -55,7 +61,8 @@ export async function addOrderSource(name: string): Promise<Result> {
     .insert({ tenant_id: tenant.id, name: trimmed });
 
   if (error) {
-    if (error.code === "23505") return { ok: false, error: "Այս աղբյուրն արդեն կա" };
+    if (error.code === "23505")
+      return { ok: false, error: "Այս աղբյուրն արդեն կա" };
     console.error("adding order source failed:", error);
     return { ok: false, error: "Չհաջողվեց ավելացնել։ Փորձեք կրկին։" };
   }

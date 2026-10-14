@@ -272,3 +272,37 @@
     animation-delay: calc(var(--i, 0) * 45ms);
   }
 }
+
+/* ── Dashboard chart: the line draws itself in, the area fades up ── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes chart-line {
+    from {
+      stroke-dashoffset: 1;
+    }
+  }
+  @keyframes chart-area {
+    from {
+      opacity: 0;
+    }
+  }
+  .chart-line {
+    stroke-dasharray: 1;
+    animation: chart-line 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .chart-draw > path:first-child {
+    animation: chart-area 0.9s ease 0.15s both;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes source-bar {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  .source-bar {
+    transform-origin: left;
+    transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: source-bar 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}

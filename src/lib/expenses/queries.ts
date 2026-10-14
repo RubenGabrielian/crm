@@ -14,6 +14,7 @@ export type Expense = {
   monthly: boolean;
   /** Unpaid expenses are listed but left out of every total. */
   paid: boolean;
+  costType: "fixed" | "variable";
 };
 
 export async function listExpenses(
@@ -22,7 +23,9 @@ export async function listExpenses(
 ): Promise<{ expenses: Expense[]; error: string | null }> {
   const { data, error } = await supabase
     .from("expenses")
-    .select("id, expense_date, expense_category, description, amount, is_paid")
+    .select(
+      "id, expense_date, expense_category, description, amount, is_paid, cost_type",
+    )
     .eq("tenant_id", tenantId)
     .gte("expense_date", range.from)
     .lte("expense_date", range.to)
@@ -40,16 +43,21 @@ export async function listExpenses(
       amount: Number(row.amount),
       monthly: false,
       paid: row.is_paid,
+      costType: row.cost_type === "variable" ? "variable" : "fixed",
     })),
     error: null,
   };
 }
 
 /** Monthly expenses of the tenant. Empty (with a log line) if they can't be read. */
-export async function listRecurringExpenses(tenantId: string): Promise<RecurringExpense[]> {
+export async function listRecurringExpenses(
+  tenantId: string,
+): Promise<RecurringExpense[]> {
   const { data, error } = await supabase
     .from("recurring_expenses")
-    .select("id, expense_category, description, amount, start_date, end_date")
+    .select(
+      "id, expense_category, description, amount, start_date, end_date, cost_type",
+    )
     .eq("tenant_id", tenantId)
     .order("created_at");
 
@@ -62,6 +70,7 @@ export async function listRecurringExpenses(tenantId: string): Promise<Recurring
     category: row.expense_category,
     description: row.description,
     amount: Number(row.amount),
+    costType: row.cost_type === "variable" ? "variable" : "fixed",
     startDate: row.start_date,
     endDate: row.end_date,
   }));
@@ -82,6 +91,7 @@ export function monthlyCharges(
       amount: expense.amount,
       monthly: true,
       paid: true,
+      costType: expense.costType,
     })),
   );
 }

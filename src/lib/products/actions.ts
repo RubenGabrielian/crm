@@ -62,8 +62,10 @@ function parseProductForm(formData: FormData, businessType: BusinessType) {
   const image = formData.get("image");
   const imageFile = image instanceof File && image.size > 0 ? image : null;
   if (imageFile) {
-    if (!(imageFile.type in PRODUCT_IMAGE_TYPES)) errors.image = PRODUCT_IMAGE_ERRORS.type;
-    else if (imageFile.size > PRODUCT_IMAGE_MAX_BYTES) errors.image = PRODUCT_IMAGE_ERRORS.size;
+    if (!(imageFile.type in PRODUCT_IMAGE_TYPES))
+      errors.image = PRODUCT_IMAGE_ERRORS.type;
+    else if (imageFile.size > PRODUCT_IMAGE_MAX_BYTES)
+      errors.image = PRODUCT_IMAGE_ERRORS.size;
   }
 
   // Type-specific values: one goes to inventory, the rest to products.metadata.
@@ -89,7 +91,10 @@ function parseProductForm(formData: FormData, businessType: BusinessType) {
 }
 
 /** Returns the public URL, or null if the upload failed. */
-async function uploadProductImage(tenantId: string, file: File): Promise<string | null> {
+async function uploadProductImage(
+  tenantId: string,
+  file: File,
+): Promise<string | null> {
   const bucket = supabase.storage.from(PRODUCT_IMAGE_BUCKET);
   const path = `${tenantId}/${crypto.randomUUID()}.${PRODUCT_IMAGE_TYPES[file.type]}`;
   const { error } = await bucket.upload(path, file, { contentType: file.type });
@@ -98,6 +103,78 @@ async function uploadProductImage(tenantId: string, file: File): Promise<string 
     return null;
   }
   return bucket.getPublicUrl(path).data.publicUrl;
+}
+
+type MaterialUse = { materialId: string; quantity: number };
+
+/** The "materials" field: JSON list of { materialId, quantity }. */
+function parseMaterials(
+  formData: FormData,
+): MaterialUse[] | { error: string } | null {
+  const raw = formData.get("materials");
+  if (raw === null) return null; // the form doesn't manage materials (services)
+  let list: unknown;
+  try {
+    list = JSON.parse(String(raw) || "[]");
+  } catch {
+    return { error: "Նյութերի ցանկը սխալ է" };
+  }
+  if (!Array.isArray(list)) return { error: "Նյութերի ցանկը սխալ է" };
+  const uses = new Map<string, number>();
+  for (const item of list) {
+    const materialId = String((item as MaterialUse)?.materialId ?? "");
+    const quantity = Number((item as MaterialUse)?.quantity);
+    if (!materialId) continue; // an empty row
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return { error: "Յուրաքանչյուր նյութի քանակը պետք է լինի 0-ից մեծ" };
+    }
+    uses.set(materialId, quantity);
+  }
+  return [...uses.entries()].map(([materialId, quantity]) => ({
+    materialId,
+    quantity,
+  }));
+}
+
+/** Replaces what one unit of the product uses. Only the tenant's own materials. */
+async function saveProductMaterials(
+  tenantId: string,
+  productId: string,
+  uses: MaterialUse[],
+): Promise<boolean> {
+  const { error: clearError } = await supabase
+    .from("product_materials")
+    .delete()
+    .eq("product_id", productId)
+    .eq("tenant_id", tenantId);
+  if (clearError) {
+    console.error("clearing product materials failed:", clearError);
+    return false;
+  }
+  if (uses.length === 0) return true;
+
+  const { data: owned } = await supabase
+    .from("materials")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .in(
+      "id",
+      uses.map((use) => use.materialId),
+    );
+  const ownedIds = new Set((owned ?? []).map((row) => row.id));
+  const rows = uses
+    .filter((use) => ownedIds.has(use.materialId))
+    .map((use) => ({
+      tenant_id: tenantId,
+      product_id: productId,
+      material_id: use.materialId,
+      quantity: use.quantity,
+    }));
+  if (rows.length === 0) return true;
+
+  const { error } = await supabase.from("product_materials").insert(rows);
+  if (error) console.error("saving product materials failed:", error);
+  return !error;
 }
 
 function revalidateProductPages() {
@@ -113,7 +190,10 @@ export async function createProduct(
   const tenant = await getCurrentTenant();
   const form = parseProductForm(formData, tenant.businessType);
   const { values } = form;
-  if (form.hasErrors) {
+  const materials = parseMaterials(formData);
+  if (materials && "error" in materials)
+    form.errors.materials = materials.error;
+  if (form.hasErrors || form.errors.materials) {
     return { ok: false, values, errors: form.errors, formError: null };
   }
   const fail = (formError: string): ProductFormState => ({
@@ -150,6 +230,16 @@ export async function createProduct(
     if (imageError) console.error("saving image_url failed:", imageError);
   }
 
+  if (
+    Array.isArray(materials) &&
+    !(await saveProductMaterials(tenant.id, created.id, materials))
+  ) {
+    revalidateProductPages();
+    return fail(
+      "Ապրանքը պահպանվեց, բայց նյութերը՝ ոչ։ Խմբագրեք ապրանքը և փորձեք կրկին։",
+    );
+  }
+
   revalidateProductPages();
   return { ok: true, values: {}, errors: {}, formError: null };
 }
@@ -162,7 +252,10 @@ export async function updateProduct(
   const tenant = await getCurrentTenant();
   const form = parseProductForm(formData, tenant.businessType);
   const { values } = form;
-  if (form.hasErrors) {
+  const materials = parseMaterials(formData);
+  if (materials && "error" in materials)
+    form.errors.materials = materials.error;
+  if (form.hasErrors || form.errors.materials) {
     return { ok: false, values, errors: form.errors, formError: null };
   }
   const fail = (formError: string): ProductFormState => ({
@@ -188,7 +281,9 @@ export async function updateProduct(
 
   // Keep metadata keys this form doesn't manage; replace the ones it does,
   // so clearing an optional field removes it.
-  const metadata = { ...((existing.metadata ?? {}) as Record<string, unknown>) };
+  const metadata = {
+    ...((existing.metadata ?? {}) as Record<string, unknown>),
+  };
   for (const field of PRODUCT_FIELDS[tenant.businessType]) {
     if (field.target === "metadata") delete metadata[field.name];
   }
@@ -230,6 +325,14 @@ export async function updateProduct(
       revalidateProductPages();
       return fail("Ապրանքը պահպանվեց, բայց քանակը չթարմացվեց։ Փորձեք կրկին։");
     }
+  }
+
+  if (
+    Array.isArray(materials) &&
+    !(await saveProductMaterials(tenant.id, productId, materials))
+  ) {
+    revalidateProductPages();
+    return fail("Ապրանքը պահպանվեց, բայց նյութերը՝ ոչ։ Փորձեք կրկին։");
   }
 
   revalidateProductPages();

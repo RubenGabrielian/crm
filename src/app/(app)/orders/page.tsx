@@ -1,13 +1,21 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ClipboardList, ShoppingBag, TriangleAlert } from "lucide-react";
 import { cn } from "cn";
 import { EmptyState } from "@/components/layout/empty-state";
+import {
+  PAGE_SIZE,
+  Pagination,
+  parsePage,
+} from "@/components/layout/pagination";
 import { AddOrderDialog } from "@/components/orders/add-order-dialog";
 import { DeleteOrderDialog } from "@/components/orders/delete-order-dialog";
 import { EditOrderDialog } from "@/components/orders/edit-order-dialog";
+import { OrderCommentDialog } from "@/components/orders/order-comment-dialog";
 import { ManageSourcesDialog } from "@/components/orders/manage-sources-dialog";
 import { OrderSourceSelect } from "@/components/orders/order-source-select";
 import { OrderStatusSelect } from "@/components/orders/order-status-select";
+import { OrderPaymentSelect } from "@/components/orders/order-payment-select";
 import {
   Table,
   TableBody,
@@ -24,11 +32,14 @@ import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 // Reads live data for the current tenant on every request.
 export const instant = false;
 
-export default async function OrdersPage() {
+export default async function OrdersPage({
+  searchParams,
+}: PageProps<"/orders">) {
   const tenant = await getCurrentTenant();
   const isShop = tenant.businessType === "ecommerce";
-  const [{ orders, error }, sources, { products }] = await Promise.all([
-    listOrders(tenant.id),
+  const page = parsePage((await searchParams).page);
+  const [{ orders, total, error }, sources, { products }] = await Promise.all([
+    listOrders(tenant.id, { page, pageSize: PAGE_SIZE }),
     listOrderSources(tenant.id),
     listProducts(tenant.id),
   ]);
@@ -39,7 +50,8 @@ export default async function OrdersPage() {
       title: product.title,
       price: product.price,
       stock: product.stock,
-      deliveryFee: Number.isFinite(deliveryFee) && deliveryFee > 0 ? deliveryFee : 0,
+      deliveryFee:
+        Number.isFinite(deliveryFee) && deliveryFee > 0 ? deliveryFee : 0,
     };
   });
   const sourceNames = sources.map((source) => source.name);
@@ -55,12 +67,19 @@ export default async function OrdersPage() {
     );
   }
 
+  // A page number past the end (e.g. after deleting orders) goes to the last page.
+  if (orders.length === 0 && total > 0) {
+    redirect(`/orders?page=${Math.ceil(total / PAGE_SIZE)}`);
+  }
+
   const numeric = "px-2 text-right tabular-nums";
 
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">Ընդամենը՝ {orders.length}</p>
+        <p className="text-sm text-muted-foreground">
+          Ընդամենը՝ {formatNumber(total)}
+        </p>
         <div className="flex flex-wrap justify-end gap-2">
           <ManageSourcesDialog sources={sources} />
           <AddOrderDialog products={productOptions} sources={sourceNames} />
@@ -89,13 +108,16 @@ export default async function OrdersPage() {
             <TableRow className="hover:bg-transparent">
               <TableHead className="px-2 pl-4">Ամսաթիվ</TableHead>
               <TableHead className="px-2">Հաճախորդ</TableHead>
-              <TableHead className="px-2">{isShop ? "Ապրանք" : "Դասընթաց"}</TableHead>
+              <TableHead className="px-2">
+                {isShop ? "Ապրանք" : "Դասընթաց"}
+              </TableHead>
               <TableHead className={numeric}>Քանակ</TableHead>
               <TableHead className={numeric}>Միավորի գին</TableHead>
               <TableHead className={numeric}>Զեղչ</TableHead>
               {isShop && <TableHead className={numeric}>Առաքում</TableHead>}
               <TableHead className={numeric}>Ընդամենը</TableHead>
               <TableHead className="px-2">Կարգավիճակ</TableHead>
+              <TableHead className="px-2">Վճարում</TableHead>
               <TableHead className="px-2 pr-4">
                 <span className="sr-only">Գործողություններ</span>
               </TableHead>
@@ -105,7 +127,9 @@ export default async function OrdersPage() {
             {orders.map((order) => (
               <TableRow key={order.id}>
                 <TableCell className="px-2 pl-4 tabular-nums" title={order.id}>
-                  <span className="block">{formatDateTime(order.createdAt)}</span>
+                  <span className="block">
+                    {formatDateTime(order.createdAt)}
+                  </span>
                   <span className="block text-xs text-muted-foreground">
                     #{order.id.slice(0, 8).toUpperCase()}
                   </span>
@@ -126,14 +150,28 @@ export default async function OrdersPage() {
                     </a>
                   )}
                   {isShop && order.address && (
-                    <span className="block text-xs text-muted-foreground">{order.address}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {order.address}
+                    </span>
                   )}
                 </TableCell>
-                <TableCell className="max-w-36 px-2 whitespace-normal">
+                <TableCell className="max-w-44 px-2 whitespace-normal">
                   {order.productTitle}
+                  {order.comment && (
+                    <span
+                      title={order.comment}
+                      className="mt-1 line-clamp-2 rounded-lg bg-apricot/35 px-2 py-1 text-xs whitespace-pre-line text-foreground/80"
+                    >
+                      {order.comment}
+                    </span>
+                  )}
                 </TableCell>
-                <TableCell className={numeric}>{formatNumber(order.qty)}</TableCell>
-                <TableCell className={numeric}>{formatMoney(order.unitPrice)}</TableCell>
+                <TableCell className={numeric}>
+                  {formatNumber(order.qty)}
+                </TableCell>
+                <TableCell className={numeric}>
+                  {formatMoney(order.unitPrice)}
+                </TableCell>
                 <TableCell className={numeric}>
                   {order.discountAmount > 0 ? (
                     <>
@@ -149,7 +187,9 @@ export default async function OrdersPage() {
                   )}
                 </TableCell>
                 {isShop && (
-                  <TableCell className={numeric}>{formatMoney(order.deliveryFee)}</TableCell>
+                  <TableCell className={numeric}>
+                    {formatMoney(order.deliveryFee)}
+                  </TableCell>
                 )}
                 <TableCell className={cn(numeric, "font-semibold")}>
                   {formatMoney(order.orderTotal)}
@@ -169,8 +209,21 @@ export default async function OrdersPage() {
                     />
                   </span>
                 </TableCell>
+                <TableCell className="px-2">
+                  <OrderPaymentSelect
+                    orderId={order.id}
+                    paid={order.paid}
+                    method={order.paymentMethod}
+                    label={`#${order.id.slice(0, 8).toUpperCase()}`}
+                  />
+                </TableCell>
                 <TableCell className="px-2 pr-4 text-right">
                   <span className="flex flex-col items-end">
+                    <OrderCommentDialog
+                      orderId={order.id}
+                      label={`#${order.id.slice(0, 8).toUpperCase()}, ${order.customerName}`}
+                      comment={order.comment}
+                    />
                     <EditOrderDialog order={order} />
                     <DeleteOrderDialog order={order} />
                   </span>
@@ -180,6 +233,7 @@ export default async function OrdersPage() {
           </TableBody>
         </Table>
       </div>
+      <Pagination basePath="/orders" page={page} total={total} />
     </div>
   );
 }

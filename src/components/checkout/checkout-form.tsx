@@ -196,7 +196,7 @@ export function CheckoutForm({
           {formatMoney(product.price)} × {qty}
         </dt>
         <dd className="text-right">{formatMoney(totals.subtotal)}</dd>
-        {sale && (
+        {sale && sale.percent > 0 && (
           <>
             <dt className="text-muted-foreground">Զեղչ {sale.percent}%</dt>
             <dd className="text-right">−{formatMoney(totals.discount)}</dd>

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { isOrderStatus, type OrderStatus } from "@/config/orders";
+import { isPaymentMethod } from "@/config/payments";
 import { notifyOrderStatusChange } from "./notify";
 import { verifySale, type LinkSale } from "./sale-link";
 import { getCheckoutProduct } from "@/lib/products/queries";
@@ -38,7 +39,10 @@ function revalidateOrderPages() {
 }
 
 /** The order's status right now, or null if it isn't this tenant's order. */
-async function currentStatus(tenantId: string, orderId: string): Promise<string | null> {
+async function currentStatus(
+  tenantId: string,
+  orderId: string,
+): Promise<string | null> {
   const { data } = await supabase
     .from("orders")
     .select("status")
@@ -98,14 +102,15 @@ export async function placeOrder(
   }
 
   // Unit price, delivery fee, tenant and stock are resolved inside place_order.
-  const { error } = await supabase.rpc("place_order", {
+  const terms = verifySale(productId, sale);
+  const { data: orderId, error } = await supabase.rpc("place_order", {
     p_product_id: productId,
     p_name: values.name,
     p_email: values.email,
     p_phone: phone,
     p_address: needsAddress ? values.address : "",
     p_qty: qty,
-    p_discount_percent: verifySale(productId, sale),
+    p_discount_percent: terms?.percent ?? 0,
   });
 
   if (error) {
@@ -115,8 +120,23 @@ export async function placeOrder(
     if (error.message.includes("product_not_found")) {
       return fail("Այս ապրանքն այլևս հասանելի չէ։");
     }
-    console.error("place_order failed:", error);
+    console.error(
+      "place_order failed:",
+      error.code,
+      error.message,
+      error.details,
+    );
     return fail("Չհաջողվեց ուղարկել պատվերը։ Փորձեք կրկին։");
+  }
+
+  // A signed link can set its own delivery fee (e.g. free delivery).
+  if (terms && terms.delivery !== null && orderId) {
+    const { error: deliveryError } = await supabase
+      .from("orders")
+      .update({ delivery_fee: terms.delivery })
+      .eq("id", orderId);
+    if (deliveryError)
+      console.error("setting link delivery fee failed:", deliveryError);
   }
 
   revalidateOrderPages();
@@ -148,7 +168,9 @@ export async function updateOrder(
   });
 
   const errors: Record<string, string> = {};
-  const amount = (name: "discount_percent" | "discount_amount" | "delivery_fee") => {
+  const amount = (
+    name: "discount_percent" | "discount_amount" | "delivery_fee",
+  ) => {
     const number = values[name] === "" ? 0 : Number(values[name]);
     if (!Number.isFinite(number) || number < 0) {
       errors[name] = "Մուտքագրեք 0 կամ ավելի";
@@ -207,7 +229,9 @@ export async function updateOrder(
       return {
         ok: false,
         values,
-        errors: { discount_amount: "Զեղչը չի կարող գերազանցել ապրանքի գումարը" },
+        errors: {
+          discount_amount: "Զեղչը չի կարող գերազանցել ապրանքի գումարը",
+        },
         formError: null,
       };
     }
@@ -217,7 +241,11 @@ export async function updateOrder(
 
   if (previousStatus !== null && previousStatus !== values.status) {
     // Awaited on purpose: background sending did not run reliably on the host.
-    await notifyOrderStatusChange(tenant, orderId, values.status as OrderStatus);
+    await notifyOrderStatusChange(
+      tenant,
+      orderId,
+      values.status as OrderStatus,
+    );
   }
 
   revalidateOrderPages();
@@ -273,6 +301,8 @@ export async function createManualOrder(
     address: read("address"),
     source: read("source"),
     discount_percent: read("discount_percent"),
+    payment_method: read("payment_method"),
+    paid: read("paid"),
   };
   const fail = (formError: string): OrderFormState => ({
     ok: false,
@@ -296,8 +326,13 @@ export async function createManualOrder(
   const qty = parseQty(values.qty);
   if (!qty) errors.qty = "Մուտքագրեք 1 կամ ավելի";
 
-  const discountPercent = values.discount_percent === "" ? 0 : Number(values.discount_percent);
-  if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+  const discountPercent =
+    values.discount_percent === "" ? 0 : Number(values.discount_percent);
+  if (
+    !Number.isFinite(discountPercent) ||
+    discountPercent < 0 ||
+    discountPercent > 100
+  ) {
     errors.discount_percent = "Մուտքագրեք 0-ից 100";
   }
 
@@ -314,7 +349,12 @@ export async function createManualOrder(
     .eq("is_active", true)
     .maybeSingle();
   if (!product) {
-    return { ok: false, values, errors: { product_id: "Ընտրեք ապրանքը ցանկից" }, formError: null };
+    return {
+      ok: false,
+      values,
+      errors: { product_id: "Ընտրեք ապրանքը ցանկից" },
+      formError: null,
+    };
   }
 
   // Same path as the public checkout: price and delivery fee come from the
@@ -335,6 +375,16 @@ export async function createManualOrder(
     return fail("Չհաջողվեց պահպանել։ Փորձեք կրկին։");
   }
 
+  // Payment details live in metadata next to the address.
+  if (isPaymentMethod(values.payment_method) || values.paid) {
+    await mergeOrderMetadata(tenant.id, orderId, {
+      payment_method: isPaymentMethod(values.payment_method)
+        ? values.payment_method
+        : null,
+      paid: values.paid === "yes",
+    });
+  }
+
   if (values.source) {
     const { data: option } = await supabase
       .from("order_sources")
@@ -348,7 +398,8 @@ export async function createManualOrder(
         .update({ source: option.name })
         .eq("id", orderId)
         .eq("tenant_id", tenant.id);
-      if (sourceError) console.error("setting order source failed:", sourceError);
+      if (sourceError)
+        console.error("setting order source failed:", sourceError);
     }
   }
 
@@ -388,14 +439,116 @@ export async function deleteOrder(
       p_received: qty,
       p_gifted: 0,
     });
+    // Packaging and other materials go back too.
+    const { error: materialError } = await supabase.rpc("consume_materials", {
+      p_product_id: product_id,
+      p_qty: -qty,
+    });
+    if (materialError)
+      console.error("returning materials failed:", materialError);
     if (stockError && !stockError.message.includes("product_not_found")) {
       console.error("restocking after order delete failed:", stockError);
       return {
         ok: false,
-        error: "Պատվերը ջնջվեց, բայց քանակը չվերադարձվեց պահեստ։ Ուղղեք այն «Պահեստ» բաժնում։",
+        error:
+          "Պատվերը ջնջվեց, բայց քանակը չվերադարձվեց պահեստ։ Ուղղեք այն «Պահեստ» բաժնում։",
       };
     }
   }
 
+  return { ok: true, error: null };
+}
+
+// ── Admin: a free-text comment on an order ───────────────────
+export async function updateOrderComment(
+  orderId: string,
+  comment: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const tenant = await getCurrentTenant();
+  const text = comment.trim();
+  if (text.length > 2000) {
+    return {
+      ok: false,
+      error: "Մեկնաբանությունը չափազանց երկար է (առավելագույնը 2000 նիշ)",
+    };
+  }
+  const failed = { ok: false, error: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("metadata")
+    .eq("id", orderId)
+    .eq("tenant_id", tenant.id)
+    .maybeSingle();
+  if (!order) return failed;
+
+  // The comment lives in metadata next to the address; keep everything else.
+  const metadata = { ...((order.metadata ?? {}) as Record<string, unknown>) };
+  if (text) metadata.note = text;
+  else delete metadata.note;
+
+  const { error } = await supabase
+    .from("orders")
+    .update({ metadata })
+    .eq("id", orderId)
+    .eq("tenant_id", tenant.id);
+  if (error) {
+    console.error("updating order comment failed:", error);
+    return failed;
+  }
+
+  revalidatePath("/orders");
+  revalidatePath("/customers", "layout");
+  return { ok: true, error: null };
+}
+
+/** Sets keys in an order's metadata (null removes a key); keeps the rest. */
+async function mergeOrderMetadata(
+  tenantId: string,
+  orderId: string,
+  changes: Record<string, unknown>,
+): Promise<boolean> {
+  const { data: order } = await supabase
+    .from("orders")
+    .select("metadata")
+    .eq("id", orderId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  if (!order) return false;
+
+  const metadata = { ...((order.metadata ?? {}) as Record<string, unknown>) };
+  for (const [key, value] of Object.entries(changes)) {
+    if (value === null) delete metadata[key];
+    else metadata[key] = value;
+  }
+  const { error } = await supabase
+    .from("orders")
+    .update({ metadata })
+    .eq("id", orderId)
+    .eq("tenant_id", tenantId);
+  if (error) console.error("updating order metadata failed:", error);
+  return !error;
+}
+
+// ── Admin: payment method and paid / unpaid, straight from the table ──
+export async function updateOrderPayment(
+  orderId: string,
+  change: { method?: string | null; paid?: boolean },
+): Promise<{ ok: boolean; error: string | null }> {
+  const tenant = await getCurrentTenant();
+  const changes: Record<string, unknown> = {};
+  if (change.method !== undefined) {
+    if (change.method !== null && !isPaymentMethod(change.method)) {
+      return { ok: false, error: "Անհայտ վճարման եղանակ" };
+    }
+    changes.payment_method = change.method;
+  }
+  if (change.paid !== undefined) changes.paid = change.paid;
+
+  const ok = await mergeOrderMetadata(tenant.id, orderId, changes);
+  if (!ok) return { ok: false, error: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
+
+  revalidatePath("/orders");
+  revalidatePath("/customers", "layout");
   return { ok: true, error: null };
 }

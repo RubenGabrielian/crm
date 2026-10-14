@@ -73,7 +73,10 @@ export function OrderStatusSelect({
         />
       </span>
       {error && (
-        <span role="alert" className="max-w-40 text-xs whitespace-normal text-destructive">
+        <span
+          role="alert"
+          className="max-w-40 text-xs whitespace-normal text-destructive"
+        >
           {error}
         </span>
       )}

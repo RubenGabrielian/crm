@@ -37,3 +37,51 @@ export async function adjustStock(
   revalidatePath("/catalog");
   return { ok: true, error: null };
 }
+
+/**
+ * Corrects a product's warehouse numbers after a count. "Sold" comes from
+ * orders, so the difference is stored as a correction on top of them.
+ */
+export async function setStockCounts(
+  productId: string,
+  counts: { available: number; sold: number; gifted: number },
+): Promise<{ ok: boolean; error: string | null }> {
+  const tenant = await getCurrentTenant();
+  for (const value of Object.values(counts)) {
+    if (!Number.isInteger(value) || value < 0) {
+      return { ok: false, error: "Մուտքագրեք 0 կամ ավելի ամբողջ թվեր" };
+    }
+  }
+
+  const { data: orders, error: ordersError } = await supabase
+    .from("orders")
+    .select("qty")
+    .eq("tenant_id", tenant.id)
+    .eq("product_id", productId);
+  if (ordersError) {
+    console.error("loading orders for stock counts failed:", ordersError);
+    return { ok: false, error: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
+  }
+  const soldInOrders = orders.reduce((sum, order) => sum + order.qty, 0);
+
+  const { data, error } = await supabase
+    .from("inventory")
+    .update({
+      stock_quantity: counts.available,
+      gift_quantity: counts.gifted,
+      sold_adjustment: counts.sold - soldInOrders,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("product_id", productId)
+    .eq("tenant_id", tenant.id)
+    .select("id");
+  if (error || data.length === 0) {
+    if (error) console.error("setting stock counts failed:", error);
+    return { ok: false, error: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
+  }
+
+  revalidatePath("/inventory");
+  revalidatePath("/catalog");
+  revalidatePath("/dashboard");
+  return { ok: true, error: null };
+}

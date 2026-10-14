@@ -41,7 +41,9 @@ export function ExpensePaidSelect({
           className={cn(
             "cursor-pointer appearance-none rounded-full py-1 pr-7 pl-2.5 text-xs font-medium outline-none",
             "focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-70",
-            shown ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900",
+            shown
+              ? "bg-emerald-100 text-emerald-900"
+              : "bg-amber-100 text-amber-900",
           )}
         >
           <option value="paid">Վճարված</option>
@@ -53,7 +55,10 @@ export function ExpensePaidSelect({
         />
       </span>
       {error && (
-        <span role="alert" className="max-w-40 text-xs whitespace-normal text-destructive">
+        <span
+          role="alert"
+          className="max-w-40 text-xs whitespace-normal text-destructive"
+        >
           {error}
         </span>
       )}

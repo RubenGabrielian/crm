@@ -3,6 +3,7 @@ export type RecurringExpense = {
   category: string;
   description: string | null;
   amount: number;
+  costType: "fixed" | "variable";
   /** YYYY-MM-DD. Charged monthly on this date's day of the month. */
   startDate: string;
   /** Last day it applies, or null while it is still running. */

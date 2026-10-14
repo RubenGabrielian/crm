@@ -49,14 +49,18 @@ export function ManageSourcesDialog({ sources }: { sources: OrderSource[] }) {
         <DialogHeader>
           <DialogTitle>Պատվերների աղբյուրներ</DialogTitle>
           <DialogDescription>
-            Որտեղից են գալիս պատվերները։ Այս ցանկից կարող եք ընտրել յուրաքանչյուր պատվերի համար։
+            Որտեղից են գալիս պատվերները։ Այս ցանկից կարող եք ընտրել
+            յուրաքանչյուր պատվերի համար։
           </DialogDescription>
         </DialogHeader>
 
         {sources.length > 0 ? (
           <ul className="divide-y rounded-lg border">
             {sources.map((source) => (
-              <li key={source.id} className="flex items-center justify-between gap-3 py-1 pr-1 pl-3">
+              <li
+                key={source.id}
+                className="flex items-center justify-between gap-3 py-1 pr-1 pl-3"
+              >
                 <span className="min-w-0 truncate text-sm">{source.name}</span>
                 <Button
                   variant="ghost"
@@ -72,7 +76,9 @@ export function ManageSourcesDialog({ sources }: { sources: OrderSource[] }) {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">Դեռ աղբյուրներ չկան։ Ավելացրեք առաջինը։</p>
+          <p className="text-sm text-muted-foreground">
+            Դեռ աղբյուրներ չկան։ Ավելացրեք առաջինը։
+          </p>
         )}
 
         <form onSubmit={add} noValidate>

@@ -24,7 +24,8 @@ export function OrderSourceSelect({
   const [error, setError] = useState<string | null>(null);
 
   // A source that was later removed from the list stays visible on its order.
-  const names = shown && !options.includes(shown) ? [shown, ...options] : options;
+  const names =
+    shown && !options.includes(shown) ? [shown, ...options] : options;
 
   function change(next: string) {
     setError(null);
@@ -62,7 +63,10 @@ export function OrderSourceSelect({
         />
       </span>
       {error && (
-        <span role="alert" className="max-w-40 text-xs whitespace-normal text-destructive">
+        <span
+          role="alert"
+          className="max-w-40 text-xs whitespace-normal text-destructive"
+        >
           {error}
         </span>
       )}

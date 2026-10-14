@@ -60,7 +60,8 @@ export function EditOrderDialog({ order }: { order: Order }) {
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {isShop ? "Խմբագրել պատվերը" : "Խմբագրել գրանցումը"} {shortId(order.id)}
+            {isShop ? "Խմբագրել պատվերը" : "Խմբագրել գրանցումը"}{" "}
+            {shortId(order.id)}
           </DialogTitle>
           <DialogDescription>
             {order.customerName}, {order.productTitle}
@@ -78,7 +79,13 @@ function toNumber(value: string) {
   return Number.isFinite(number) && number > 0 ? number : 0;
 }
 
-function EditOrderForm({ order, onSaved }: { order: Order; onSaved: () => void }) {
+function EditOrderForm({
+  order,
+  onSaved,
+}: {
+  order: Order;
+  onSaved: () => void;
+}) {
   const { businessType } = useTenant();
   const isShop = businessType === "ecommerce";
 
@@ -141,7 +148,9 @@ function EditOrderForm({ order, onSaved }: { order: Order; onSaved: () => void }
             id="order-status"
             name="status"
             value={status}
-            onChange={(event) => setStatus(event.currentTarget.value as typeof status)}
+            onChange={(event) =>
+              setStatus(event.currentTarget.value as typeof status)
+            }
             className="h-10 w-full rounded-xl border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             {ORDER_STATUSES.map((value) => (
@@ -223,7 +232,8 @@ function EditOrderForm({ order, onSaved }: { order: Order; onSaved: () => void }
         className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-2xl bg-muted px-4 py-3 text-sm tabular-nums"
       >
         <dt className="text-muted-foreground">
-          {formatMoney(order.unitPrice)} × {Math.max(Math.trunc(toNumber(qty)), 0)}
+          {formatMoney(order.unitPrice)} ×{" "}
+          {Math.max(Math.trunc(toNumber(qty)), 0)}
         </dt>
         <dd className="text-right">{formatMoney(totals.subtotal)}</dd>
         <dt className="text-muted-foreground">Զեղչ</dt>
@@ -231,7 +241,9 @@ function EditOrderForm({ order, onSaved }: { order: Order; onSaved: () => void }
           {totals.discount > 0 ? `−${formatMoney(totals.discount)}` : "—"}
         </dd>
         <dt className="font-medium">Ապրանքի գումար</dt>
-        <dd className="text-right font-medium">{formatMoney(totals.productTotal)}</dd>
+        <dd className="text-right font-medium">
+          {formatMoney(totals.productTotal)}
+        </dd>
         {isShop && (
           <>
             <dt className="text-muted-foreground">Առաքում</dt>
@@ -288,7 +300,9 @@ function TextField({
         aria-describedby={error ? `${id}-error` : undefined}
         {...input}
       />
-      {description && !error && <FieldDescription>{description}</FieldDescription>}
+      {description && !error && (
+        <FieldDescription>{description}</FieldDescription>
+      )}
       {error && <FieldError id={`${id}-error`}>{error}</FieldError>}
     </Field>
   );

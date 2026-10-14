@@ -1,7 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isExpenseCategory } from "@/config/expenses";
+import {
+  defaultCostType,
+  isCostType,
+  isExpenseCategory,
+  type CostType,
+} from "@/config/expenses";
 import { addDays } from "@/lib/analytics/range";
 import { supabase } from "@/lib/supabase";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
@@ -32,11 +37,15 @@ export async function addExpense(
     description: read("description"),
     amount: read("amount"),
     status: read("status"),
+    cost_type: read("cost_type"),
   };
   const errors: Record<string, string> = {};
 
   if (!values.date) errors.date = REQUIRED;
-  else if (!/^\d{4}-\d{2}-\d{2}$/.test(values.date) || Number.isNaN(Date.parse(values.date))) {
+  else if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(values.date) ||
+    Number.isNaN(Date.parse(values.date))
+  ) {
     errors.date = "Մուտքագրեք ճիշտ ամսաթիվ";
   }
 
@@ -44,9 +53,11 @@ export async function addExpense(
 
   const amount = Number(values.amount);
   if (!values.amount) errors.amount = REQUIRED;
-  else if (!Number.isFinite(amount) || amount <= 0) errors.amount = "Մուտքագրեք 0-ից մեծ թիվ";
+  else if (!Number.isFinite(amount) || amount <= 0)
+    errors.amount = "Մուտքագրեք 0-ից մեծ թիվ";
 
-  if (values.description.length > 200) errors.description = "Առավելագույնը 200 նիշ";
+  if (values.description.length > 200)
+    errors.description = "Առավելագույնը 200 նիշ";
 
   if (Object.keys(errors).length > 0) {
     return { ok: false, values, errors, formError: null };
@@ -54,6 +65,9 @@ export async function addExpense(
 
   // "Repeat every month" saves a monthly expense starting on the chosen date
   // instead of a single entry.
+  const costType = isCostType(values.cost_type)
+    ? values.cost_type
+    : defaultCostType(values.category);
   const monthly = formData.get("monthly") === "on";
   const { error } = monthly
     ? await supabase.from("recurring_expenses").insert({
@@ -62,6 +76,7 @@ export async function addExpense(
         expense_category: values.category,
         description: values.description || null,
         amount,
+        cost_type: costType,
       })
     : await supabase.from("expenses").insert({
         tenant_id: tenant.id,
@@ -70,6 +85,7 @@ export async function addExpense(
         description: values.description || null,
         amount,
         is_paid: values.status !== "unpaid",
+        cost_type: costType,
       });
 
   if (error) {
@@ -161,7 +177,8 @@ export async function removeRecurringExpense(
 
     // Ends yesterday, but never before it started.
     const yesterday = addDays(today, -1);
-    const endDate = yesterday < existing.start_date ? existing.start_date : yesterday;
+    const endDate =
+      yesterday < existing.start_date ? existing.start_date : yesterday;
     const { error } = await supabase
       .from("recurring_expenses")
       .update({ end_date: endDate })
@@ -171,6 +188,29 @@ export async function removeRecurringExpense(
       console.error("stopping monthly expense failed:", error);
       return failed;
     }
+  }
+
+  revalidateExpensePages();
+  return { ok: true, error: null };
+}
+
+/** Switch an expense between fixed and variable, straight from the table. */
+export async function setExpenseCostType(
+  expenseId: string,
+  costType: CostType,
+): Promise<{ ok: boolean; error: string | null }> {
+  const tenant = await getCurrentTenant();
+  if (!isCostType(costType)) return { ok: false, error: "Անհայտ տեսակ" };
+
+  const { data, error } = await supabase
+    .from("expenses")
+    .update({ cost_type: costType })
+    .eq("id", expenseId)
+    .eq("tenant_id", tenant.id)
+    .select("id");
+  if (error || data.length === 0) {
+    if (error) console.error("changing expense cost type failed:", error);
+    return { ok: false, error: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
   }
 
   revalidateExpensePages();

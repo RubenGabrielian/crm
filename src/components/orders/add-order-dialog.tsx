@@ -19,6 +19,7 @@ import { createManualOrder, type OrderFormState } from "@/lib/orders/actions";
 import { computeOrderTotals } from "@/lib/orders/totals";
 import { useRefreshNewOrders } from "@/components/layout/new-orders";
 import { useTenant } from "@/lib/tenant/tenant-context";
+import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS } from "@/config/payments";
 
 export type OrderProductOption = {
   id: string;
@@ -48,7 +49,8 @@ export function AddOrderDialog({
 }) {
   const { businessType } = useTenant();
   const [open, setOpen] = useState(false);
-  const title = businessType === "ecommerce" ? "Ավելացնել պատվեր" : "Ավելացնել գրանցում";
+  const title =
+    businessType === "ecommerce" ? "Ավելացնել պատվեր" : "Ավելացնել գրանցում";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -61,7 +63,11 @@ export function AddOrderDialog({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         {/* Mounted only while open, so each opening starts with a clean form. */}
-        <AddOrderForm products={products} sources={sources} onSaved={() => setOpen(false)} />
+        <AddOrderForm
+          products={products}
+          sources={sources}
+          onSaved={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -101,6 +107,8 @@ function AddOrderForm({
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [source, setSource] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [paid, setPaid] = useState("no");
   const [discount, setDiscount] = useState("");
 
   const product = products.find((item) => item.id === productId);
@@ -128,7 +136,9 @@ function AddOrderForm({
     <form action={formAction} noValidate className="grid gap-4">
       <div className="grid gap-4 sm:grid-cols-[1fr_7rem]">
         <Field data-invalid={errors.product_id ? true : undefined}>
-          <FieldLabel htmlFor="new-order-product">{isShop ? "Ապրանք" : "Դասընթաց"}</FieldLabel>
+          <FieldLabel htmlFor="new-order-product">
+            {isShop ? "Ապրանք" : "Դասընթաց"}
+          </FieldLabel>
           <select
             id="new-order-product"
             name="product_id"
@@ -160,19 +170,42 @@ function AddOrderForm({
           value={qty}
           onChange={setQty}
           error={
-            errors.qty ?? (overStock ? `Առկա է միայն ${product?.stock}` : undefined)
+            errors.qty ??
+            (overStock ? `Առկա է միայն ${product?.stock}` : undefined)
           }
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField name="name" label="Անուն Ազգանուն" value={name} onChange={setName} error={errors.name} />
-        <TextField name="phone" label="Հեռախոս" type="tel" value={phone} onChange={setPhone} error={errors.phone} />
+        <TextField
+          name="name"
+          label="Անուն Ազգանուն"
+          value={name}
+          onChange={setName}
+          error={errors.name}
+        />
+        <TextField
+          name="phone"
+          label="Հեռախոս"
+          type="tel"
+          value={phone}
+          onChange={setPhone}
+          error={errors.phone}
+        />
       </div>
 
-      <div className={isShop ? "grid gap-4 sm:grid-cols-[1fr_7rem]" : undefined}>
+      <div
+        className={isShop ? "grid gap-4 sm:grid-cols-[1fr_7rem]" : undefined}
+      >
         {isShop && (
-          <TextField name="address" label="Հասցե" optional value={address} onChange={setAddress} error={errors.address} />
+          <TextField
+            name="address"
+            label="Հասցե"
+            optional
+            value={address}
+            onChange={setAddress}
+            error={errors.address}
+          />
         )}
         <TextField
           name="discount_percent"
@@ -189,11 +222,21 @@ function AddOrderForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField name="email" label="Էլ. հասցե" type="email" optional value={email} onChange={setEmail} error={errors.email} />
+        <TextField
+          name="email"
+          label="Էլ. հասցե"
+          type="email"
+          optional
+          value={email}
+          onChange={setEmail}
+          error={errors.email}
+        />
         <Field>
           <FieldLabel htmlFor="new-order-source">
             Աղբյուր
-            <span className="font-normal text-muted-foreground">(ոչ պարտադիր)</span>
+            <span className="font-normal text-muted-foreground">
+              (ոչ պարտադիր)
+            </span>
           </FieldLabel>
           <select
             id="new-order-source"
@@ -208,6 +251,41 @@ function AddOrderForm({
                 {item}
               </option>
             ))}
+          </select>
+        </Field>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field>
+          <FieldLabel htmlFor="new-order-payment-method">
+            Վճարման եղանակ
+          </FieldLabel>
+          <select
+            id="new-order-payment-method"
+            name="payment_method"
+            value={paymentMethod}
+            onChange={(event) => setPaymentMethod(event.currentTarget.value)}
+            className={SELECT_CLASS}
+          >
+            <option value="">Նշված չէ</option>
+            {PAYMENT_METHODS.map((method) => (
+              <option key={method} value={method}>
+                {PAYMENT_METHOD_LABELS[method]}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="new-order-paid">Վճարում</FieldLabel>
+          <select
+            id="new-order-paid"
+            name="paid"
+            value={paid}
+            onChange={(event) => setPaid(event.currentTarget.value)}
+            className={SELECT_CLASS}
+          >
+            <option value="no">Չվճարված</option>
+            <option value="yes">Վճարված</option>
           </select>
         </Field>
       </div>
@@ -233,7 +311,9 @@ function AddOrderForm({
               <dd className="text-right">{formatMoney(product.deliveryFee)}</dd>
             </>
           )}
-          <dt className="mt-1 border-t pt-2 text-base font-semibold">Ընդամենը</dt>
+          <dt className="mt-1 border-t pt-2 text-base font-semibold">
+            Ընդամենը
+          </dt>
           <dd className="mt-1 border-t pt-2 text-right text-base font-semibold">
             {formatMoney(totals.orderTotal)}
           </dd>
@@ -275,7 +355,11 @@ function TextField({
     <Field data-invalid={error ? true : undefined}>
       <FieldLabel htmlFor={id}>
         {label}
-        {optional && <span className="font-normal text-muted-foreground">(ոչ պարտադիր)</span>}
+        {optional && (
+          <span className="font-normal text-muted-foreground">
+            (ոչ պարտադիր)
+          </span>
+        )}
       </FieldLabel>
       <Input
         id={id}

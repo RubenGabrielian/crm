@@ -4,6 +4,11 @@ import { Search, TriangleAlert, Users } from "lucide-react";
 import { cn } from "cn";
 import { CustomerCommentDialog } from "@/components/customers/customer-comment-dialog";
 import { EmptyState } from "@/components/layout/empty-state";
+import {
+  PAGE_SIZE,
+  Pagination,
+  parsePage,
+} from "@/components/layout/pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -78,6 +83,14 @@ export default async function CustomersPage({
     : allCustomers;
   const compare = SORTS[sort];
   if (compare) customers = [...customers].sort(compare);
+
+  const found = customers.length;
+  const lastPage = Math.max(Math.ceil(found / PAGE_SIZE), 1);
+  const page = Math.min(parsePage(query.page), lastPage);
+  const pageCustomers = customers.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  );
 
   if (error) {
     console.error("listCustomers failed:", error);
@@ -161,8 +174,8 @@ export default async function CustomersPage({
 
       <p className="text-sm text-muted-foreground">
         {search
-          ? `Գտնվեց՝ ${customers.length} / ${allCustomers.length}`
-          : `Ընդամենը՝ ${customers.length}`}
+          ? `Գտնվեց՝ ${formatNumber(found)} / ${formatNumber(allCustomers.length)}`
+          : `Ընդամենը՝ ${formatNumber(found)}`}
       </p>
       {customers.length === 0 ? (
         <p className="rounded-3xl bg-card px-6 py-10 text-center text-sm text-muted-foreground shadow-soft">
@@ -193,7 +206,7 @@ export default async function CustomersPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {customers.map((customer) => (
+              {pageCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="px-4 font-medium">
                     <Link
@@ -252,6 +265,15 @@ export default async function CustomersPage({
           </Table>
         </div>
       )}
+      <Pagination
+        basePath="/customers"
+        params={{
+          sort: sort === "recent" ? undefined : sort,
+          q: search || undefined,
+        }}
+        page={page}
+        total={found}
+      />
     </div>
   );
 }

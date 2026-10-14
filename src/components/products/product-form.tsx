@@ -28,6 +28,7 @@ import {
 } from "@/lib/products/actions";
 import type { Product } from "@/lib/products/queries";
 import { useTenant } from "@/lib/tenant/tenant-context";
+import { MaterialUsesField } from "@/components/materials/material-uses-field";
 
 const INITIAL_STATE: ProductFormState = {
   ok: false,
@@ -36,11 +37,15 @@ const INITIAL_STATE: ProductFormState = {
   formError: null,
 };
 
-function initialValue(field: ProductField, product: Product | undefined): string {
+function initialValue(
+  field: ProductField,
+  product: Product | undefined,
+): string {
   if (!product) return "";
   if (field.name === "title") return product.title;
   if (field.name === "price") return String(product.price);
-  const value = field.target === "stock" ? product.stock : product.metadata[field.name];
+  const value =
+    field.target === "stock" ? product.stock : product.metadata[field.name];
   return value === null || value === undefined ? "" : String(value);
 }
 
@@ -71,8 +76,10 @@ export function ProductForm({
   function checkImage(input: HTMLInputElement) {
     const file = input.files?.[0];
     let error: string | null = null;
-    if (file && !(file.type in PRODUCT_IMAGE_TYPES)) error = PRODUCT_IMAGE_ERRORS.type;
-    else if (file && file.size > PRODUCT_IMAGE_MAX_BYTES) error = PRODUCT_IMAGE_ERRORS.size;
+    if (file && !(file.type in PRODUCT_IMAGE_TYPES))
+      error = PRODUCT_IMAGE_ERRORS.type;
+    else if (file && file.size > PRODUCT_IMAGE_MAX_BYTES)
+      error = PRODUCT_IMAGE_ERRORS.size;
     if (error) input.value = "";
     setImageError(error);
   }
@@ -85,16 +92,27 @@ export function ProductForm({
           <ProductFieldInput
             key={field.name}
             field={field}
-            defaultValue={state.values[field.name] ?? initialValue(field, product)}
+            defaultValue={
+              state.values[field.name] ?? initialValue(field, product)
+            }
             error={state.errors[field.name]}
             autoFocus={index === 0}
           />
         ))}
 
+        {businessType === "ecommerce" && (
+          <MaterialUsesField
+            initial={product?.materials ?? []}
+            error={state.errors.materials}
+          />
+        )}
+
         <Field data-invalid={shownImageError ? true : undefined}>
           <FieldLabel htmlFor="product-image">
             Նկար
-            <span className="font-normal text-muted-foreground">(ոչ պարտադիր)</span>
+            <span className="font-normal text-muted-foreground">
+              (ոչ պարտադիր)
+            </span>
           </FieldLabel>
           <Input
             id="product-image"
@@ -103,7 +121,9 @@ export function ProductForm({
             accept={Object.keys(PRODUCT_IMAGE_TYPES).join(",")}
             onChange={(event) => checkImage(event.currentTarget)}
             aria-invalid={shownImageError ? true : undefined}
-            aria-describedby={shownImageError ? "product-image-error" : undefined}
+            aria-describedby={
+              shownImageError ? "product-image-error" : undefined
+            }
           />
           {product?.imageUrl && !shownImageError && (
             <FieldDescription>
@@ -150,7 +170,9 @@ function ProductFieldInput({
       <FieldLabel htmlFor={id}>
         {field.label}
         {!field.required && (
-          <span className="font-normal text-muted-foreground">(ոչ պարտադիր)</span>
+          <span className="font-normal text-muted-foreground">
+            (ոչ պարտադիր)
+          </span>
         )}
       </FieldLabel>
       <Input
@@ -158,10 +180,20 @@ function ProductFieldInput({
         name={field.name}
         type={numeric ? "number" : "text"}
         inputMode={
-          field.kind === "money" ? "decimal" : field.kind === "integer" ? "numeric" : undefined
+          field.kind === "money"
+            ? "decimal"
+            : field.kind === "integer"
+              ? "numeric"
+              : undefined
         }
         min={numeric ? field.min : undefined}
-        step={field.kind === "integer" ? 1 : field.kind === "money" ? "any" : undefined}
+        step={
+          field.kind === "integer"
+            ? 1
+            : field.kind === "money"
+              ? "any"
+              : undefined
+        }
         defaultValue={defaultValue}
         required={field.required}
         autoFocus={autoFocus}

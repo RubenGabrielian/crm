@@ -68,8 +68,9 @@ export function DeleteOrderDialog({ order }: { order: Order }) {
             {isShop ? "Ջնջե՞լ պատվերը" : "Ջնջե՞լ գրանցումը"} {shortId}
           </DialogTitle>
           <DialogDescription>
-            {order.customerName}, {order.productTitle} × {order.qty}։ Այն կհեռացվի ցանկից և
-            հաշվարկներից, և հնարավոր չի լինի վերականգնել։ Հաճախորդը կմնա CRM-ում։
+            {order.customerName}, {order.productTitle} × {order.qty}։ Այն
+            կհեռացվի ցանկից և հաշվարկներից, և հնարավոր չի լինի վերականգնել։
+            Հաճախորդը կմնա CRM-ում։
           </DialogDescription>
         </DialogHeader>
 
@@ -82,7 +83,9 @@ export function DeleteOrderDialog({ order }: { order: Order }) {
               className="mt-0.5 size-4 accent-[var(--primary)]"
             />
             <span>
-              <span className="font-medium">Վերադարձնել {order.qty} հատը պահեստ</span>
+              <span className="font-medium">
+                Վերադարձնել {order.qty} հատը պահեստ
+              </span>
               <span className="block text-muted-foreground">
                 Հանեք նշումը, եթե ապրանքն արդեն հանձնվել է հաճախորդին։
               </span>
@@ -96,7 +99,11 @@ export function DeleteOrderDialog({ order }: { order: Order }) {
           <DialogClose render={<Button type="button" variant="outline" />}>
             Չեղարկել
           </DialogClose>
-          <Button variant="destructive" disabled={pending} onClick={confirmDelete}>
+          <Button
+            variant="destructive"
+            disabled={pending}
+            onClick={confirmDelete}
+          >
             {pending ? "Ջնջվում է…" : "Ջնջել"}
           </Button>
         </DialogFooter>
