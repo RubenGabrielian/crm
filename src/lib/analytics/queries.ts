@@ -15,11 +15,11 @@ import {
  * orders are deleted. `deliveredOrders` is shown for information only.
  * "Sales" is product revenue without delivery fees, which only pass through.
  *
- * Costs follow the variable / fixed model:
- *   variable = product cost + materials used + expenses marked variable
- *   contribution margin = sales − variable
- *   net profit = contribution margin − fixed expenses
- * Personal spending is kept apart from the business result.
+ * Net profit, as the owner defines it:
+ *   contribution margin = sales − product cost − materials used
+ *   net profit = contribution margin − marketing
+ * Other business expenses and personal spending are shown below it,
+ * leading to "remaining after all expenses".
  */
 export type Analytics = {
   totalOrders: number;
@@ -40,34 +40,32 @@ export type Analytics = {
   grossProfit: number;
   /** qty × the materials one unit uses × their unit cost. */
   materialsCost: number;
-  /** Expenses marked variable (e.g. materials bought in bulk). */
-  variableExpenses: number;
-  /** COGS + materials + variable expenses. */
+  /** COGS + materials: what each unit sold costs. */
   variableCosts: number;
   /** Sales − variable costs. */
   contribution: number;
   /** Contribution ÷ sales, as a percentage. Null when there are no sales. */
   contributionMargin: number | null;
-  /** Expenses marked fixed (marketing budget, rent, ...). */
-  fixedCosts: number;
-  /** Marketing categories, fixed or variable; used for CAC and ROAS. */
+  /** Marketing categories; subtracted from net profit, used for CAC and ROAS. */
   marketingSpend: number;
+  /** Business expenses that are not marketing; shown below net profit. */
+  otherExpenses: number;
   /** The owner's personal spending. */
   personalExpenses: number;
-  /** Contribution − fixed costs. */
+  /** Contribution − marketing. */
   netProfit: number;
-  /** Net profit − personal expenses. */
+  /** Net profit − other expenses − personal expenses. */
   remainingAfterExpenses: number;
   breakEven: {
-    /** First day in the period whose running contribution covered the fixed costs. */
+    /** First day in the period whose running contribution covered marketing. */
     date: string | null;
     /** Contribution of one average unit sold. Null when nothing was sold. */
     contributionPerUnit: number | null;
-    /** Units needed in the period to cover the fixed costs. */
+    /** Units needed in the period to cover marketing. */
     unitsNeeded: number | null;
     /** Money still missing to reach zero (0 once reached). */
     remaining: number;
-    /** Contribution ÷ fixed costs, capped at 1. */
+    /** Contribution ÷ marketing, capped at 1. */
     progress: number;
   };
   /** Marketing spend ÷ total orders. Null when there are no orders. */
@@ -227,8 +225,7 @@ export async function getAnalytics(
 
   const marketing = new Map<string, number>();
   let marketingSpend = 0;
-  let fixedCosts = 0;
-  let variableExpenses = 0;
+  let otherExpenses = 0;
   let personalExpenses = 0;
   for (const expense of expenseRows) {
     const group = expenseGroup(expense.category);
@@ -242,32 +239,25 @@ export async function getAnalytics(
         expense.category,
         (marketing.get(expense.category) ?? 0) + expense.amount,
       );
-    }
-    if (expense.costType === "variable") {
-      variableExpenses += expense.amount;
-      dailyContribution.set(
-        expense.date,
-        (dailyContribution.get(expense.date) ?? 0) - expense.amount,
-      );
     } else {
-      fixedCosts += expense.amount;
+      otherExpenses += expense.amount;
     }
   }
 
   // ── KPIs ───────────────────────────────────────────────────
   const grossProfit = sales - cogs;
-  const variableCosts = cogs + materialsCost + variableExpenses;
+  const variableCosts = cogs + materialsCost;
   const contribution = sales - variableCosts;
-  const netProfit = contribution - fixedCosts;
+  const netProfit = contribution - marketingSpend;
 
   // Break-even: walk the days until the running contribution covers the
   // period's fixed costs.
   let breakEvenDate: string | null = null;
-  if (fixedCosts > 0) {
+  if (marketingSpend > 0) {
     let running = 0;
     for (const date of daysBetween(range.from, range.to)) {
       running += dailyContribution.get(date) ?? 0;
-      if (running >= fixedCosts) {
+      if (running >= marketingSpend) {
         breakEvenDate = date;
         break;
       }
@@ -291,26 +281,25 @@ export async function getAnalytics(
       cogs,
       grossProfit,
       materialsCost,
-      variableExpenses,
       variableCosts,
       contribution,
       contributionMargin: sales > 0 ? (contribution / sales) * 100 : null,
-      fixedCosts,
       marketingSpend,
+      otherExpenses,
       personalExpenses,
       netProfit,
-      remainingAfterExpenses: netProfit - personalExpenses,
+      remainingAfterExpenses: netProfit - otherExpenses - personalExpenses,
       breakEven: {
         date: breakEvenDate,
         contributionPerUnit,
         unitsNeeded:
           contributionPerUnit && contributionPerUnit > 0
-            ? Math.ceil((fixedCosts + variableExpenses) / contributionPerUnit)
+            ? Math.ceil(marketingSpend / contributionPerUnit)
             : null,
-        remaining: Math.max(fixedCosts - contribution, 0),
+        remaining: Math.max(marketingSpend - contribution, 0),
         progress:
-          fixedCosts > 0
-            ? Math.min(Math.max(contribution / fixedCosts, 0), 1)
+          marketingSpend > 0
+            ? Math.min(Math.max(contribution / marketingSpend, 0), 1)
             : 1,
       },
       cac: orders.length ? marketingSpend / orders.length : null,

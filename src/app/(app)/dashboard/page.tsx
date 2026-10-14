@@ -109,7 +109,9 @@ export default async function DashboardPage({
               icon={TrendingUp}
               label="Մաքուր շահույթ"
               value={formatMoney(analytics.netProfit)}
-              note="Մարժինալ շահույթ − ֆիքսված ծախսեր"
+              note={
+                isShop ? "Վաճառք − ինքնարժեք − մարքեթինգ" : "Վաճառք − մարքեթինգ"
+              }
               negative={analytics.netProfit < 0}
               emphasis
             />
@@ -158,29 +160,25 @@ export default async function DashboardPage({
             />
             <KpiCard
               icon={Receipt}
-              label="Փոփոխական ծախսեր"
+              label="Ինքնարժեք"
               value={formatMoney(analytics.variableCosts)}
               note={
                 analytics.contributionMargin === null
-                  ? "Աճում են ամեն վաճառքի հետ"
+                  ? "Ապրանք + նյութեր"
                   : `Մարժինալ շահույթ՝ ${oneDecimal(analytics.contributionMargin)}%`
               }
             />
             <KpiCard
               icon={Receipt}
-              label="Ֆիքսված ծախսեր"
-              value={formatMoney(analytics.fixedCosts)}
-              note={
-                analytics.personalExpenses > 0
-                  ? `Անձնական՝ ${formatMoney(analytics.personalExpenses)} (առանձին)`
-                  : `Մարքեթինգ՝ ${formatMoney(analytics.marketingSpend)}`
-              }
+              label="Մարքեթինգ"
+              value={formatMoney(analytics.marketingSpend)}
+              note={`Այլ ծախսեր՝ ${formatMoney(analytics.otherExpenses)} (առանձին)`}
             />
           </dl>
 
           <BreakEvenCard
             breakEven={analytics.breakEven}
-            fixedCosts={analytics.fixedCosts}
+            fixedCosts={analytics.marketingSpend}
             contribution={analytics.contribution}
             unitsSold={analytics.unitsSold}
             unitLabel={isShop ? "հատ" : "գրանցում"}
@@ -322,37 +320,30 @@ export default async function DashboardPage({
                     amount={-analytics.materialsCost}
                   />
                 )}
-                {analytics.variableExpenses > 0 && (
-                  <Line
-                    label="Այլ փոփոխական ծախսեր"
-                    amount={-analytics.variableExpenses}
-                  />
-                )}
                 <Line
                   label="Մարժինալ շահույթ"
                   amount={analytics.contribution}
                   total
                 />
-                <Line label="Ֆիքսված ծախսեր" amount={-analytics.fixedCosts} />
+                <Line label="Մարքեթինգ" amount={-analytics.marketingSpend} />
                 <Line
                   label="Մաքուր շահույթ"
                   amount={analytics.netProfit}
                   total
                   strong
                 />
+                <Line label="Այլ ծախսեր" amount={-analytics.otherExpenses} />
                 {analytics.personalExpenses > 0 && (
-                  <>
-                    <Line
-                      label="Անձնական ծախսեր"
-                      amount={-analytics.personalExpenses}
-                    />
-                    <Line
-                      label="Մնացորդ անձնականից հետո"
-                      amount={analytics.remainingAfterExpenses}
-                      total
-                    />
-                  </>
+                  <Line
+                    label="Անձնական ծախսեր"
+                    amount={-analytics.personalExpenses}
+                  />
                 )}
+                <Line
+                  label="Մնացորդ բոլոր ծախսերից հետո"
+                  amount={analytics.remainingAfterExpenses}
+                  total
+                />
               </dl>
               {isShop && analytics.deliveryCollected > 0 && (
                 <p className="mt-3 text-xs text-muted-foreground">
@@ -446,8 +437,9 @@ function BreakEvenCard({
         <div>
           <h2 className="text-base font-semibold">Զրոյական կետ</h2>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Երբ մարժինալ շահույթը ծածկում է ֆիքսված ծախսերը, բիզնեսը դուրս է
-            գալիս զրոյի, և ամեն հաջորդ վաճառքը արդեն մաքուր շահույթ է։
+            Երբ վաճառքից ստացված մարժինալ շահույթը ծածկում է մարքեթինգի ծախսը,
+            բիզնեսը դուրս է գալիս զրոյի, և ամեն հաջորդ վաճառքը արդեն մաքուր
+            շահույթ է։
           </p>
         </div>
         <p
@@ -461,7 +453,7 @@ function BreakEvenCard({
           )}
         >
           {fixedCosts === 0
-            ? "Ֆիքսված ծախսեր չկան"
+            ? "Մարքեթինգի ծախս չկա"
             : reached
               ? breakEven.date
                 ? `Հասավ ${displayShortDate(breakEven.date)}-ին`
@@ -483,7 +475,7 @@ function BreakEvenCard({
           </div>
           <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             <div>
-              <dt className="text-muted-foreground">Ֆիքսված ծախսեր</dt>
+              <dt className="text-muted-foreground">Մարքեթինգ</dt>
               <dd className="mt-0.5 font-semibold tabular-nums">
                 {formatMoney(fixedCosts)}
               </dd>
