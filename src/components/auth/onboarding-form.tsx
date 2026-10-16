@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { GraduationCap, Package, type LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  GraduationCap,
+  Package,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -9,7 +15,12 @@ import { Input } from "@/components/ui/input";
 import { createTenant } from "@/lib/auth/actions";
 import type { BusinessType } from "@/lib/tenant/features";
 
-const OPTIONS: { type: BusinessType; icon: LucideIcon; title: string; examples: string }[] = [
+const OPTIONS: {
+  type: BusinessType;
+  icon: LucideIcon;
+  title: string;
+  examples: string;
+}[] = [
   {
     type: "ecommerce",
     icon: Package,
@@ -50,11 +61,18 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
             <label
               key={value}
               className={cn(
-                "relative flex cursor-pointer flex-col gap-3 rounded-3xl bg-card p-6 shadow-soft transition-colors",
+                "relative flex cursor-pointer flex-col gap-3 rounded-3xl border-2 bg-card p-5 shadow-soft transition-[border-color,box-shadow]",
                 "has-focus-visible:ring-2 has-focus-visible:ring-ring",
-                type === value ? "border-primary ring-1 ring-primary" : "hover:border-foreground/30",
+                type === value
+                  ? "border-[#7c5cf5] shadow-[0_18px_40px_-24px_rgb(124_92_245/0.6)]"
+                  : "border-transparent hover:border-border",
               )}
             >
+              {type === value && (
+                <span className="success-pop absolute top-4 right-4 flex size-6 items-center justify-center rounded-full bg-[#7c5cf5] text-white">
+                  <Check className="size-3.5" strokeWidth={3} aria-hidden />
+                </span>
+              )}
               <input
                 type="radio"
                 name="business_type"
@@ -66,7 +84,9 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
               <span
                 className={cn(
                   "flex size-12 items-center justify-center rounded-xl",
-                  type === value ? "bg-apricot text-primary" : "bg-muted text-muted-foreground",
+                  type === value
+                    ? "bg-[#ece8ff] text-[#5b45d6]"
+                    : "bg-muted text-muted-foreground",
                 )}
               >
                 <Icon className="size-6" strokeWidth={1.75} aria-hidden />
@@ -86,7 +106,7 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
           onChange={(event) => setName(event.currentTarget.value)}
           maxLength={60}
           placeholder="Օրինակ՝ Արևիկ Խաղալիքներ"
-          className="h-10"
+          className="h-12 rounded-xl px-4 text-base"
           autoComplete="organization"
           required
           aria-invalid={error ? true : undefined}
@@ -98,10 +118,11 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
       <Button
         type="submit"
         size="lg"
-        className="h-11 w-full text-base sm:w-auto sm:justify-self-end sm:px-8"
+        className="h-12 w-full rounded-xl text-base"
         disabled={pending || !type || !name.trim()}
       >
-        {pending ? "Պահպանվում է…" : "Շարունակել"}
+        {pending ? "Պահպանվում է…" : "Բացել վահանակը"}
+        {!pending && <ArrowRight className="size-4" aria-hidden />}
       </Button>
     </form>
   );

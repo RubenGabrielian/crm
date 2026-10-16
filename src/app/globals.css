@@ -307,7 +307,7 @@
   }
 }
 
-/* ── Landing page: hero demo, glow and section motion ─────── */
+/* ── Landing page ─────────────────────────────────────────── */
 .no-scrollbar {
   scrollbar-width: none;
 }
@@ -315,86 +315,221 @@
   display: none;
 }
 
+/* Dotted paper behind the hero, fading out at the edges. */
+.dot-grid {
+  background-image: radial-gradient(color-mix(in srgb, var(--foreground) 14%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 65% at 50% 40%, black 30%, transparent 75%);
+}
+
+/* Calculator sliders: a thin track filled up to the thumb. */
+.calc-range {
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--muted);
+  background-image: linear-gradient(#7c5cf5, #7c5cf5);
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.calc-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 2px solid var(--primary);
+  box-shadow: 0 2px 6px rgb(20 20 22 / 0.2);
+}
+.calc-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 2px solid var(--primary);
+}
+.calc-range:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  /* Background colour blobs drift slowly. */
-  @keyframes glow-drift {
+  @keyframes typing-dot {
     0%,
+    60%,
     100% {
-      transform: translate3d(0, 0, 0) scale(1);
+      transform: translateY(0);
+      opacity: 0.5;
     }
-    33% {
-      transform: translate3d(40px, -30px, 0) scale(1.08);
-    }
-    66% {
-      transform: translate3d(-30px, 25px, 0) scale(0.95);
-    }
-  }
-  .glow-blob {
-    animation: glow-drift 18s ease-in-out infinite;
-  }
-
-  /* The highlight behind the headline phrase sweeps in once. */
-  @keyframes marker-sweep {
-    from {
-      transform: scaleX(0);
+    30% {
+      transform: translateY(-3px);
+      opacity: 1;
     }
   }
-  .marker {
-    transform-origin: left;
-    animation: marker-sweep 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
+  .typing-dot {
+    animation: typing-dot 0.9s ease-in-out infinite;
   }
 
-  /* A new order slides into the demo list. */
-  @keyframes hero-row {
+  @keyframes faq-answer {
     from {
       opacity: 0;
-      transform: translateY(-12px) scale(0.98);
-      background-color: color-mix(in srgb, var(--apricot) 45%, transparent);
-    }
-    60% {
-      background-color: color-mix(in srgb, var(--apricot) 30%, transparent);
+      transform: translateY(6px) scale(0.98);
     }
   }
-  .hero-row:first-child {
-    animation: hero-row 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  .faq-answer {
+    transform-origin: right bottom;
+    animation: faq-answer 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  @keyframes hero-toast {
-    from {
-      opacity: 0;
-      transform: translateY(10px) scale(0.92);
+  /* A blinking caret after the placeholder product link. */
+  @keyframes caret {
+    50% {
+      border-color: transparent;
     }
   }
-  .hero-toast {
-    animation: hero-toast 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-
-  /* Module cards rise one after another when their section appears. */
-  .reveal .module-card {
-    opacity: 0;
-    transform: translateY(18px);
-    transition:
-      opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow 0.3s ease;
-    transition-delay: calc(var(--i, 0) * 70ms), calc(var(--i, 0) * 70ms), 0s;
-  }
-  .reveal[data-visible="true"] .module-card {
-    opacity: 1;
-    transform: none;
-  }
-  .reveal[data-visible="true"] .module-card:hover {
-    transform: translateY(-4px);
-    transition-delay: 0s;
-  }
-
-  @keyframes detail-panel {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-  }
-  .detail-panel {
-    animation: detail-panel 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  .cta-caret {
+    border-right: 2px solid #7c5cf5;
+    padding-right: 2px;
+    animation: caret 1s step-end infinite;
   }
 }
+
+
+/* ── Landing hero: the two phones ─────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  /* A finger tap on a button inside the phone. */
+  @keyframes tap-ripple {
+    from {
+      transform: translate(-50%, -50%) scale(0.3);
+      opacity: 0.6;
+    }
+    to {
+      transform: translate(-50%, -50%) scale(1.7);
+      opacity: 0;
+    }
+  }
+  .tap-ripple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    background: rgb(124 92 245 / 0.45);
+    pointer-events: none;
+    animation: tap-ripple 0.6s ease-out both;
+  }
+
+  /* The owner's phone buzzes when an order arrives. */
+  @keyframes phone-buzz {
+    0%,
+    100% {
+      transform: rotate(0);
+    }
+    20% {
+      transform: rotate(-1.6deg);
+    }
+    40% {
+      transform: rotate(1.6deg);
+    }
+    60% {
+      transform: rotate(-1deg);
+    }
+    80% {
+      transform: rotate(1deg);
+    }
+  }
+  .phone-buzz {
+    animation: phone-buzz 0.5s ease-in-out both;
+  }
+
+  @keyframes order-in {
+    from {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.96);
+    }
+  }
+  .order-in {
+    animation: order-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes success-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+  }
+  .success-pop {
+    animation: success-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes delta-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+  .delta-in {
+    display: inline-block;
+    animation: delta-in 0.4s ease-out both;
+  }
+
+  /* The text cursor in the field being typed. */
+  @keyframes caret-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  .field-caret::after {
+    content: "";
+    display: inline-block;
+    width: 1px;
+    height: 1em;
+    margin-left: 1px;
+    vertical-align: -0.15em;
+    background: #7c5cf5;
+    animation: caret-blink 1s step-end infinite;
+  }
+}
+
+/* ── Landing: stages, pricing seal, small pop-ins ─────────── */
+.dot-grid-soft {
+  background-image: radial-gradient(color-mix(in srgb, var(--foreground) 10%, transparent) 1px, transparent 1px);
+  background-size: 20px 20px;
+  mask-image: radial-gradient(ellipse 80% 75% at 50% 50%, black 35%, transparent 85%);
+}
+.dot-grid-dark {
+  background-image: radial-gradient(rgb(255 255 255 / 0.09) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 80% 70% at 30% 20%, black 20%, transparent 80%);
+}
+.seal-spin {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes seal-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .seal-spin {
+    animation: seal-spin 24s linear infinite;
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.96);
+    }
+  }
+  .pop-in {
+    animation: pop-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .code-caret {
+    animation: caret-blink 1s step-end infinite;
+  }
+}
+

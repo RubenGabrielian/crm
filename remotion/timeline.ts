@@ -1,17 +1,19 @@
+/**
+ * Scene lengths in frames (30 fps). They follow the voice-over script in
+ * remotion/voiceover-timing.md; change both together.
+ */
 export const FPS = 30;
 
-/** Length of each scene in frames, in playing order. Retime the video here. */
 export const SCENES = {
-  hook: 78, // "Do you have a shop on Instagram?"
-  excel: 108, // "You track orders in Excel?"
-  chaos: 66, // "And it's all a mess?"
-  intro: 66, // "Meet Mardouk"
-  copyLink: 108, // owner copies the product link
-  sendLink: 96, // owner sends it in a DM
-  checkout: 138, // customer buys
-  newOrder: 120, // owner sees the order
-  dashboard: 144, // statistics
-  end: 96, // call to action
+  hook: 90, //     0–3 s
+  pain: 90, //     3–6 s
+  turn: 60, //     6–8 s
+  link: 120, //    8–12 s
+  checkout: 120, // 12–16 s
+  owner: 90, //   16–19 s
+  stock: 90, //   19–22 s
+  profit: 120, // 22–26 s
+  cta: 120, //    26–30 s
 } as const;
 
 export const DURATION = Object.values(SCENES).reduce((sum, frames) => sum + frames, 0);

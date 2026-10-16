@@ -1,38 +1,71 @@
 import type { Metadata } from "next";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import {
-  ArrowUpRight,
+  ArrowRight,
   BarChart3,
-  Bell,
-  ChevronDown,
+  Check,
   Link2,
-  Megaphone,
   Quote,
-  Receipt,
   ShoppingBag,
-  Users,
   Warehouse,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "cn";
-import { DetailTabs } from "@/components/landing/detail-tabs";
-import { FlowDemo } from "@/components/landing/flow-demo";
-import { HeroDemo } from "@/components/landing/hero-demo";
+import { BeforeAfter } from "@/components/landing/before-after";
+import { ChatFaq } from "@/components/landing/chat-faq";
+import {
+  LinkDemo,
+  OrdersDemo,
+  ProfitDemo,
+  StockDemo,
+} from "@/components/landing/feature-demos";
+import { HeroShowcase } from "@/components/landing/hero-showcase";
+import { Pricing } from "@/components/landing/pricing";
+import { ProfitCalculator } from "@/components/landing/profit-calculator";
 import { Reveal } from "@/components/landing/reveal";
+import { SalePipeline } from "@/components/landing/sale-pipeline";
 import { REVIEWS } from "@/config/reviews";
 
 export const metadata: Metadata = {
-  title: "Mardouk – Instagram խանութը՝ հղումից մինչև մաքուր շահույթ",
+  title: "Mardouk – Վաճառեք Instagram-ում, հաշվարկը թողեք մեզ",
   description:
-    "Պատվեր մեկ հղումով, պահեստ և նյութեր, հաճախորդներ, ծախսեր և իրական մաքուր շահույթ՝ մեկ տեղում։ Instagram-ով վաճառող բիզնեսների համար, ամբողջությամբ հայերեն։",
+    "Պատվեր մեկ հղումով, պահեստ և նյութեր, հաճախորդներ, ծախսեր և իրական մաքուր շահույթ՝ մեկ տեղում։ Instagram-ով վաճառող խանութների համար, 13 000 ֏ ամսական՝ 30 օրվա երաշխիքով։",
 };
 
 /** Delay for one step of the hero entrance sequence. */
 const delay = (ms: number) => ({ "--delay": `${ms}ms` }) as CSSProperties;
 
-const PILL =
-  "inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 text-base font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+const FAQ = [
+  {
+    q: "Բարև, ի՞նչ է պետք սկսելու համար",
+    a: "Միայն էլ. հասցե։ Նշում եք բիզնեսի անունը և տեսակը՝ ապրանքներ կամ դասընթացներ։ Մուտքը կոդով է, գաղտնաբառ պետք չէ։",
+  },
+  {
+    q: "Որքա՞ն արժե",
+    a: "13 000 ֏ ամսական։ Բոլոր հնարավորությունները ներառված են, ավելի թանկ փաթեթներ կամ լրացուցիչ մոդուլներ չկան։",
+  },
+  {
+    q: "Իսկ եթե չհավանե՞մ",
+    a: "Օգտագործեք Mardouk-ը 30 օր։ Եթե չհավանեք, գրեք մեզ, և կվերադարձնենք ձեր վճարած գումարը։",
+  },
+  {
+    q: "Հաճախորդս պե՞տք է գրանցվի կամ հավելված տեղադրի",
+    a: "Ոչ։ Բացում է ձեր հղումը, լրացնում անունը, հեռախոսը և հասցեն, և պատվիրում։ Պատվերն անմիջապես հայտնվում է ձեր ցանկում։",
+  },
+  {
+    q: "Ունեմ Excel՝ պատվերներով։ Կարո՞ղ եմ տեղափոխել",
+    a: "Այո։ Գրեք մեզ, կօգնենք ներմուծել պատվերները, հաճախորդներին, ծախսերը և պահեստը, որպեսզի վիճակագրությունը սկսվի ձեր իրական պատմությունից։",
+  },
+  {
+    q: "Ինչպե՞ս եք հաշվում մաքուր շահույթը",
+    a: "Վաճառքից (առանց առաքման վճարի) հանվում են ինքնարժեքը և նյութերը, հետո՝ մարքեթինգը։ Մնացած և անձնական ծախսերը երևում են առանձին։",
+  },
+  {
+    q: "Ես դասընթացներ եմ անցկացնում, ինձ մոտ պահեստ չկա",
+    a: "Գրանցվելիս ընտրեք «ծառայություններ». պատվերների փոխարեն կլինեն գրանցումներ, դասընթացներ՝ դասախոսով և խմբի չափով, առանց պահեստի։",
+  },
+];
 
 export default function LandingPage() {
   return (
@@ -41,58 +74,38 @@ export default function LandingPage() {
         <style>{".reveal{opacity:1!important;transform:none!important}"}</style>
       </noscript>
 
-      {/* Soft colour glow behind the hero */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[52rem]"
-      >
-        <span className="glow-blob absolute -top-24 right-[8%] size-[32rem] rounded-full bg-[#c9bcff]/60 blur-3xl" />
-        <span className="glow-blob absolute top-40 right-[34%] size-[22rem] rounded-full bg-[#bfeedd]/70 blur-3xl [animation-delay:-6s]" />
-        <span className="glow-blob absolute top-10 -left-24 size-[26rem] rounded-full bg-[#fde3cf]/70 blur-3xl [animation-delay:-11s]" />
-      </div>
-
-      <header className="sticky top-0 z-40 border-b border-transparent bg-background/70 backdrop-blur-md">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
-          >
-            <span
-              aria-hidden
-              className="flex size-9 items-center justify-center rounded-full bg-primary text-sm text-primary-foreground"
-            >
-              M
-            </span>
-            Mardouk
-          </Link>
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:h-20 sm:px-6">
+          <Logo />
           <nav
             aria-label="Էջի բաժիններ"
-            className="hidden items-center gap-1 text-sm md:flex"
+            className="hidden items-center gap-7 text-sm lg:flex"
           >
             {[
-              ["#modules", "Հնարավորություններ"],
-              ["#flow", "Ինչպես է աշխատում"],
+              ["#features", "Հնարավորություններ"],
+              ["#how", "Ինչպես է աշխատում"],
+              ["#pricing", "Գինը"],
               ["#faq", "Հարցեր"],
             ].map(([href, label]) => (
               <a
                 key={href}
                 href={href}
-                className="rounded-full px-3.5 py-2 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                className="text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:underline"
               >
                 {label}
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Link
               href="/auth/login"
-              className="rounded-full px-4 py-2 text-sm font-medium outline-none hover:bg-card focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded-xl px-3.5 py-2 text-sm font-medium outline-none hover:bg-card focus-visible:ring-2 focus-visible:ring-ring"
             >
               Մուտք
             </Link>
             <Link
               href="/auth/register"
-              className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground outline-none hover:bg-primary/85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground outline-none hover:bg-primary/85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               Գրանցվել
             </Link>
@@ -100,256 +113,158 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-28 px-4 pt-10 pb-20 sm:px-6 sm:pt-16">
-        {/* ── Hero ───────────────────────────────────────── */}
-        <section className="grid items-center gap-14 lg:grid-cols-[1fr_1.05fr] lg:gap-12">
-          <div>
-            <p className="animate-rise inline-flex items-center gap-2 rounded-full border border-white/80 bg-card/80 px-3.5 py-1.5 text-sm font-medium shadow-soft backdrop-blur">
-              <span aria-hidden className="size-2 rounded-full bg-ring" />
-              Instagram-ով վաճառող բիզնեսների համար
-            </p>
-            <h1
-              style={delay(80)}
-              className="animate-rise mt-6 text-[2.6rem] leading-[1.12] font-semibold tracking-tight text-balance sm:text-6xl sm:leading-[1.08]"
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-36 px-4 pt-6 pb-20 sm:px-6 sm:pt-10">
+        {/* ── Hero: a real sale, on the customer's phone and yours ── */}
+        <HeroShowcase>
+          <h1 className="animate-rise text-[2.6rem] leading-[1.06] font-semibold tracking-tight text-balance sm:text-6xl xl:text-[3.5rem]">
+            Վաճառեք <span className="whitespace-nowrap">Instagram-ում,</span>{" "}
+            հաշվարկը թողեք մեզ
+          </h1>
+          <p
+            style={delay(120)}
+            className="animate-rise mx-auto mt-6 max-w-xl text-lg text-muted-foreground"
+          >
+            Ուղարկեք ապրանքի հղումը, և պատվերը կգրանցվի ինքնաբերաբար, պահեստը
+            կնվազի, իսկ վահանակը ցույց կտա իրական մաքուր շահույթը։
+          </p>
+          <div
+            style={delay(200)}
+            className="animate-rise mt-8 flex flex-wrap items-center justify-center gap-3"
+          >
+            <Link
+              href="/auth/register"
+              className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 font-medium text-primary-foreground shadow-[0_14px_30px_-14px_rgb(20_20_22/0.7)] outline-none hover:bg-primary/85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              Ձեր խանութը՝ հղումից մինչև{" "}
-              <span className="relative whitespace-nowrap">
-                <span
-                  aria-hidden
-                  className="marker absolute inset-x-[-0.15em] bottom-[0.08em] top-[0.18em] -z-10 rounded-xl bg-apricot"
-                />
-                մաքուր շահույթ
-              </span>
-            </h1>
-            <p
-              style={delay(160)}
-              className="animate-rise mt-6 max-w-xl text-lg text-muted-foreground"
+              Ստեղծել խանութը
+              <ArrowRight className="size-4" aria-hidden />
+            </Link>
+            <a
+              href="#how"
+              className="inline-flex h-12 items-center rounded-xl border bg-card px-5 font-medium outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
             >
-              Պատվերներ, պահեստ և նյութեր, հաճախորդներ, ծախսեր և վճարումներ՝ մեկ
-              տեղում։ Առանց Excel-ի և առանց DM-ում կորած պատվերների։
-            </p>
-            <div
-              style={delay(240)}
-              className="animate-rise mt-8 flex flex-wrap gap-3"
-            >
-              <Link
-                href="/auth/register"
-                className={`${PILL} bg-primary text-primary-foreground shadow-[0_12px_30px_-12px_rgb(20_20_22/0.6)] hover:bg-primary/85`}
-              >
-                Սկսել հիմա
-                <ArrowUpRight className="size-5" aria-hidden />
-              </Link>
-              <a
-                href="#flow"
-                className={`${PILL} bg-card shadow-soft hover:bg-muted`}
-              >
-                Ինչպես է աշխատում
-              </a>
-            </div>
-            <ul
-              style={delay(320)}
-              className="animate-rise mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground"
-            >
-              {[
-                "Գրանցում 1 րոպեում",
-                "Աշխատում է հեռախոսում",
-                "Ամբողջությամբ հայերեն",
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2">
-                  <span
-                    aria-hidden
-                    className="size-1.5 rounded-full bg-emerald-500"
-                  />
-                  {item}
-                </li>
-              ))}
-            </ul>
+              Ինչպես է աշխատում
+            </a>
           </div>
+          <p
+            style={delay(260)}
+            className="animate-rise mt-4 text-sm text-muted-foreground"
+          >
+            13 000 ֏ ամսական՝ 30 օրվա գումարի վերադարձի երաշխիքով։
+          </p>
+        </HeroShowcase>
 
-          <div style={delay(200)} className="animate-rise min-w-0">
-            <HeroDemo />
+        {/* ── The problem ───────────────────────────────── */}
+        <Reveal as="section">
+          <SectionHeader
+            title="Տետրը, DM-ները և Excel-ը՝ մեկ էկրանում"
+            text="Քաշեք սլաքը։ Նույն օրը՝ երկու կերպ. չգիտեք՝ ով է վճարել, քանի տոպրակ է մնացել և որքան է իրականում մնում ձեզ, կամ տեսնում եք դա միանգամից։"
+          />
+          <div className="mx-auto mt-12 max-w-4xl">
+            <BeforeAfter />
           </div>
+        </Reveal>
+
+        {/* ── Features, each with a live demo ───────────── */}
+        <section id="features" className="flex scroll-mt-24 flex-col gap-28">
+          <Reveal>
+            <SectionHeader
+              title="Ամեն ինչ, ինչ պետք է Instagram խանութին"
+              text="Չորս գործիք, որոնք կապված են իրար. պատվերը նվազեցնում է պահեստը, կարգավիճակը նամակ է ուղարկում, ծախսը փոխում է շահույթը։"
+            />
+          </Reveal>
+          <FeatureRow
+            icon={Link2}
+            label="Պատվեր հղումով"
+            title="Մեկ հղում՝ զեղչով և առաքման գնով"
+            text="Պատճենում եք ապրանքի հղումը, ընտրում զեղչը և առաքումը, ուղարկում DM-ով կամ Story-ում։ Հաճախորդն ինքն է լրացնում պատվերը՝ առանց հարց ու պատասխանի։"
+            points={[
+              "Հաճախորդը չի կարող փոխել զեղչը հղման մեջ",
+              "Անվճար առաքում՝ մեկ թվով",
+              "Աշխատում է ցանկացած հեռախոսում, առանց հավելվածի",
+            ]}
+            demo={<LinkDemo />}
+          />
+          <FeatureRow
+            flip
+            icon={ShoppingBag}
+            label="Պատվերներ"
+            title="Կարգավիճակ, վճարում և նամակ՝ մեկ սեղմումով"
+            text="Փոխեք կարգավիճակը հենց աղյուսակից. «Առաքված» ընտրելիս հաճախորդը նամակ է ստանում։ Նշեք՝ վճարվա՞ծ է, թե՞ ոչ, և ինչպես։"
+            points={[
+              "Կանխիկ, քարտով, փոխանցում կամ POS",
+              "Մեկնաբանություն յուրաքանչյուր պատվերի համար",
+              "Պատվեր ձեռքով՝ զանգի կամ DM-ի դեպքում",
+            ]}
+            demo={<OrdersDemo />}
+          />
+          <FeatureRow
+            icon={Warehouse}
+            label="Պահեստ և նյութեր"
+            title="Պահեստը նվազում է ինքը, տոպրակներն ու պիտակները՝ նույնպես"
+            text="Ամեն վաճառքից դուրս է գրվում ոչ միայն ապրանքը, այլև այն նյութերը, որոնք ծախսվում են դրա վրա։ Տեսնում եք՝ ինչ է վերջանում, նախքան վերջանալը։"
+            points={[
+              "Նյութեր՝ հատով, գրամով կամ մետրով",
+              "Նվերները դուրս են գրվում առանձին",
+              "Պատվերը ջնջելիս ամեն ինչ վերադառնում է պահեստ",
+            ]}
+            demo={<StockDemo />}
+          />
+          <FeatureRow
+            flip
+            icon={BarChart3}
+            label="Վահանակ"
+            title="Իրական մաքուր շահույթ, ոչ թե պարզապես վաճառք"
+            text="Վաճառքից հանվում են ինքնարժեքը, նյութերը և մարքեթինգը։ Տեսնում եք, թե ամսվա որ օրն եք դուրս եկել զրոյի, և որ աղբյուրն է իրոք բերում պատվերներ։"
+            points={[
+              "Մաքուր շահույթ, շահութաբերություն, ROAS և CAC",
+              "Զրոյական կետ՝ ամսվա որ օրն է",
+              "Աղբյուրներ՝ Instagram DM, Meta Ads, խանութ",
+            ]}
+            demo={<ProfitDemo />}
+          />
         </section>
 
-        {/* ── Modules ───────────────────────────────────── */}
-        <Reveal as="section" id="modules" className="scroll-mt-24">
-          <SectionTitle
-            title="Ձեր խանութի առօրյան՝ մեկ համակարգում"
-            text="Ութ մոդուլ, որոնք կապված են իրար. նույն տվյալը երկու անգամ մուտքագրելու կարիք չկա։"
+        {/* ── One sale, step by step ────────────────────── */}
+        <Reveal as="section" id="how" className="scroll-mt-24">
+          <SectionHeader
+            title="DM-ից մինչև մաքուր շահույթ"
+            text="Նույն պատվերը՝ քայլ առ քայլ. նամակագրությունից մինչև այն պահը, երբ շահույթն արդեն հաշվված է վահանակում։"
           />
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Module
-              index={0}
-              icon={Link2}
-              tone="bg-violet-100 text-violet-700"
-              title="Պատվեր մեկ հղումով"
-              text="Յուրաքանչյուր ապրանք ունի իր էջը։ Զեղչն ու առաքումը՝ հենց հղման մեջ։"
-            >
-              <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2 text-xs">
-                <span className="truncate text-muted-foreground">
-                  mardouk.am/checkout/…
-                </span>
-                <span className="ml-auto shrink-0 rounded-full bg-violet-100 px-2 py-0.5 font-medium text-violet-800">
-                  −15%
-                </span>
-              </div>
-            </Module>
-            <Module
-              index={1}
-              icon={ShoppingBag}
-              tone="bg-amber-100 text-amber-800"
-              title="Պատվերներ և կարգավիճակներ"
-              text="Կարգավիճակը, աղբյուրը և վճարումը փոխվում են անմիջապես աղյուսակից։"
-            >
-              <div className="flex flex-wrap gap-1.5 text-[11px] font-medium">
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-900">
-                  Նոր
-                </span>
-                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-900">
-                  Հաստատված
-                </span>
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-900">
-                  Առաքված
-                </span>
-                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-rose-900">
-                  Չվճարված
-                </span>
-              </div>
-            </Module>
-            <Module
-              index={2}
-              icon={Users}
-              tone="bg-sky-100 text-sky-800"
-              title="Հաճախորդներ"
-              text="Պատվերների պատմություն, Instagram, մեկնաբանություն և «ամենաշատ գնողները»։"
-            >
-              <div className="flex items-center gap-2.5 rounded-xl bg-muted px-3 py-2">
-                <span className="flex size-7 items-center justify-center rounded-full bg-sky-200 text-xs font-semibold">
-                  Լ
-                </span>
-                <span className="text-xs">
-                  <span className="block font-medium">Լիլիթ Ա.</span>
-                  <span className="block text-muted-foreground">
-                    6 պատվեր · 74 400 ֏
-                  </span>
-                </span>
-              </div>
-            </Module>
-            <Module
-              index={3}
-              icon={Warehouse}
-              tone="bg-emerald-100 text-emerald-800"
-              title="Պահեստ և նյութեր"
-              text="Վաճառքը հանում է ապրանքը և նրա նյութերը՝ տոպրակ, պիտակ, լցոն։"
-            >
-              <div className="flex flex-col gap-1.5 text-xs">
-                <MiniBar label="Արարատ" value="71" share={0.24} />
-                <MiniBar label="Տոպրակ" value="−2" share={0.56} />
-              </div>
-            </Module>
-            <Module
-              index={4}
-              icon={Receipt}
-              tone="bg-orange-100 text-orange-800"
-              title="Ծախսեր"
-              text="Ֆիքսված և փոփոխական, ամսական կրկնվող, վճարված կամ դեռ ոչ։"
-            >
-              <div className="grid grid-cols-2 gap-1.5 text-xs">
-                <span className="rounded-xl bg-sky-100 px-2.5 py-1.5 text-sky-900">
-                  Ֆիքսված
-                  <span className="block font-semibold tabular-nums">
-                    100 000 ֏
-                  </span>
-                </span>
-                <span className="rounded-xl bg-violet-100 px-2.5 py-1.5 text-violet-900">
-                  Փոփոխական
-                  <span className="block font-semibold tabular-nums">
-                    42 300 ֏
-                  </span>
-                </span>
-              </div>
-            </Module>
-            <Module
-              index={5}
-              icon={BarChart3}
-              tone="bg-violet-100 text-violet-700"
-              title="Մաքուր շահույթ"
-              text="Վաճառք − ինքնարժեք − մարքեթինգ. և որ օրն եք դուրս եկել զրոյի։"
-            >
-              <div className="rounded-xl bg-muted px-3 py-2">
-                <span className="block text-[11px] text-muted-foreground">
-                  Մաքուր շահույթ
-                </span>
-                <span className="block text-lg font-semibold tracking-tight tabular-nums">
-                  186 400 ֏
-                </span>
-              </div>
-            </Module>
-            <Module
-              index={6}
-              icon={Megaphone}
-              tone="bg-rose-100 text-rose-800"
-              title="Որտեղից են գալիս պատվերները"
-              text="Instagram DM, Meta Ads կամ խանութ. տեսեք, որն է իրոք աշխատում։"
-            >
-              <div className="flex flex-col gap-1.5 text-xs">
-                <MiniBar label="Instagram DM" value="65%" share={0.65} />
-                <MiniBar label="Meta Ads" value="23%" share={0.23} />
-              </div>
-            </Module>
-            <Module
-              index={7}
-              icon={Bell}
-              tone="bg-teal-100 text-teal-800"
-              title="Ծանուցումներ"
-              text="Նոր պատվերի նշան ձեզ, և նամակ հաճախորդին, երբ փոխվում է կարգավիճակը։"
-            >
-              <div className="rounded-xl bg-muted px-3 py-2 text-xs">
-                <span className="block font-medium">Ձեր պատվերն առաքված է</span>
-                <span className="block truncate text-muted-foreground">
-                  Բարև, Անի։ Պատվեր #4F2A…
-                </span>
-              </div>
-            </Module>
+          <div className="mt-12">
+            <SalePipeline />
           </div>
         </Reveal>
 
-        {/* ── One order, end to end ─────────────────────── */}
-        <Reveal
-          as="section"
-          id="flow"
-          className="-mx-4 scroll-mt-20 bg-gradient-to-b from-transparent via-[#e6e3f7]/60 to-transparent px-4 py-4 sm:-mx-6 sm:px-6"
-        >
-          <SectionTitle
-            title="Հղումից մինչև մաքուր շահույթ"
-            text="Պատվերը, պահեստը, վճարումը և շահույթը կապված են իրար։ Հետևեք մեկ պատվերի ճանապարհին։"
-            center
+        {/* ── Profit calculator ─────────────────────────── */}
+        <Reveal as="section" id="calculator" className="scroll-mt-24">
+          <SectionHeader
+            title="Որքա՞ն է իրականում մնում ձեզ"
+            text="Շարժեք թվերը՝ ձեր խանութի չափով։ Նույն բանաձևն աշխատում է վահանակում, միայն թե այնտեղ ամեն ինչ հաշվվում է իրական պատվերներից։"
           />
-          <div className="mt-10">
-            <FlowDemo />
+          <div className="mt-12">
+            <ProfitCalculator />
           </div>
         </Reveal>
 
-        {/* ── Details ───────────────────────────────────── */}
-        <Reveal as="section">
-          <SectionTitle
-            title="Ճշգրիտ՝ մինչև մանրուքը"
-            text="Փոքր բաներ, որոնք Excel-ում ամենից հաճախ մոռացվում են։"
-            center
+        {/* ── Pricing ───────────────────────────────────── */}
+        <Reveal as="section" id="pricing" className="scroll-mt-24">
+          <SectionHeader
+            title="Մեկ գին՝ ամեն ինչ ներառված"
+            text="Փաթեթներ ընտրելու կարիք չկա։ Բոլոր հնարավորությունները՝ մեկ ամսական վճարով, և 30 օր՝ համոզվելու համար։"
           />
-          <div className="mt-10">
-            <DetailTabs />
+          <div className="mt-12">
+            <Pricing />
           </div>
         </Reveal>
 
         {/* ── Reviews: shown only once real ones are added ── */}
         {REVIEWS.length > 0 && (
           <Reveal as="section">
-            <SectionTitle
+            <SectionHeader
               title="Ինչ են ասում օգտատերերը"
               text="Մեր հաճախորդների խոսքերը։"
             />
-            <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {REVIEWS.map((review) => (
                 <figure
                   key={`${review.name}-${review.business}`}
@@ -371,239 +286,162 @@ export default function LandingPage() {
           </Reveal>
         )}
 
-        {/* ── Getting started ───────────────────────────── */}
-        <Reveal
-          as="section"
-          className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start"
-        >
-          <div>
-            <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              Սկսում եք նույն օրը
-            </h2>
-            <p className="mt-4 text-muted-foreground">
-              Ունե՞ք Excel կամ Google Sheet՝ պատվերներով և ծախսերով։ Գրեք մեզ, և
-              կօգնենք տեղափոխել տվյալները, որպեսզի վահանակը առաջին օրվանից ցույց
-              տա ձեր իրական պատկերը։
-            </p>
-          </div>
-          <ol className="grid gap-3">
-            {[
-              {
-                title: "Գրանցվեք",
-                text: "Ընկերության անունը, ձեր անունը և էլ. հասցեն։ Գաղտնաբառ պետք չէ՝ մուտքը կոդով է։",
-              },
-              {
-                title: "Ավելացրեք ապրանքները և նյութերը",
-                text: "Գին, ինքնարժեք, առկա քանակ և ինչ նյութեր է ծախսում ամեն վաճառքը։",
-              },
-              {
-                title: "Ուղարկեք առաջին հղումը",
-                text: "Պատճենեք ապրանքի հղումը Instagram-ում։ Պատվերները, պահեստը և շահույթը կհաշվվեն ինքնաբերաբար։",
-              },
-            ].map((step, index) => (
-              <li
-                key={step.title}
-                className="flex gap-4 rounded-3xl bg-card p-5 shadow-soft"
-              >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground tabular-nums">
-                  {index + 1}
-                </span>
-                <div>
-                  <h3 className="font-semibold">{step.title}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {step.text}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </Reveal>
-
-        {/* ── FAQ ───────────────────────────────────────── */}
+        {/* ── FAQ as a chat ─────────────────────────────── */}
         <Reveal as="section" id="faq" className="scroll-mt-24">
-          <SectionTitle
-            title="Հաճախակի տրվող հարցեր"
-            text="Եթե պատասխան չգտաք՝ գրեք մեզ։"
-            center
+          <SectionHeader
+            title="Գրեք՝ կպատասխանենք"
+            text="Ամենահաճախ տրվող հարցերը։ Սեղմեք հարցի վրա։"
           />
-          <div className="mx-auto mt-10 flex max-w-3xl flex-col gap-3">
-            {FAQ.map((item) => (
-              <details
-                key={item.q}
-                className="group rounded-3xl bg-card px-6 shadow-soft open:pb-5"
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-medium outline-none focus-visible:underline [&::-webkit-details-marker]:hidden">
-                  {item.q}
-                  <ChevronDown
-                    className="size-5 shrink-0 text-muted-foreground transition-transform duration-300 group-open:rotate-180"
-                    aria-hidden
-                  />
-                </summary>
-                <p className="text-muted-foreground">{item.a}</p>
-              </details>
-            ))}
+          <div className="mt-12">
+            <ChatFaq items={FAQ} />
           </div>
         </Reveal>
 
         {/* ── Final call to action ──────────────────────── */}
-        <Reveal
-          as="section"
-          className="relative overflow-hidden rounded-[2.25rem] bg-primary px-6 py-16 text-center text-primary-foreground sm:px-10"
-        >
-          <span
+        <Reveal as="section" className="relative">
+          <div
             aria-hidden
-            className="glow-blob absolute -top-24 -left-16 size-80 rounded-full bg-[#8b6ff7]/45 blur-3xl"
+            className="dot-grid pointer-events-none absolute -inset-x-6 -inset-y-16 -z-10 sm:-inset-x-16"
           />
-          <span
-            aria-hidden
-            className="glow-blob absolute -right-16 -bottom-28 size-80 rounded-full bg-[#3fbf95]/30 blur-3xl [animation-delay:-8s]"
-          />
-          <div className="relative">
-            <h2 className="mx-auto max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
-              Տեսեք ձեր խանութի իրական պատկերը
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
+              Ձեր առաջին պատվերը՝ այսօր
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-primary-foreground/70">
-              Գրանցումը տևում է մեկ րոպե։ Ավելացրեք առաջին ապրանքը և ուղարկեք
-              առաջին հղումը հենց այսօր։
+            <p className="mx-auto mt-5 max-w-lg text-lg text-muted-foreground">
+              Գրանցվեք, ավելացրեք ապրանքը և ուղարկեք հղումը։ Եթե 30 օրում
+              չհավանեք, գումարը կվերադարձնենք։
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <div className="mx-auto mt-9 flex max-w-xl flex-col gap-3 rounded-2xl border bg-card p-2 shadow-soft sm:flex-row sm:items-center">
+              <span className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-sm">
+                <Link2
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
+                <span className="shrink-0 text-muted-foreground">
+                  mardouk.am/
+                </span>
+                <span className="cta-caret truncate font-medium">
+                  ձեր-ապրանքը
+                </span>
+              </span>
               <Link
                 href="/auth/register"
-                className={`${PILL} bg-apricot text-primary hover:bg-apricot/85 focus-visible:ring-offset-primary`}
+                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 font-medium text-primary-foreground outline-none hover:bg-primary/85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                Սկսել հիմա
-                <ArrowUpRight className="size-5" aria-hidden />
-              </Link>
-              <Link
-                href="/auth/login"
-                className={`${PILL} bg-white/10 hover:bg-white/15 focus-visible:ring-offset-primary`}
-              >
-                Ունեմ հաշիվ
+                Ստեղծել խանութը
+                <ArrowRight className="size-4" aria-hidden />
               </Link>
             </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Արդեն ունե՞ք հաշիվ։{" "}
+              <Link
+                href="/auth/login"
+                className="font-medium text-foreground underline underline-offset-4"
+              >
+                Մուտք գործել
+              </Link>
+            </p>
           </div>
         </Reveal>
       </main>
 
-      <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 border-t px-4 py-8 text-sm text-muted-foreground sm:px-6">
-        <span>© Mardouk</span>
-        <span className="flex gap-4">
-          <a href="#modules" className="hover:text-foreground">
-            Հնարավորություններ
-          </a>
-          <Link href="/auth/login" className="hover:text-foreground">
-            Մուտք գործել
-          </Link>
-        </span>
+      <footer className="border-t">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-10 text-sm text-muted-foreground sm:px-6">
+          <Logo />
+          <span className="flex flex-wrap gap-x-6 gap-y-2">
+            <a href="#features" className="hover:text-foreground">
+              Հնարավորություններ
+            </a>
+            <a href="#pricing" className="hover:text-foreground">
+              Գինը
+            </a>
+            <Link href="/auth/login" className="hover:text-foreground">
+              Մուտք գործել
+            </Link>
+          </span>
+          <span>© Mardouk</span>
+        </div>
       </footer>
     </div>
   );
 }
 
-const FAQ = [
-  {
-    q: "Ինչ է պետք սկսելու համար",
-    a: "Միայն էլ. հասցե։ Գրանցվելիս նշում եք բիզնեսի անունը և տեսակը՝ ապրանքներ կամ դասընթացներ, իսկ մուտքը կատարվում է էլ. փոստով ստացված կոդով։",
-  },
-  {
-    q: "Հաճախորդը պե՞տք է գրանցվի կամ որևէ հավելված տեղադրի",
-    a: "Ոչ։ Հաճախորդը բացում է ձեր ուղարկած հղումը, լրացնում անունը, հեռախոսը և հասցեն, ընտրում քանակը և պատվիրում։ Պատվերն անմիջապես հայտնվում է ձեր ցանկում։",
-  },
-  {
-    q: "Կարո՞ղ եմ տեղափոխել իմ Excel-ի տվյալները",
-    a: "Այո։ Գրեք մեզ, և կօգնենք ներմուծել պատվերները, հաճախորդներին, ծախսերը և պահեստի մնացորդը, որպեսզի վիճակագրությունը սկսվի ձեր իրական պատմությունից։",
-  },
-  {
-    q: "Ինչպե՞ս է հաշվվում մաքուր շահույթը",
-    a: "Վաճառքից (առանց առաքման վճարի) հանվում են ապրանքների ինքնարժեքը և օգտագործված նյութերը, հետո՝ մարքեթինգի ծախսերը։ Մնացած ծախսերը և անձնական ծախսերը ցույց են տրվում առանձին։",
-  },
-  {
-    q: "Աշխատո՞ւմ է հեռախոսում",
-    a: "Այո։ Բոլոր էջերը հարմարեցված են հեռախոսին. կարող եք փոխել պատվերի կարգավիճակը կամ պատճենել հղումը հենց ճանապարհին։",
-  },
-  {
-    q: "Հարմա՞ր է դասընթացների և ծառայությունների համար",
-    a: "Այո։ Գրանցվելիս ընտրեք «ծառայություններ», և պատվերների փոխարեն կտեսնեք գրանցումներ, դասընթացներ՝ դասախոսով և խմբի չափով, առանց պահեստի։",
-  },
-];
-
-function SectionTitle({
-  title,
-  text,
-  center,
-}: {
-  title: string;
-  text: string;
-  center?: boolean;
-}) {
+function Logo() {
   return (
-    <div className={cn("max-w-2xl", center && "mx-auto text-center")}>
-      <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+    <Link
+      href="/"
+      className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground"
+    >
+      <span
+        aria-hidden
+        className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm text-primary-foreground"
+      >
+        M
+      </span>
+      Mardouk
+    </Link>
+  );
+}
+
+function SectionHeader({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="mx-auto max-w-2xl text-center">
+      <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
         {title}
       </h2>
-      <p className="mt-3 text-muted-foreground">{text}</p>
+      <p className="mx-auto mt-4 max-w-xl text-muted-foreground sm:text-lg">
+        {text}
+      </p>
     </div>
   );
 }
 
-function Module({
-  index,
+function FeatureRow({
   icon: Icon,
-  tone,
+  label,
   title,
   text,
-  children,
+  points,
+  demo,
+  flip,
 }: {
-  index: number;
   icon: LucideIcon;
-  tone: string;
+  label: string;
   title: string;
   text: string;
-  children: React.ReactNode;
+  points: string[];
+  demo: ReactNode;
+  /** Demo on the left instead of the right. */
+  flip?: boolean;
 }) {
   return (
-    <article
-      style={{ "--i": index } as CSSProperties}
-      className="module-card flex flex-col rounded-3xl border border-white/70 bg-card p-5 shadow-soft transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-28px_rgb(73_52_160/0.4)]"
+    <Reveal
+      className={cn(
+        "grid items-center gap-10 lg:gap-16",
+        flip ? "lg:grid-cols-[1.2fr_0.8fr]" : "lg:grid-cols-[0.8fr_1.2fr]",
+      )}
     >
-      <span
-        className={cn(
-          "flex size-10 items-center justify-center rounded-2xl",
-          tone,
-        )}
-      >
-        <Icon className="size-5" strokeWidth={1.75} aria-hidden />
-      </span>
-      <h3 className="mt-4 font-semibold text-balance">{title}</h3>
-      <p className="mt-1.5 flex-1 text-sm text-muted-foreground">{text}</p>
-      <div className="mt-5" aria-hidden>
-        {children}
+      <div className={flip ? "lg:order-2" : undefined}>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs font-medium shadow-soft">
+          <Icon className="size-3.5" aria-hidden />
+          {label}
+        </span>
+        <h3 className="mt-5 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+          {title}
+        </h3>
+        <p className="mt-4 text-muted-foreground sm:text-lg">{text}</p>
+        <ul className="mt-7 flex flex-col gap-3">
+          {points.map((point) => (
+            <li key={point} className="flex gap-3">
+              <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Check className="size-3" strokeWidth={3} aria-hidden />
+              </span>
+              {point}
+            </li>
+          ))}
+        </ul>
       </div>
-    </article>
-  );
-}
-
-function MiniBar({
-  label,
-  value,
-  share,
-}: {
-  label: string;
-  value: string;
-  share: number;
-}) {
-  return (
-    <span className="flex items-center gap-2">
-      <span className="w-20 shrink-0 truncate text-muted-foreground">
-        {label}
-      </span>
-      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-        <span
-          className="block h-full rounded-full bg-ring"
-          style={{ width: `${share * 100}%` }}
-        />
-      </span>
-      <span className="w-8 text-right font-semibold tabular-nums">{value}</span>
-    </span>
+      <div className={flip ? "lg:order-1" : undefined}>{demo}</div>
+    </Reveal>
   );
 }

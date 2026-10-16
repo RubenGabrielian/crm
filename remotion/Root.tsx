@@ -2,7 +2,7 @@ import { Composition } from "remotion";
 import { Promo } from "./Promo";
 import { DURATION, FPS } from "./timeline";
 
-/** Every size renders the same animation; the camera adapts to the frame. */
+/** Same 30-second ad in three shapes; every scene re-lays itself out for the frame. */
 export function RemotionRoot() {
   return (
     <>

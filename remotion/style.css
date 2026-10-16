@@ -1,0 +1,14 @@
+/* The website's styles, so the reused screens look exactly the same. */
+@import "../src/app/globals.css";
+
+/* In a rendered video every change must come from the frame number, so the
+   site's CSS transitions and keyframe animations are switched off here. */
+*,
+*::before,
+*::after {
+  transition: none !important;
+  animation: none !important;
+}
+.tap-ripple {
+  display: none !important;
+}
