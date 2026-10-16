@@ -131,6 +131,9 @@ export async function listOrders(
     page?: number;
     pageSize?: number;
     search?: { by: OrderSearchField; term: string };
+    /** created_at range, ISO timestamps: from inclusive, to exclusive. */
+    from?: string;
+    to?: string;
   } = {},
 ): Promise<{ orders: Order[]; total: number; error: string | null }> {
   const term = filter.search?.term.trim() ?? "";
@@ -153,6 +156,8 @@ export async function listOrders(
     .order("id", { ascending: false });
   if (filter.customerId) query = query.eq("customer_id", filter.customerId);
   if (conditions.length) query = query.or(conditions.join(","));
+  if (filter.from) query = query.gte("created_at", filter.from);
+  if (filter.to) query = query.lt("created_at", filter.to);
   if (filter.page && filter.pageSize) {
     const from = (filter.page - 1) * filter.pageSize;
     query = query.range(from, from + filter.pageSize - 1);

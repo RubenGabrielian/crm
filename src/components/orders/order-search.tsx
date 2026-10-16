@@ -53,11 +53,15 @@ export function OrderSearch({
   options,
   by: initialBy,
   q,
+  view = "list",
 }: {
   options: OrderSearchOption[];
   by: OrderSearchField;
   q: string;
+  /** Kept when searching, so the calendar stays the calendar. */
+  view?: "list" | "calendar";
 }) {
+  const clearHref = view === "calendar" ? "/orders?view=calendar" : "/orders";
   const [by, setBy] = useState<OrderSearchField>(initialBy);
   const current = options.find((option) => option.value === by) ?? options[0];
   const CurrentIcon = ICONS[current.value];
@@ -69,6 +73,7 @@ export function OrderSearch({
       className="group/search flex h-11 w-full max-w-xl items-center rounded-2xl border border-input bg-card shadow-soft transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/40 dark:bg-input/30"
     >
       {by !== "all" && <input type="hidden" name="by" value={by} />}
+      {view === "calendar" && <input type="hidden" name="view" value="calendar" />}
 
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -127,7 +132,7 @@ export function OrderSearch({
 
       {q && (
         <Link
-          href="/orders"
+          href={clearHref}
           aria-label="Մաքրել որոնումը"
           className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
