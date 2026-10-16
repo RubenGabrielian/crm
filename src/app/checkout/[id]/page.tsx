@@ -33,6 +33,11 @@ export default async function CheckoutPage({
   const claimed = readLinkSale(query);
   const terms = verifySale(product.id, claimed);
   const sale = terms ? claimed : null;
+  // Opaque id of the admin's private note; the note itself stays on the server.
+  const ref =
+    typeof query.ref === "string" && /^[\w-]{6,32}$/.test(query.ref)
+      ? query.ref
+      : null;
   // The link may set its own delivery fee (e.g. free delivery); otherwise the product's.
   const deliveryFee = terms?.delivery ?? product.deliveryFee;
   const salePrice =
@@ -81,7 +86,11 @@ export default async function CheckoutPage({
             </p>
           </header>
 
-          <CheckoutForm product={{ ...product, deliveryFee }} sale={sale} />
+          <CheckoutForm
+            product={{ ...product, deliveryFee }}
+            sale={sale}
+            linkRef={ref}
+          />
         </div>
       </div>
     </main>

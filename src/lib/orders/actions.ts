@@ -57,6 +57,8 @@ export async function placeOrder(
   productId: string,
   /** From a signed sale link; ignored unless the signature is genuine. */
   sale: LinkSale | null,
+  /** Id of the admin's private note from the copied link, if any. */
+  linkRef: string | null,
   _prev: OrderFormState,
   formData: FormData,
 ): Promise<OrderFormState> {
@@ -137,6 +139,32 @@ export async function placeOrder(
       .eq("id", orderId);
     if (deliveryError)
       console.error("setting link delivery fee failed:", deliveryError);
+  }
+
+  // The admin's private note from the link becomes the order's comment.
+  if (linkRef && orderId) {
+    const { data: link } = await supabase
+      .from("checkout_link_notes")
+      .select("note")
+      .eq("id", linkRef)
+      .eq("product_id", productId)
+      .maybeSingle();
+    if (link?.note) {
+      const { data: order } = await supabase
+        .from("orders")
+        .select("metadata")
+        .eq("id", orderId)
+        .maybeSingle();
+      const metadata = {
+        ...((order?.metadata ?? {}) as Record<string, unknown>),
+        note: link.note,
+      };
+      const { error: noteError } = await supabase
+        .from("orders")
+        .update({ metadata })
+        .eq("id", orderId);
+      if (noteError) console.error("saving link note on order failed:", noteError);
+    }
   }
 
   revalidateOrderPages();

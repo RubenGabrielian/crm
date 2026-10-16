@@ -88,6 +88,7 @@ export default async function InventoryPage() {
     key: material.id,
     name: material.name,
     note: material.unit,
+    thumb: material.imageUrl,
     received: material.received,
     sales: material.usedInSales,
     gifts: material.usedInGifts,

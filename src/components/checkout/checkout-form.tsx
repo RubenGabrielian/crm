@@ -55,13 +55,16 @@ type CheckoutField = {
 export function CheckoutForm({
   product,
   sale,
+  linkRef = null,
 }: {
   product: CheckoutProduct;
   /** Already verified by the page; the server checks it again on submit. */
   sale: LinkSale | null;
+  /** Id of the admin's private link note, if the link had one. */
+  linkRef?: string | null;
 }) {
   const [state, formAction, pending] = useActionState(
-    placeOrder.bind(null, product.id, sale),
+    placeOrder.bind(null, product.id, sale, linkRef),
     INITIAL_STATE,
   );
   const [qty, setQty] = useState(1);

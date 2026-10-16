@@ -6,6 +6,7 @@ export type Material = {
   id: string;
   name: string;
   unit: string;
+  imageUrl: string | null;
   /** Price of one unit, part of each product's variable cost. */
   unitCost: number;
   /** Can be negative when sales used more than was entered. */
@@ -22,7 +23,7 @@ export async function listMaterials(
   const { data, error } = await supabase
     .from("materials")
     .select(
-      "id, name, unit, unit_cost, stock_quantity, used_in_sales, used_in_gifts",
+      "id, name, unit, image_url, unit_cost, stock_quantity, used_in_sales, used_in_gifts",
     )
     .eq("tenant_id", tenantId)
     .order("created_at");
@@ -38,6 +39,7 @@ export async function listMaterials(
         id: row.id,
         name: row.name,
         unit: row.unit,
+        imageUrl: row.image_url,
         unitCost: Number(row.unit_cost),
         available,
         usedInSales,

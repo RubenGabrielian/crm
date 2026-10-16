@@ -155,7 +155,11 @@ function Progress({
   }, [onPendingChange]);
 
   return (
+    // Base UI marks page elements with data-base-ui-inert while a dialog or
+    // menu is open; this bar hydrates late (inside Suspense), so it can find
+    // that attribute already set. It isn't React's to manage, so don't warn.
     <div
+      suppressHydrationWarning
       aria-hidden
       className="nav-progress"
       style={{

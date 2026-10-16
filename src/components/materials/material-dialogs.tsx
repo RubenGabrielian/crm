@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
-import { PackagePlus, Pencil, Plus, Trash2 } from "lucide-react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { ImagePlus, PackagePlus, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +20,11 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  PRODUCT_IMAGE_ERRORS,
+  PRODUCT_IMAGE_MAX_BYTES,
+  PRODUCT_IMAGE_TYPES,
+} from "@/config/product-images";
 import { formatNumber } from "@/lib/format";
 import {
   createMaterial,
@@ -243,6 +248,11 @@ function MaterialForm({
         </>
       )}
 
+      <MaterialImageField
+        current={material?.imageUrl ?? null}
+        serverError={errors.image}
+      />
+
       {state.formError && <FieldError>{state.formError}</FieldError>}
       <DialogFooter>
         <DialogClose render={<Button type="button" variant="outline" />}>
@@ -253,6 +263,110 @@ function MaterialForm({
         </Button>
       </DialogFooter>
     </form>
+  );
+}
+
+/** Photo picker with a preview; sends "image" and, to clear it, "remove_image". */
+function MaterialImageField({
+  current,
+  serverError,
+}: {
+  current: string | null;
+  serverError?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [removed, setRemoved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const shown = preview ?? (removed ? null : current);
+  const shownError = error ?? serverError;
+
+  // Free the object URL of the previous preview.
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview);
+  }, [preview]);
+
+  function pick(input: HTMLInputElement) {
+    const file = input.files?.[0];
+    if (!file) return;
+    let problem: string | null = null;
+    if (!(file.type in PRODUCT_IMAGE_TYPES)) problem = PRODUCT_IMAGE_ERRORS.type;
+    else if (file.size > PRODUCT_IMAGE_MAX_BYTES) problem = PRODUCT_IMAGE_ERRORS.size;
+    setError(problem);
+    if (problem) {
+      input.value = "";
+      return;
+    }
+    setPreview(URL.createObjectURL(file));
+    setRemoved(false);
+  }
+
+  function clear() {
+    if (inputRef.current) inputRef.current.value = "";
+    setPreview(null);
+    setRemoved(true);
+    setError(null);
+  }
+
+  return (
+    <Field data-invalid={shownError ? true : undefined}>
+      <FieldLabel htmlFor="material-image">
+        Նկար
+        <span className="font-normal text-muted-foreground">(ոչ պարտադիր)</span>
+      </FieldLabel>
+      <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          aria-label={shown ? "Փոխել նկարը" : "Ընտրել նկար"}
+          className="group relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-input bg-muted text-muted-foreground outline-none transition-colors hover:border-ring hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {shown ? (
+            // eslint-disable-next-line @next/next/no-img-element -- blob: previews can't go through next/image
+            <img src={shown} alt="" className="size-full object-cover" />
+          ) : (
+            <ImagePlus className="size-6" aria-hidden />
+          )}
+          {shown && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+              Փոխել
+            </span>
+          )}
+        </button>
+        <div className="flex min-w-0 flex-col items-start gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+          >
+            <ImagePlus />
+            {shown ? "Փոխել նկարը" : "Ընտրել նկար"}
+          </Button>
+          {shown && (
+            <Button type="button" variant="ghost" size="sm" onClick={clear}>
+              <X />
+              Հեռացնել
+            </Button>
+          )}
+          <FieldDescription className="text-xs">
+            JPG, PNG կամ WebP, մինչև 5 ՄԲ
+          </FieldDescription>
+        </div>
+      </div>
+      <input
+        ref={inputRef}
+        id="material-image"
+        name="image"
+        type="file"
+        accept={Object.keys(PRODUCT_IMAGE_TYPES).join(",")}
+        onChange={(event) => pick(event.currentTarget)}
+        className="sr-only"
+        tabIndex={-1}
+      />
+      {removed && current && <input type="hidden" name="remove_image" value="1" />}
+      {shownError && <FieldError>{shownError}</FieldError>}
+    </Field>
   );
 }
 

@@ -1,6 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  PRODUCT_IMAGE_BUCKET,
+  PRODUCT_IMAGE_ERRORS,
+  PRODUCT_IMAGE_MAX_BYTES,
+  PRODUCT_IMAGE_TYPES,
+} from "@/config/product-images";
 import { supabase } from "@/lib/supabase";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
@@ -12,6 +18,22 @@ export type MaterialFormState = {
 };
 
 const SAVE_FAILED = "Չհաջողվեց պահպանել։ Փորձեք կրկին։";
+const UPLOAD_FAILED = "Չհաջողվեց վերբեռնել նկարը։ Փորձեք կրկին։";
+
+/** Returns the public URL, or null if the upload failed. */
+async function uploadMaterialImage(
+  tenantId: string,
+  file: File,
+): Promise<string | null> {
+  const bucket = supabase.storage.from(PRODUCT_IMAGE_BUCKET);
+  const path = `${tenantId}/materials/${crypto.randomUUID()}.${PRODUCT_IMAGE_TYPES[file.type]}`;
+  const { error } = await bucket.upload(path, file, { contentType: file.type });
+  if (error) {
+    console.error("material image upload failed:", error);
+    return null;
+  }
+  return bucket.getPublicUrl(path).data.publicUrl;
+}
 
 function revalidateMaterialPages() {
   revalidatePath("/inventory");
@@ -40,6 +62,15 @@ function readForm(formData: FormData) {
       errors[name] = "Մուտքագրեք 0 կամ ավելի";
     return number;
   };
+  const image = formData.get("image");
+  const imageFile = image instanceof File && image.size > 0 ? image : null;
+  if (imageFile) {
+    if (!(imageFile.type in PRODUCT_IMAGE_TYPES))
+      errors.image = PRODUCT_IMAGE_ERRORS.type;
+    else if (imageFile.size > PRODUCT_IMAGE_MAX_BYTES)
+      errors.image = PRODUCT_IMAGE_ERRORS.size;
+  }
+  const removeImage = formData.get("remove_image") === "1";
   const unitCost = values.unit_cost === "" ? 0 : Number(values.unit_cost);
   if (!Number.isFinite(unitCost) || unitCost < 0)
     errors.unit_cost = "Մուտքագրեք 0 կամ ավելի";
@@ -48,6 +79,8 @@ function readForm(formData: FormData) {
     errors,
     quantity,
     unitCost,
+    imageFile,
+    removeImage,
     usedInSales: used("used_in_sales"),
     usedInGifts: used("used_in_gifts"),
   };
@@ -59,10 +92,17 @@ export async function createMaterial(
   formData: FormData,
 ): Promise<MaterialFormState> {
   const tenant = await getCurrentTenant();
-  const { values, errors, quantity, unitCost } = readForm(formData);
+  const { values, errors, quantity, unitCost, imageFile } = readForm(formData);
   if (quantity < 0) errors.quantity = "Մուտքագրեք 0 կամ ավելի";
   if (Object.keys(errors).length > 0)
     return { ok: false, values, errors, formError: null };
+
+  let imageUrl: string | null = null;
+  if (imageFile) {
+    imageUrl = await uploadMaterialImage(tenant.id, imageFile);
+    if (!imageUrl)
+      return { ok: false, values, errors: {}, formError: UPLOAD_FAILED };
+  }
 
   const { error } = await supabase.from("materials").insert({
     tenant_id: tenant.id,
@@ -70,6 +110,7 @@ export async function createMaterial(
     unit: values.unit,
     stock_quantity: quantity,
     unit_cost: unitCost,
+    image_url: imageUrl,
   });
   if (error) {
     console.error("creating material failed:", error);
@@ -87,10 +128,28 @@ export async function updateMaterial(
   formData: FormData,
 ): Promise<MaterialFormState> {
   const tenant = await getCurrentTenant();
-  const { values, errors, quantity, unitCost, usedInSales, usedInGifts } =
-    readForm(formData);
+  const {
+    values,
+    errors,
+    quantity,
+    unitCost,
+    usedInSales,
+    usedInGifts,
+    imageFile,
+    removeImage,
+  } = readForm(formData);
   if (Object.keys(errors).length > 0)
     return { ok: false, values, errors, formError: null };
+
+  // A new file replaces the photo; "remove" clears it; otherwise keep it.
+  const image: { image_url?: string | null } = {};
+  if (imageFile) {
+    const url = await uploadMaterialImage(tenant.id, imageFile);
+    if (!url) return { ok: false, values, errors: {}, formError: UPLOAD_FAILED };
+    image.image_url = url;
+  } else if (removeImage) {
+    image.image_url = null;
+  }
 
   const { data, error } = await supabase
     .from("materials")
@@ -101,6 +160,7 @@ export async function updateMaterial(
       unit_cost: unitCost,
       used_in_sales: usedInSales,
       used_in_gifts: usedInGifts,
+      ...image,
       updated_at: new Date().toISOString(),
     })
     .eq("id", materialId)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Link as LinkIcon } from "lucide-react";
+import { Check, Link as LinkIcon, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,6 +46,7 @@ function CopyLinkForm({ product }: { product: Product }) {
       ? productDelivery
       : 0;
   const [percent, setPercent] = useState("");
+  const [note, setNote] = useState("");
   const [deliveryText, setDeliveryText] = useState(String(defaultDelivery));
   const [pending, setPending] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -65,12 +66,13 @@ function CopyLinkForm({ product }: { product: Product }) {
   async function copy() {
     setError(null);
     let url = `${window.location.origin}/checkout/${product.id}`;
-    if (sale > 0 || deliveryOverride !== null) {
+    if (sale > 0 || deliveryOverride !== null || note.trim()) {
       setPending(true);
       const result = await createSaleLinkQuery(
         product.id,
         sale,
         deliveryOverride,
+        note,
       );
       setPending(false);
       if (!result.query) {
@@ -162,6 +164,32 @@ function CopyLinkForm({ product }: { product: Product }) {
           {formatMoney(salePrice + (deliveryInvalid ? 0 : delivery))}
         </dd>
       </dl>
+
+      <Field>
+        <FieldLabel htmlFor="link-note">
+          Նշում ինձ համար
+          <span className="font-normal text-muted-foreground">
+            (ոչ պարտադիր)
+          </span>
+        </FieldLabel>
+        <textarea
+          id="link-note"
+          rows={3}
+          maxLength={2000}
+          placeholder="օր.՝ Instagram, @anna_h, ուզում է կարմիր գույնը"
+          value={note}
+          onChange={(event) => {
+            setNote(event.currentTarget.value);
+            setCopied(false);
+          }}
+          aria-describedby="link-note-hint"
+          className="min-h-20 w-full resize-y rounded-xl border border-input bg-card px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+        />
+        <p id="link-note-hint" className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Lock className="size-3 shrink-0" aria-hidden />
+          Հաճախորդը չի տեսնի։ Կավելանա պատվերին որպես մեկնաբանություն։
+        </p>
+      </Field>
 
       {error && <FieldError>{error}</FieldError>}
 
