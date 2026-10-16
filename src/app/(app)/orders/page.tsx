@@ -14,8 +14,13 @@ import { EditOrderDialog } from "@/components/orders/edit-order-dialog";
 import { OrderCommentDialog } from "@/components/orders/order-comment-dialog";
 import { ManageSourcesDialog } from "@/components/orders/manage-sources-dialog";
 import { OrderSourceSelect } from "@/components/orders/order-source-select";
+import { OrderSearch } from "@/components/orders/order-search";
 import { OrderStatusSelect } from "@/components/orders/order-status-select";
 import { OrderPaymentSelect } from "@/components/orders/order-payment-select";
+import {
+  isOrderSearchField,
+  type OrderSearchField,
+} from "@/config/orders";
 import {
   Table,
   TableBody,
@@ -37,9 +42,44 @@ export default async function OrdersPage({
 }: PageProps<"/orders">) {
   const tenant = await getCurrentTenant();
   const isShop = tenant.businessType === "ecommerce";
-  const page = parsePage((await searchParams).page);
+  const query = await searchParams;
+  const page = parsePage(query.page);
+  const search = typeof query.q === "string" ? query.q.trim() : "";
+  const searchBy: OrderSearchField = isOrderSearchField(query.by)
+    ? query.by
+    : "all";
+  const searchLabels: Record<OrderSearchField, string> = {
+    all: "Բոլոր դաշտերը",
+    customer: "Հաճախորդի անուն",
+    phone: "Հեռախոս",
+    email: "Էլ. փոստ",
+    product: isShop ? "Ապրանք" : "Դասընթաց",
+    order: "Պատվերի համար (#)",
+    address: "Հասցե",
+    comment: "Մեկնաբանություն",
+    source: "Աղբյուր",
+  };
+  const searchPlaceholders: Record<OrderSearchField, string> = {
+    all: "Անուն, հեռախոս, էլ. փոստ, ապրանք…",
+    customer: "օր.՝ Անի Հակոբյան",
+    phone: "օր.՝ 091 123 456",
+    email: "օր.՝ name@mail.com",
+    product: isShop ? "Ապրանքի անվանում" : "Դասընթացի անվանում",
+    order: "օր.՝ #3FA2C1D0",
+    address: "Քաղաք, փողոց",
+    comment: "Մեկնաբանության տեքստ",
+    source: "օր.՝ Instagram",
+  };
+  const searchParamsToKeep = {
+    q: search || undefined,
+    by: search && searchBy !== "all" ? searchBy : undefined,
+  };
   const [{ orders, total, error }, sources, { products }] = await Promise.all([
-    listOrders(tenant.id, { page, pageSize: PAGE_SIZE }),
+    listOrders(tenant.id, {
+      page,
+      pageSize: PAGE_SIZE,
+      search: search ? { by: searchBy, term: search } : undefined,
+    }),
     listOrderSources(tenant.id),
     listProducts(tenant.id),
   ]);
@@ -69,23 +109,52 @@ export default async function OrdersPage({
 
   // A page number past the end (e.g. after deleting orders) goes to the last page.
   if (orders.length === 0 && total > 0) {
-    redirect(`/orders?page=${Math.ceil(total / PAGE_SIZE)}`);
+    const last = new URLSearchParams();
+    for (const [key, value] of Object.entries(searchParamsToKeep))
+      if (value) last.set(key, value);
+    last.set("page", String(Math.ceil(total / PAGE_SIZE)));
+    redirect(`/orders?${last}`);
   }
 
   const numeric = "px-2 text-right tabular-nums";
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
-          Ընդամենը՝ {formatNumber(total)}
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <OrderSearch
+          by={searchBy}
+          q={search}
+          options={(Object.keys(searchLabels) as OrderSearchField[]).map(
+            (value) => ({
+              value,
+              label: searchLabels[value],
+              placeholder: searchPlaceholders[value],
+            }),
+          )}
+        />
         <div className="flex flex-wrap justify-end gap-2">
           <ManageSourcesDialog sources={sources} />
           <AddOrderDialog products={productOptions} sources={sourceNames} />
         </div>
       </div>
-      {orders.length === 0 &&
+      <p className="-mt-2 text-sm text-muted-foreground">
+        {search
+          ? `Գտնվեց՝ ${formatNumber(total)} · «${search}» · ${searchLabels[searchBy]}`
+          : `Ընդամենը՝ ${formatNumber(total)}`}
+      </p>
+      {search && orders.length === 0 && (
+        <p className="rounded-3xl bg-card px-6 py-10 text-center text-sm text-muted-foreground shadow-soft">
+          Այս որոնմամբ պատվեր չգտնվեց։ Փորձեք այլ դաշտ կամ{" "}
+          <Link
+            href="/orders"
+            className="font-medium text-foreground underline underline-offset-2"
+          >
+            մաքրեք որոնումը
+          </Link>
+          ։
+        </p>
+      )}
+      {!search && orders.length === 0 &&
         (isShop ? (
           <EmptyState
             icon={ShoppingBag}
@@ -233,7 +302,12 @@ export default async function OrdersPage({
           </TableBody>
         </Table>
       </div>
-      <Pagination basePath="/orders" page={page} total={total} />
+      <Pagination
+        basePath="/orders"
+        params={searchParamsToKeep}
+        page={page}
+        total={total}
+      />
     </div>
   );
 }
