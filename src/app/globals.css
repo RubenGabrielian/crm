@@ -306,3 +306,95 @@
     animation: source-bar 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 }
+
+/* ── Landing page: hero demo, glow and section motion ─────── */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Background colour blobs drift slowly. */
+  @keyframes glow-drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    33% {
+      transform: translate3d(40px, -30px, 0) scale(1.08);
+    }
+    66% {
+      transform: translate3d(-30px, 25px, 0) scale(0.95);
+    }
+  }
+  .glow-blob {
+    animation: glow-drift 18s ease-in-out infinite;
+  }
+
+  /* The highlight behind the headline phrase sweeps in once. */
+  @keyframes marker-sweep {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  .marker {
+    transform-origin: left;
+    animation: marker-sweep 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
+  }
+
+  /* A new order slides into the demo list. */
+  @keyframes hero-row {
+    from {
+      opacity: 0;
+      transform: translateY(-12px) scale(0.98);
+      background-color: color-mix(in srgb, var(--apricot) 45%, transparent);
+    }
+    60% {
+      background-color: color-mix(in srgb, var(--apricot) 30%, transparent);
+    }
+  }
+  .hero-row:first-child {
+    animation: hero-row 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes hero-toast {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.92);
+    }
+  }
+  .hero-toast {
+    animation: hero-toast 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Module cards rise one after another when their section appears. */
+  .reveal .module-card {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.3s ease;
+    transition-delay: calc(var(--i, 0) * 70ms), calc(var(--i, 0) * 70ms), 0s;
+  }
+  .reveal[data-visible="true"] .module-card {
+    opacity: 1;
+    transform: none;
+  }
+  .reveal[data-visible="true"] .module-card:hover {
+    transform: translateY(-4px);
+    transition-delay: 0s;
+  }
+
+  @keyframes detail-panel {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  .detail-panel {
+    animation: detail-panel 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}

@@ -19,7 +19,11 @@ export function CountUp({
 
   useEffect(() => {
     const element = ref.current;
-    if (!element || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (
+      !element ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
 
     let frame = 0;
     const observer = new IntersectionObserver(([entry]) => {
