@@ -78,7 +78,7 @@ export default async function CheckoutPage({
                   <s className="text-lg font-normal text-muted-foreground">
                     {formatMoney(product.price)}
                   </s>
-                  <span className="rounded-full bg-apricot px-2.5 py-0.5 text-sm font-semibold text-primary">
+                  <span className="rounded-full bg-apricot px-2.5 py-0.5 text-sm font-semibold text-foreground">
                     −{sale.percent}%
                   </span>
                 </>

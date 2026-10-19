@@ -1,14 +1,19 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Palette: plum ink + apricot (ծիրան). Light theme only for now. */
+/* Numa palette: brand blue #185aef, white and brand yellow #fed740.
+   Light theme only for now. */
 :root {
-  /* Neutral canvas, white cards, near-black ink and one soft violet accent. */
-  --paper: #eef0f3;
-  --ink: #141416;
-  --plum: #141416;
-  --plum-soft: #2a2a2e;
-  --apricot: #c9bcff;
+  --paper: #eef1f6;
+  --ink: #101828;
+  --brand-blue: #185aef;
+  --brand-blue-dark: #1146c4;
+  --brand-blue-soft: #e8efff;
+  --brand-yellow: #fed740;
+  --plum: var(--brand-blue);
+  --plum-soft: var(--brand-blue-dark);
+  /* Historical name: the highlight colour, now brand yellow. */
+  --apricot: var(--brand-yellow);
   --mist: #72747d;
   --line: #e6e7eb;
   --surface: var(--paper);
@@ -31,7 +36,7 @@
   --destructive: #d1344b;
   --border: var(--line);
   --input: var(--line);
-  --ring: #8b6ff7;
+  --ring: var(--brand-blue);
 
   /* The sidebar is a floating white card. */
   --sidebar: #ffffff;
@@ -42,8 +47,8 @@
 }
 
 @theme inline {
-  /* Outfit draws Latin letters and digits; Armenian falls through to Noto. */
-  --font-sans: var(--font-outfit), var(--font-noto-armenian), ui-sans-serif, system-ui, sans-serif;
+  /* Montserrat draws only the digits (unicode-range); Fedra draws everything else. */
+  --font-sans: var(--font-digits), var(--font-dram), var(--font-fedra), ui-sans-serif, system-ui, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -328,7 +333,7 @@
   height: 6px;
   border-radius: 999px;
   background-color: var(--muted);
-  background-image: linear-gradient(#7c5cf5, #7c5cf5);
+  background-image: linear-gradient(#185aef, #185aef);
   background-repeat: no-repeat;
   cursor: pointer;
 }
@@ -388,7 +393,7 @@
     }
   }
   .cta-caret {
-    border-right: 2px solid #7c5cf5;
+    border-right: 2px solid #185aef;
     padding-right: 2px;
     animation: caret 1s step-end infinite;
   }
@@ -415,7 +420,7 @@
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 999px;
-    background: rgb(124 92 245 / 0.45);
+    background: rgb(24 90 239 / 0.45);
     pointer-events: none;
     animation: tap-ripple 0.6s ease-out both;
   }
@@ -487,7 +492,7 @@
     height: 1em;
     margin-left: 1px;
     vertical-align: -0.15em;
-    background: #7c5cf5;
+    background: #185aef;
     animation: caret-blink 1s step-end infinite;
   }
 }

@@ -30,7 +30,7 @@ export function Sidebar({
       <div className="mx-4 mb-3 flex items-center gap-3 border-b px-1 pt-6 pb-5">
         <span
           aria-hidden
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-apricot text-base font-semibold text-primary"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-apricot text-base font-semibold text-foreground"
         >
           {tenant.name.charAt(0)}
         </span>
@@ -68,7 +68,7 @@ export function Sidebar({
                   />
                   {label}
                   {showsNewOrders && newOrders > 0 && (
-                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-apricot px-1.5 text-xs font-semibold tabular-nums text-primary">
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-apricot px-1.5 text-xs font-semibold tabular-nums text-foreground">
                       {newOrders > 99 ? "99+" : newOrders}
                       <span className="sr-only"> նոր</span>
                     </span>

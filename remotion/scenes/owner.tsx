@@ -60,7 +60,7 @@ export function OwnerScene() {
             className="absolute bottom-[40px] left-1/2 flex items-center gap-2.5 rounded-full bg-[#141416] px-5 py-3 text-[18px] font-semibold whitespace-nowrap text-white shadow-lg"
             style={{ opacity: sent, transform: `translateX(-50%) translateY(${(1 - sent) * 20}px)` }}
           >
-            <Mail className="size-5 text-[#c9bcff]" />
+            <Mail className="size-5 text-[#fed740]" />
             Նամակ ուղարկվեց Անիին
           </span>
         </div>

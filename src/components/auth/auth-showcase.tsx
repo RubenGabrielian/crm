@@ -32,7 +32,7 @@ export function AuthShowcase() {
   return (
     <div
       ref={ref}
-      className="relative flex h-full flex-col overflow-hidden rounded-[2rem] bg-[#141416] p-8 text-white xl:p-10"
+      className="relative flex h-full flex-col overflow-hidden rounded-[2rem] bg-primary p-8 text-white xl:p-10"
     >
       <div
         aria-hidden
@@ -40,7 +40,7 @@ export function AuthShowcase() {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-1/2 left-1/2 size-[30rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgb(124_92_245/0.28),transparent_65%)]"
+        className="pointer-events-none absolute top-1/2 left-1/2 size-[30rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgb(24_90_239/0.28),transparent_65%)]"
       />
 
       <div className="relative max-w-md">
@@ -68,7 +68,7 @@ export function AuthShowcase() {
           <Floating
             show={owner.banner}
             icon={Bell}
-            tone="bg-[#c9bcff] text-[#141416]"
+            tone="bg-[#fed740] text-[#141416]"
             className="top-[14%] -left-40"
           >
             Նոր պատվեր՝ 16 830 ֏

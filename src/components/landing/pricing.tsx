@@ -59,7 +59,7 @@ export function Pricing() {
           </p>
           <Link
             href="/auth/register"
-            className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-apricot px-6 font-medium text-primary outline-none hover:bg-apricot/85 focus-visible:ring-2 focus-visible:ring-apricot focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+            className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-apricot px-6 font-medium text-foreground outline-none hover:bg-apricot/85 focus-visible:ring-2 focus-visible:ring-apricot focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
           >
             Սկսել հիմա
             <ArrowRight className="size-4" aria-hidden />
@@ -72,7 +72,7 @@ export function Pricing() {
                 30 օրվա երաշխիք
               </span>
               <span className="mt-1 block text-primary-foreground/70">
-                Օգտագործեք Mardouk-ը 30 օր։ Եթե չհավանեք, կվերադարձնենք ձեր
+                Օգտագործեք Numa-ը 30 օր։ Եթե չհավանեք, կվերադարձնենք ձեր
                 վճարած գումարը։
               </span>
             </p>
@@ -120,7 +120,7 @@ function GuaranteeSeal({ className }: { className?: string }) {
           d="M60 60 m-45 0 a45 45 0 1 1 90 0 a45 45 0 1 1 -90 0"
         />
       </defs>
-      <circle cx="60" cy="60" r="59" fill="#c9bcff" />
+      <circle cx="60" cy="60" r="59" fill="#fed740" />
       <circle cx="60" cy="60" r="35" fill="#141416" />
       <g className="seal-spin">
         <text fill="#141416" fontSize="9.5" fontWeight="600">
@@ -143,7 +143,7 @@ function GuaranteeSeal({ className }: { className?: string }) {
       >
         30
       </text>
-      <text x="60" y="76" textAnchor="middle" fill="#c9bcff" fontSize="10">
+      <text x="60" y="76" textAnchor="middle" fill="#fed740" fontSize="10">
         օր
       </text>
     </svg>

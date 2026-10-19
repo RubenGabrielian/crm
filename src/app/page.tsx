@@ -26,9 +26,10 @@ import { ProfitCalculator } from "@/components/landing/profit-calculator";
 import { Reveal } from "@/components/landing/reveal";
 import { SalePipeline } from "@/components/landing/sale-pipeline";
 import { REVIEWS } from "@/config/reviews";
+import { NumaLogo } from "@/components/brand/numa-logo";
 
 export const metadata: Metadata = {
-  title: "Mardouk – Վաճառեք Instagram-ում, հաշվարկը թողեք մեզ",
+  title: "Numa – Վաճառեք Instagram-ում, հաշվարկը թողեք մեզ",
   description:
     "Պատվեր մեկ հղումով, պահեստ և նյութեր, հաճախորդներ, ծախսեր և իրական մաքուր շահույթ՝ մեկ տեղում։ Instagram-ով վաճառող խանութների համար, 13 000 ֏ ամսական՝ 30 օրվա երաշխիքով։",
 };
@@ -47,7 +48,7 @@ const FAQ = [
   },
   {
     q: "Իսկ եթե չհավանե՞մ",
-    a: "Օգտագործեք Mardouk-ը 30 օր։ Եթե չհավանեք, գրեք մեզ, և կվերադարձնենք ձեր վճարած գումարը։",
+    a: "Օգտագործեք Numa-ը 30 օր։ Եթե չհավանեք, գրեք մեզ, և կվերադարձնենք ձեր վճարած գումարը։",
   },
   {
     q: "Հաճախորդս պե՞տք է գրանցվի կամ հավելված տեղադրի",
@@ -270,7 +271,7 @@ export default function LandingPage() {
                   key={`${review.name}-${review.business}`}
                   className="flex flex-col rounded-3xl bg-card p-6 shadow-soft"
                 >
-                  <Quote className="size-6 text-violet-600" aria-hidden />
+                  <Quote className="size-6 text-[#185aef]" aria-hidden />
                   <blockquote className="mt-4 flex-1 text-sm">
                     {review.text}
                   </blockquote>
@@ -317,9 +318,7 @@ export default function LandingPage() {
                   className="size-4 shrink-0 text-muted-foreground"
                   aria-hidden
                 />
-                <span className="shrink-0 text-muted-foreground">
-                  mardouk.am/
-                </span>
+                <span className="shrink-0 text-muted-foreground">numa.am/</span>
                 <span className="cta-caret truncate font-medium">
                   ձեր-ապրանքը
                 </span>
@@ -359,7 +358,7 @@ export default function LandingPage() {
               Մուտք գործել
             </Link>
           </span>
-          <span>© Mardouk</span>
+          <span>© Numa</span>
         </div>
       </footer>
     </div>
@@ -370,15 +369,9 @@ function Logo() {
   return (
     <Link
       href="/"
-      className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground"
+      className="flex items-center text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <span
-        aria-hidden
-        className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm text-primary-foreground"
-      >
-        M
-      </span>
-      Mardouk
+      <NumaLogo size={34} />
     </Link>
   );
 }

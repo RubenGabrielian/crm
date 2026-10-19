@@ -3,7 +3,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { Caption } from "../ui/caption";
 import { Fit } from "../ui/layout";
 import { pop } from "../ui/motion";
-import { GuaranteeSeal, MardoukLogo } from "../ui/props";
+import { GuaranteeSeal, NumaLogo } from "../ui/props";
 import { SceneShell } from "../ui/scene";
 
 /** 26–30 s. Price, the 30-day guarantee, the button and the address. */
@@ -27,10 +27,10 @@ export function CtaScene() {
       <Fit w={520} h={600}>
         <div className="flex h-full w-full flex-col items-center justify-center gap-7">
           <div
-            className="relative w-full rounded-[2rem] bg-white p-8 text-[#141416] shadow-[0_40px_90px_-30px_rgb(124_92_245/0.6)]"
+            className="relative w-full rounded-[2rem] bg-white p-8 text-[#141416] shadow-[0_40px_90px_-30px_rgb(17_40_110/0.7)]"
             style={{ transform: `translateY(${(1 - card) * 60}px) scale(${0.9 + card * 0.1})`, opacity: card }}
           >
-            <MardoukLogo size={46} />
+            <NumaLogo size={46} />
             <p className="mt-7 text-[17px] text-muted-foreground">
               Մեկ փաթեթ՝ բոլոր հնարավորություններով
             </p>
@@ -66,7 +66,7 @@ export function CtaScene() {
           </div>
 
           <span
-            className="flex h-[76px] w-full items-center justify-center gap-3 rounded-2xl bg-[#c9bcff] text-[30px] font-semibold text-[#141416]"
+            className="flex h-[76px] w-full items-center justify-center gap-3 rounded-2xl bg-[#fed740] text-[30px] font-semibold text-[#141416]"
             style={{ opacity: button, transform: `scale(${(0.85 + button * 0.15) * pulse})` }}
           >
             Ստեղծել խանութը
@@ -76,7 +76,7 @@ export function CtaScene() {
             className="text-[40px] font-semibold tracking-tight text-white"
             style={{ opacity: url, transform: `translateY(${(1 - url) * 20}px)` }}
           >
-            mardouk.am
+            numa.am
           </span>
         </div>
       </Fit>

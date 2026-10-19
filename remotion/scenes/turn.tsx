@@ -2,7 +2,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remo
 import { Caption } from "../ui/caption";
 import { Fit } from "../ui/layout";
 import { pop, ramp } from "../ui/motion";
-import { ExcelCard, MardoukLogo, NotebookCard, StickyNote } from "../ui/props";
+import { ExcelCard, NumaLogo, NotebookCard, StickyNote } from "../ui/props";
 import { SceneShell } from "../ui/scene";
 
 /** 6–8 s. The mess is swept away, ink floods in, the logo snaps into place. */
@@ -47,7 +47,7 @@ export function TurnScene() {
       {/* Ink floods out from the centre */}
       <AbsoluteFill
         style={{
-          background: "#141416",
+          background: "#185aef",
           clipPath: `circle(${flood * radius * 0.6}px at 50% 50%)`,
         }}
       />
@@ -59,10 +59,10 @@ export function TurnScene() {
         }}
       />
 
-      {/* A violet ring bursting behind the logo */}
+      {/* A yellow ring bursting behind the logo */}
       <AbsoluteFill className="items-center justify-center">
         <div
-          className="rounded-full border-[6px] border-[#7c5cf5]"
+          className="rounded-full border-[6px] border-[#fed740]"
           style={{
             width: 260 + ring * 900,
             height: 260 + ring * 900,
@@ -72,11 +72,11 @@ export function TurnScene() {
       </AbsoluteFill>
       <AbsoluteFill className="items-center justify-center">
         <div style={{ transform: `scale(${0.4 + logo * 0.6})`, opacity: logo }}>
-          <MardoukLogo size={width > 1000 ? 150 : 120} dark />
+          <NumaLogo size={width > 1000 ? 150 : 120} dark />
         </div>
       </AbsoluteFill>
 
-      <Caption text="Ծանոթացեք՝ Mardouk" accent={["Mardouk"]} delay={18} dark />
+      <Caption text="Ծանոթացեք՝ Numa" accent={["Numa"]} delay={18} dark />
     </SceneShell>
   );
 }

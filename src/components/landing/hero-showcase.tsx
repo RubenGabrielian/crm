@@ -177,7 +177,7 @@ function Wire({
         <path
           d={ARC}
           fill="none"
-          stroke="#7c5cf5"
+          stroke="#185aef"
           strokeWidth={2.5}
           strokeLinecap="round"
           pathLength={1}
@@ -201,8 +201,8 @@ function Wire({
             cx={dot.x}
             cy={dot.y}
             r="7"
-            fill={litReply > 0 ? "#10b981" : "#7c5cf5"}
-            style={{ filter: "drop-shadow(0 0 6px rgb(124 92 245 / 0.6))" }}
+            fill={litReply > 0 ? "#10b981" : "#185aef"}
+            style={{ filter: "drop-shadow(0 0 6px rgb(24 90 239 / 0.6))" }}
           />
         )}
       </svg>

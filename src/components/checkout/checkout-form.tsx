@@ -101,7 +101,7 @@ export function CheckoutForm({
   if (state.ok) {
     return (
       <div role="status" className="rounded-2xl bg-muted px-5 py-6">
-        <CircleCheck className="size-7 text-violet-600" strokeWidth={1.75} aria-hidden />
+        <CircleCheck className="size-7 text-[#185aef]" strokeWidth={1.75} aria-hidden />
         <h2 className="mt-3 text-base font-semibold">{copy.doneTitle}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{copy.doneText}</p>
       </div>

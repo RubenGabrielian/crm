@@ -12,3 +12,24 @@
 .tap-ripple {
   display: none !important;
 }
+
+/* Numa brand type, the same files the website loads through next/font:
+   Montserrat for digits, Noto Sans Armenian for ֏, Fedra Sans Arm for text. */
+@font-face { font-family: "Numa Digits"; font-weight: 400; src: url("../src/app/fonts/Montserrat-400.woff2"); unicode-range: U+0030-0039; }
+@font-face { font-family: "Numa Digits"; font-weight: 500; src: url("../src/app/fonts/Montserrat-500.woff2"); unicode-range: U+0030-0039; }
+@font-face { font-family: "Numa Digits"; font-weight: 600; src: url("../src/app/fonts/Montserrat-600.woff2"); unicode-range: U+0030-0039; }
+@font-face { font-family: "Numa Digits"; font-weight: 700; src: url("../src/app/fonts/Montserrat-700.woff2"); unicode-range: U+0030-0039; }
+@font-face { font-family: "Numa Dram"; font-weight: 400; src: url("../src/app/fonts/Dram-400.woff2"); unicode-range: U+058F; }
+@font-face { font-family: "Numa Dram"; font-weight: 600; src: url("../src/app/fonts/Dram-600.woff2"); unicode-range: U+058F; }
+@font-face { font-family: "Numa Dram"; font-weight: 700; src: url("../src/app/fonts/Dram-700.woff2"); unicode-range: U+058F; }
+@font-face { font-family: "Numa Fedra"; font-weight: 300; src: url("../src/app/fonts/FedraSansArm-Light.otf"); unicode-range: U+0000-058E, U+0590-10FFFF; }
+@font-face { font-family: "Numa Fedra"; font-weight: 400; src: url("../src/app/fonts/FedraSansArm-Book.otf"); unicode-range: U+0000-058E, U+0590-10FFFF; }
+@font-face { font-family: "Numa Fedra"; font-weight: 500; src: url("../src/app/fonts/FedraSansArm-Medium.otf"); unicode-range: U+0000-058E, U+0590-10FFFF; }
+@font-face { font-family: "Numa Fedra"; font-weight: 600; src: url("../src/app/fonts/FedraSansArm-Demi.otf"); unicode-range: U+0000-058E, U+0590-10FFFF; }
+@font-face { font-family: "Numa Fedra"; font-weight: 700; src: url("../src/app/fonts/FedraSansArm-Bold.otf"); unicode-range: U+0000-058E, U+0590-10FFFF; }
+
+:root {
+  --font-digits: "Numa Digits";
+  --font-dram: "Numa Dram";
+  --font-fedra: "Numa Fedra";
+}

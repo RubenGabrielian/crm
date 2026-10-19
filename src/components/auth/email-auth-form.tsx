@@ -211,7 +211,7 @@ export function EmailAuthForm({
         </>
       ) : (
         <>
-          <span className="success-pop mt-8 flex size-14 items-center justify-center rounded-2xl bg-[#ece8ff] text-[#5b45d6]">
+          <span className="success-pop mt-8 flex size-14 items-center justify-center rounded-2xl bg-[#e8efff] text-[#1146c4]">
             <MailCheck className="size-7" strokeWidth={1.75} aria-hidden />
           </span>
           <h1 className="mt-5 text-[2.1rem] leading-tight font-semibold tracking-tight text-balance sm:text-[2.5rem]">
@@ -341,7 +341,7 @@ function CodeInput({
               className={cn(
                 "flex h-14 items-center justify-center rounded-xl border bg-card text-2xl font-semibold tabular-nums transition-[border-color,box-shadow] duration-200",
                 active &&
-                  "border-[#7c5cf5] shadow-[0_0_0_4px_rgb(124_92_245/0.18)]",
+                  "border-[#185aef] shadow-[0_0_0_4px_rgb(24_90_239/0.18)]",
                 invalid && !active && "border-destructive",
               )}
             >

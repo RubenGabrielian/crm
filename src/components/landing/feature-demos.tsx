@@ -134,7 +134,7 @@ export function LinkDemo({ time }: { time?: number } = {}) {
   return (
     <div ref={ref}>
       <DemoShell
-        tint="bg-[#f3f0ff]"
+        tint="bg-[#f0f5ff]"
         playing={playing}
         onToggle={() => setPlaying((value) => !value)}
         showToggle={!reduced && time === undefined}
@@ -157,7 +157,7 @@ export function LinkDemo({ time }: { time?: number } = {}) {
               <span className="font-semibold">Անի Մ.</span>
               <span className="text-muted-foreground">DM</span>
             </span>
-            <span className="mt-2 ml-auto block w-fit rounded-2xl rounded-br-md bg-[#7c5cf5] px-3 py-1.5 text-[11px] text-white">
+            <span className="mt-2 ml-auto block w-fit rounded-2xl rounded-br-md bg-[#185aef] px-3 py-1.5 text-[11px] text-white">
               Ահա հղումը՝ 15% զեղչով
             </span>
             <span className="mt-1.5 ml-auto flex w-[90%] items-center gap-2 rounded-xl border bg-white p-1.5">
@@ -176,7 +176,7 @@ export function LinkDemo({ time }: { time?: number } = {}) {
           </div>
         }
       >
-        <BrowserFrame url="mardouk.am/catalog">
+        <BrowserFrame url="numa.am/catalog">
           <div className="relative h-[21rem] bg-[#eef0f3] p-3 @sm:p-4">
             <AppHeader title="Ապրանքներ">
               <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-medium text-white">
@@ -311,7 +311,7 @@ function ProductRow({
     <span
       className={cn(
         "flex items-center gap-3 rounded-xl px-2 py-2",
-        highlight && "bg-[#f7f5ff]",
+        highlight && "bg-[#f0f5ff]",
       )}
     >
       <span
@@ -360,7 +360,7 @@ function MiniInput({
         className={cn(
           "mt-0.5 flex h-8 items-center rounded-lg border px-2.5 text-[12px] tabular-nums transition-[border-color,box-shadow] duration-300",
           active
-            ? "border-[#7c5cf5] shadow-[0_0_0_3px_rgb(124_92_245/0.18)]"
+            ? "border-[#185aef] shadow-[0_0_0_3px_rgb(24_90_239/0.18)]"
             : "border-border",
         )}
       >
@@ -453,13 +453,13 @@ export function OrdersDemo({ time }: { time?: number } = {}) {
         onToggle={() => setPlaying((value) => !value)}
         showToggle={!reduced && time === undefined}
       >
-        <BrowserFrame url="mardouk.am/orders">
+        <BrowserFrame url="numa.am/orders">
           <div className="relative h-[21.5rem] bg-[#eef0f3] p-3 @sm:p-4">
             <AppHeader title="Պատվերներ">
               <span className="relative flex size-8 items-center justify-center rounded-full bg-white">
                 <Bell className="size-4" />
                 {arrived && !picked && (
-                  <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#7c5cf5] text-[9px] font-semibold text-white">
+                  <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#185aef] text-[9px] font-semibold text-white">
                     1
                   </span>
                 )}
@@ -528,7 +528,7 @@ export function OrdersDemo({ time }: { time?: number } = {}) {
             </div>
 
             <Toast show={within(t, O.pick + 150, O.toastOut)}>
-              <Mail className="size-3.5 text-[#c9bcff]" />
+              <Mail className="size-3.5 text-[#fed740]" />
               Նամակ ուղարկվեց Անիին՝ «Առաքված է»
             </Toast>
           </div>
@@ -569,7 +569,7 @@ function OrderRow({
     <span
       className={cn(
         "grid grid-cols-[minmax(0,1fr)_auto_7.5rem] items-center gap-2.5 rounded-xl px-2.5 py-2",
-        fresh && "order-in bg-[#f7f5ff]",
+        fresh && "order-in bg-[#f0f5ff]",
       )}
     >
       <span className="min-w-0">
@@ -578,7 +578,7 @@ function OrderRow({
           {item}
         </span>
         {comment !== undefined && comment !== null && (
-          <span className="mt-1 flex max-w-full items-center gap-1 rounded-md bg-[#ece8ff] px-1.5 py-0.5 text-[10px] text-[#4b3aa8]">
+          <span className="mt-1 flex max-w-full items-center gap-1 rounded-md bg-[#e8efff] px-1.5 py-0.5 text-[10px] text-[#1146c4]">
             <MessageSquareText className="size-3 shrink-0" />
             <span className={cn("truncate", commentTyping && "field-caret")}>
               {comment}
@@ -718,7 +718,7 @@ export function StockDemo({ time }: { time?: number } = {}) {
         onToggle={() => setPlaying((value) => !value)}
         showToggle={!reduced && time === undefined}
       >
-        <BrowserFrame url="mardouk.am/inventory">
+        <BrowserFrame url="numa.am/inventory">
           <div className="overflow-hidden bg-[#eef0f3] p-3 @sm:p-4">
             <AppHeader title="Պահեստ">
               <span className="rounded-full bg-white px-3 py-1.5 text-[11px] font-medium">
@@ -771,7 +771,7 @@ export function StockDemo({ time }: { time?: number } = {}) {
                           className={cn(
                             "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full",
                             event.kind === "sale"
-                              ? "bg-[#ece8ff] text-[#5b45d6]"
+                              ? "bg-[#e8efff] text-[#1146c4]"
                               : "bg-emerald-100 text-emerald-700",
                           )}
                         >
@@ -861,7 +861,7 @@ function StockLine({
         <span
           className={cn(
             "block h-full rounded-full transition-[width,background-color] duration-700",
-            low ? "bg-amber-500" : material ? "bg-[#7c5cf5]" : "bg-primary",
+            low ? "bg-amber-500" : material ? "bg-[#185aef]" : "bg-primary",
           )}
           style={{ width: `${Math.min(share, 1) * 100}%` }}
         />
@@ -920,7 +920,7 @@ export function ProfitDemo({ time }: { time?: number } = {}) {
         onToggle={() => {}}
         showToggle={false}
       >
-        <BrowserFrame url="mardouk.am/dashboard">
+        <BrowserFrame url="numa.am/dashboard">
           <div className="bg-[#eef0f3] p-3 @sm:p-4">
             <AppHeader title="Վահանակ">
               <span className="rounded-full bg-white px-3 py-1.5 text-[11px] font-medium">
@@ -952,8 +952,8 @@ export function ProfitDemo({ time }: { time?: number } = {}) {
                     y1="0"
                     y2="1"
                   >
-                    <stop offset="0%" stopColor="#7c5cf5" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#7c5cf5" stopOpacity="0" />
+                    <stop offset="0%" stopColor="#185aef" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="#185aef" stopOpacity="0" />
                   </linearGradient>
                 </defs>
                 <path
@@ -964,7 +964,7 @@ export function ProfitDemo({ time }: { time?: number } = {}) {
                 <path
                   d={CHART_LINE}
                   fill="none"
-                  stroke="#7c5cf5"
+                  stroke="#185aef"
                   strokeWidth={2.5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -1016,7 +1016,7 @@ export function ProfitDemo({ time }: { time?: number } = {}) {
                       </span>
                       <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                         <span
-                          className="block h-full rounded-full bg-[#7c5cf5]"
+                          className="block h-full rounded-full bg-[#185aef]"
                           style={{ width: `${source.share * sources}%` }}
                         />
                       </span>

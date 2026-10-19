@@ -98,7 +98,7 @@ export function ProfitCalculator() {
     {
       label: "Ինքնարժեք",
       value: inputs.units * inputs.cost,
-      tone: "bg-[#d9d4ff]",
+      tone: "bg-[#c9dafd]",
     },
     {
       label: "Նյութեր",
@@ -106,7 +106,7 @@ export function ProfitCalculator() {
       tone: "bg-[#ffd9c2]",
     },
     { label: "Մարքեթինգ", value: inputs.marketing, tone: "bg-[#bfe6ff]" },
-    { label: "Մաքուր շահույթ", value: Math.max(net, 0), tone: "bg-[#7c5cf5]" },
+    { label: "Մաքուր շահույթ", value: Math.max(net, 0), tone: "bg-[#185aef]" },
   ];
   const whole = Math.max(sales, variable + inputs.marketing, 1);
 
@@ -158,7 +158,7 @@ export function ProfitCalculator() {
       </form>
 
       <div
-        className="flex flex-col gap-5 bg-[#f6f4ff] p-6 sm:p-8"
+        className="flex flex-col gap-5 bg-[#f0f5ff] p-6 sm:p-8"
         aria-live="polite"
       >
         <div>

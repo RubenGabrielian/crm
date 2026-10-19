@@ -50,7 +50,7 @@ export function Caption({
               marginRight: "0.26em",
               transform: `translateY(${(1 - p) * 40}px)`,
               opacity: p,
-              color: isAccent ? "#7c5cf5" : undefined,
+              color: isAccent ? (dark ? "#fed740" : "#185aef") : undefined,
             }}
           >
             {word}

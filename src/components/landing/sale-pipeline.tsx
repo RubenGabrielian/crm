@@ -88,7 +88,7 @@ export function SalePipeline() {
               )}
             >
               <div className="flex items-center gap-2.5">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#f1ecff] text-lg">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#f0f5ff] text-lg">
                   🧸
                 </span>
                 <span className="min-w-0 text-xs">
@@ -106,7 +106,7 @@ export function SalePipeline() {
               </div>
               <span className="mt-2 flex items-center gap-1 truncate rounded-lg bg-muted px-2 py-1 text-[11px] text-muted-foreground">
                 <Link2 className="size-3 shrink-0" aria-hidden />
-                mardouk.am/checkout/…
+                numa.am/checkout/…
               </span>
             </div>
             <Bubble show={at(4)} side="in">
@@ -121,7 +121,7 @@ export function SalePipeline() {
         <Panel
           active={stage === 1}
           icon={ShoppingBag}
-          label="Mardouk · նոր պատվեր"
+          label="Numa · նոր պատվեր"
           step="02"
         >
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
@@ -262,7 +262,7 @@ function Bubble({
         "max-w-[85%] rounded-2xl px-3.5 py-2 text-sm transition-all duration-300",
         side === "in"
           ? "self-start rounded-bl-md bg-muted"
-          : "self-end rounded-br-md bg-[#7c5cf5] text-white",
+          : "self-end rounded-br-md bg-[#185aef] text-white",
         show ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
       )}
     >

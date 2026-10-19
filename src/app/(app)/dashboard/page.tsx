@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import {
   Megaphone,
@@ -95,86 +96,133 @@ export default async function DashboardPage({
         />
       ) : (
         <>
-          {/* Row 1: the numbers that matter most */}
-          <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <KpiCard
-              icon={Wallet}
-              label="Վաճառք"
-              value={formatMoney(analytics.sales)}
-              note={`${formatNumber(analytics.totalOrders)} ${isShop ? "պատվեր" : "գրանցում"}${isShop ? `, ${formatNumber(analytics.unitsSold)} հատ` : ""}`}
-              emphasis
-              tone="accent"
-            />
-            <KpiCard
-              icon={TrendingUp}
-              label="Մաքուր շահույթ"
-              value={formatMoney(analytics.netProfit)}
-              note={
-                isShop ? "Վաճառք − ինքնարժեք − մարքեթինգ" : "Վաճառք − մարքեթինգ"
-              }
-              negative={analytics.netProfit < 0}
-              emphasis
-            />
-            <KpiCard
-              icon={ShoppingCart}
-              label="Միջին պատվերի արժեք"
-              value={formatMoney(analytics.averageOrder)}
-              emphasis
-              tone="peach"
-            />
-            <KpiCard
-              icon={Percent}
-              label="Շահութաբերություն"
-              value={
-                analytics.profitMargin === null
-                  ? "—"
-                  : `${oneDecimal(analytics.profitMargin)}%`
-              }
-              negative={(analytics.profitMargin ?? 0) < 0}
-              emphasis
-              tone="sky"
-            />
-          </dl>
+          {analytics.totalOrders === 0 && <GettingStarted isShop={isShop} />}
 
-          {/* Row 2: efficiency */}
-          <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <KpiCard
-              icon={Megaphone}
-              label="ROAS"
-              value={
-                analytics.roas === null
-                  ? "—"
-                  : `${formatNumber(Math.round(analytics.roas * 100) / 100)}×`
-              }
-              note={
-                analytics.roas === null
-                  ? "Մարքեթինգի ծախս չկա"
-                  : "Վաճառքը՝ մարքեթինգի 1 ֏-ի դիմաց"
-              }
-            />
-            <KpiCard
-              icon={UserPlus}
-              label="CAC"
-              value={analytics.cac === null ? "—" : formatMoney(analytics.cac)}
-              note={`Մարքեթինգի ծախսը՝ 1 ${isShop ? "պատվերի" : "գրանցման"} համար`}
-            />
-            <KpiCard
-              icon={Receipt}
-              label="Ինքնարժեք"
-              value={formatMoney(analytics.variableCosts)}
-              note={
-                analytics.contributionMargin === null
-                  ? "Ապրանք + նյութեր"
-                  : `Մարժինալ շահույթ՝ ${oneDecimal(analytics.contributionMargin)}%`
-              }
-            />
-            <KpiCard
-              icon={Receipt}
-              label="Մարքեթինգ"
-              value={formatMoney(analytics.marketingSpend)}
-              note={`Այլ ծախսեր՝ ${formatMoney(analytics.otherExpenses)} (առանձին)`}
-            />
-          </dl>
+          {/* The path to net profit, read left to right as one equation */}
+          <section aria-labelledby="profit-equation" className="flex flex-col gap-3">
+            <h2 id="profit-equation" className="text-base font-semibold">
+              Որքա՞ն եք վաստակել այս ժամանակահատվածում
+            </h2>
+            <dl className="grid gap-2 lg:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1.15fr] lg:items-stretch">
+              <MoneyStep
+                icon={Wallet}
+                label="Վաճառք"
+                hint={
+                  isShop
+                    ? "Որքան են վճարել հաճախորդները ապրանքների համար"
+                    : "Որքան են վճարել հաճախորդները"
+                }
+                value={formatMoney(analytics.sales)}
+                note={`${formatNumber(analytics.totalOrders)} ${isShop ? "պատվեր" : "գրանցում"}${isShop ? `, ${formatNumber(analytics.unitsSold)} հատ` : ""}`}
+              />
+              <Operator sign="−" />
+              <MoneyStep
+                icon={Receipt}
+                label="Ինքնարժեք"
+                hint={
+                  isShop
+                    ? "Որքան արժեցան վաճառված ապրանքներն ու փաթեթավորումը"
+                    : "Որքան արժեցան օգտագործված նյութերը"
+                }
+                value={formatMoney(analytics.variableCosts)}
+                note={
+                  analytics.variableCosts === 0 && analytics.sales > 0
+                    ? "Լրացրեք ապրանքների ինքնարժեքը"
+                    : undefined
+                }
+              />
+              <Operator sign="−" />
+              <MoneyStep
+                icon={Megaphone}
+                label="Մարքեթինգ"
+                hint="Գովազդի, բլոգերների և նմանատիպ ծախսեր"
+                value={formatMoney(analytics.marketingSpend)}
+                action={
+                  analytics.marketingSpend === 0
+                    ? { href: "/expenses", label: "Ավելացնել ծախս" }
+                    : undefined
+                }
+              />
+              <Operator sign="=" />
+              <MoneyStep
+                icon={TrendingUp}
+                label="Մաքուր շահույթ"
+                hint="Ինչ է մնում ձեզ բոլոր հիմնական ծախսերից հետո"
+                value={formatMoney(analytics.netProfit)}
+                note={
+                  analytics.profitMargin === null
+                    ? undefined
+                    : `Վաճառքի ${oneDecimal(analytics.profitMargin)}%-ը`
+                }
+                negative={analytics.netProfit < 0}
+                result
+              />
+            </dl>
+          </section>
+
+          {/* Secondary numbers, each explained in one plain sentence */}
+          <section aria-labelledby="extra-metrics" className="flex flex-col gap-3">
+            <h2 id="extra-metrics" className="text-base font-semibold">
+              Օգտակար ցուցանիշներ
+            </h2>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <MetricCard
+                icon={ShoppingCart}
+                label={isShop ? "Միջին պատվեր" : "Միջին գրանցում"}
+                value={analytics.totalOrders === 0 ? "—" : formatMoney(analytics.averageOrder)}
+                explain={
+                  analytics.totalOrders === 0
+                    ? "Կհաշվվի առաջին պատվերից հետո"
+                    : `Մեկ ${isShop ? "պատվերի" : "գրանցման"} միջին գումարը`
+                }
+              />
+              <MetricCard
+                icon={Percent}
+                label="Շահութաբերություն"
+                value={
+                  analytics.profitMargin === null
+                    ? "—"
+                    : `${oneDecimal(analytics.profitMargin)}%`
+                }
+                negative={(analytics.profitMargin ?? 0) < 0}
+                explain={
+                  analytics.profitMargin === null
+                    ? "Կհաշվվի առաջին վաճառքից հետո"
+                    : analytics.profitMargin >= 0
+                      ? `Ամեն 100 ֏ վաճառքից ձեզ մնում է ${formatMoney(Math.round(analytics.profitMargin))}`
+                      : `Ամեն 100 ֏ վաճառքից կորցնում եք ${formatMoney(Math.round(-analytics.profitMargin))}`
+                }
+              />
+              <MetricCard
+                icon={Megaphone}
+                label="Գովազդի վերադարձ"
+                tag="ROAS"
+                value={
+                  analytics.roas === null
+                    ? "—"
+                    : `${formatNumber(Math.round(analytics.roas * 100) / 100)}×`
+                }
+                explain={
+                  analytics.roas === null
+                    ? "Ավելացրեք գովազդի ծախսը՝ հաշվելու համար"
+                    : `Գովազդին ծախսած 1 ֏-ը բերել է ${formatMoney(Math.round(analytics.roas))} վաճառք`
+                }
+              />
+              <MetricCard
+                icon={UserPlus}
+                label={`Գովազդը՝ 1 ${isShop ? "պատվերի" : "գրանցման"} համար`}
+                tag="CAC"
+                value={analytics.cac === null || analytics.marketingSpend === 0 ? "—" : formatMoney(analytics.cac)}
+                explain={
+                  analytics.marketingSpend === 0
+                    ? "Ավելացրեք գովազդի ծախսը՝ հաշվելու համար"
+                    : analytics.cac === null
+                      ? `Կհաշվվի առաջին ${isShop ? "պատվերից" : "գրանցումից"} հետո`
+                      : `Ամեն ${isShop ? "պատվեր" : "գրանցում"} բերելու համար ծախսել եք ${formatMoney(Math.round(analytics.cac))}`
+                }
+              />
+            </dl>
+          </section>
 
           <BreakEvenCard
             breakEven={analytics.breakEven}
@@ -520,72 +568,187 @@ function BreakEvenCard({
   );
 }
 
-const TONES = {
-  accent: "bg-apricot",
-  peach: "bg-[#fde8cd]",
-  sky: "bg-[#d5f0e3]",
-  plain: "bg-card",
-};
+/** First visit, or a quiet period: what to do so the numbers fill in. */
+function GettingStarted({ isShop }: { isShop: boolean }) {
+  const steps = [
+    {
+      href: "/catalog",
+      title: isShop ? "Ավելացրեք ապրանք" : "Ավելացրեք դասընթաց",
+      text: "Գնով և ինքնարժեքով, որ շահույթը ճիշտ հաշվվի",
+    },
+    {
+      href: "/catalog",
+      title: "Ուղարկեք հղումը հաճախորդին",
+      text: isShop
+        ? "Հաճախորդը պատվիրում է, պատվերը հայտնվում է այստեղ"
+        : "Հաճախորդը գրանցվում է, գրանցումը հայտնվում է այստեղ",
+    },
+    {
+      href: "/expenses",
+      title: "Գրանցեք գովազդի ծախսը",
+      text: "Կտեսնեք՝ որքան է բերում գովազդի ամեն դրամը",
+    },
+  ];
+  return (
+    <section className="rounded-3xl bg-primary p-5 text-primary-foreground shadow-soft sm:p-6">
+      <h2 className="text-lg font-semibold">
+        Այս ժամանակահատվածում դեռ {isShop ? "պատվեր" : "գրանցում"} չկա
+      </h2>
+      <p className="mt-1 max-w-2xl text-sm opacity-80">
+        Ներքևի թվերը կլրացվեն ինքնաբերաբար։ Սկսելու համար՝
+      </p>
+      <ol className="mt-4 grid gap-3 sm:grid-cols-3">
+        {steps.map((step, index) => (
+          <li key={step.title}>
+            <Link
+              href={step.href}
+              className="flex h-full gap-3 rounded-2xl bg-white/10 p-4 outline-none transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-apricot"
+            >
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-apricot text-sm font-semibold text-foreground">
+                {index + 1}
+              </span>
+              <span>
+                <span className="block text-sm font-semibold">{step.title}</span>
+                <span className="mt-0.5 block text-xs opacity-75">{step.text}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
-function KpiCard({
+/** One term of the profit equation. The last one (`result`) is the answer. */
+function MoneyStep({
   icon: Icon,
   label,
+  hint,
   value,
   note,
+  action,
   negative,
-  emphasis,
-  tone = "plain",
+  result,
 }: {
   icon: LucideIcon;
   label: string;
+  /** What the number means, in everyday words. */
+  hint: string;
   value: string;
   note?: string;
+  action?: { href: string; label: string };
   negative?: boolean;
-  /** Larger figure, for the top row. */
-  emphasis?: boolean;
-  /** Background tint of the tile. */
-  tone?: keyof typeof TONES;
+  result?: boolean;
 }) {
   return (
     <div
       className={cn(
         "flex flex-col rounded-3xl p-5 shadow-soft",
-        emphasis && "min-h-36",
-        TONES[tone],
+        result ? "bg-primary text-primary-foreground" : "bg-card",
       )}
     >
-      <dt className="flex items-start justify-between gap-3 text-sm font-medium">
-        {label}
+      <dt>
+        <span className="flex items-center gap-2 text-sm font-semibold">
+          <span
+            className={cn(
+              "flex size-8 shrink-0 items-center justify-center rounded-full",
+              result ? "bg-apricot text-foreground" : "bg-muted",
+            )}
+          >
+            <Icon className="size-4" strokeWidth={1.75} aria-hidden />
+          </span>
+          {label}
+        </span>
         <span
           className={cn(
-            "flex size-9 shrink-0 items-center justify-center rounded-full",
-            tone === "plain"
-              ? "bg-muted"
-              : "bg-primary text-primary-foreground",
+            "mt-2 block text-xs leading-snug",
+            result ? "opacity-80" : "text-muted-foreground",
           )}
         >
-          <Icon className="size-4" strokeWidth={1.75} aria-hidden />
+          {hint}
         </span>
       </dt>
       <dd
         className={cn(
-          "mt-auto pt-3 font-semibold tracking-tight whitespace-nowrap tabular-nums",
-          emphasis ? "text-3xl" : "text-2xl",
-          negative && "text-destructive",
+          "mt-auto pt-4 text-2xl font-semibold tracking-tight whitespace-nowrap tabular-nums xl:text-3xl",
+          negative && (result ? "text-apricot" : "text-destructive"),
         )}
       >
         {value}
       </dd>
       {note && (
-        <dd
-          className={cn(
-            "mt-1 text-xs",
-            tone === "plain" ? "text-muted-foreground" : "opacity-70",
-          )}
-        >
+        <dd className={cn("mt-1 text-xs", result ? "opacity-80" : "text-muted-foreground")}>
           {note}
         </dd>
       )}
+      {action && (
+        <dd className="mt-1">
+          <Link
+            href={action.href}
+            className="text-xs font-semibold text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {action.label}
+          </Link>
+        </dd>
+      )}
+    </div>
+  );
+}
+
+function Operator({ sign }: { sign: string }) {
+  return (
+    <div
+      aria-hidden
+      className="flex items-center justify-center text-2xl font-semibold text-muted-foreground lg:px-0.5"
+    >
+      <span className="flex size-9 items-center justify-center rounded-full bg-card shadow-soft">
+        {sign}
+      </span>
+    </div>
+  );
+}
+
+/** A secondary number with a sentence that says what it means right now. */
+function MetricCard({
+  icon: Icon,
+  label,
+  tag,
+  value,
+  explain,
+  negative,
+}: {
+  icon: LucideIcon;
+  label: string;
+  /** The usual short name, for owners who already know it. */
+  tag?: string;
+  value: string;
+  explain: string;
+  negative?: boolean;
+}) {
+  return (
+    <div className="flex flex-col rounded-3xl bg-card p-5 shadow-soft">
+      <dt className="flex items-start justify-between gap-3 text-sm font-medium">
+        <span>
+          {label}
+          {tag && (
+            <span className="ml-1.5 rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+              {tag}
+            </span>
+          )}
+        </span>
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
+          <Icon className="size-4" strokeWidth={1.75} aria-hidden />
+        </span>
+      </dt>
+      <dd
+        className={cn(
+          "mt-auto pt-3 text-2xl font-semibold tracking-tight whitespace-nowrap tabular-nums",
+          negative && "text-destructive",
+        )}
+      >
+        {value}
+      </dd>
+      <dd className="mt-1 text-xs leading-snug text-muted-foreground">{explain}</dd>
     </div>
   );
 }

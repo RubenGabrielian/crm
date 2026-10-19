@@ -21,7 +21,7 @@ export function RangeFilter({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-      <nav aria-label="Ժամանակահատված" className="flex rounded-full bg-card p-1 text-sm font-medium shadow-soft">
+      <nav aria-label="Ժամանակահատված" className="flex max-w-full overflow-x-auto rounded-full bg-card p-1 text-sm font-medium shadow-soft [scrollbar-width:none]">
         {RANGE_PRESETS.map((preset) => (
           <Link
             key={preset}

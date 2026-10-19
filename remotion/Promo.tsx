@@ -1,8 +1,5 @@
 import "./style.css";
-import type { CSSProperties } from "react";
-import { AbsoluteFill, Series } from "remotion";
-import { loadFont as loadArmenian } from "@remotion/google-fonts/NotoSansArmenian";
-import { loadFont as loadOutfit } from "@remotion/google-fonts/Outfit";
+import { AbsoluteFill, Series, cancelRender, continueRender, delayRender } from "remotion";
 import { CheckoutScene } from "./scenes/checkout";
 import { CtaScene } from "./scenes/cta";
 import { HookScene } from "./scenes/hook";
@@ -14,14 +11,17 @@ import { StockScene } from "./scenes/stock";
 import { TurnScene } from "./scenes/turn";
 import { SCENES } from "./timeline";
 
-const outfit = loadOutfit("normal", {
-  weights: ["400", "500", "600", "700"],
-  subsets: ["latin"],
-});
-const armenian = loadArmenian("normal", {
-  weights: ["400", "500", "600", "700"],
-  subsets: ["armenian"],
-});
+// The brand fonts are declared in style.css; hold the render until they load.
+const fontsReady = delayRender("Numa brand fonts");
+Promise.all(
+  ["400", "500", "600", "700"].flatMap((weight) => [
+    document.fonts.load(`${weight} 16px "Numa Fedra"`, "Աա"),
+    document.fonts.load(`${weight} 16px "Numa Digits"`, "0"),
+    document.fonts.load(`${weight} 16px "Numa Dram"`, "\u058F"),
+  ]),
+)
+  .then(() => continueRender(fontsReady))
+  .catch((error) => cancelRender(error));
 
 /**
  * The 30-second ad. Scene lengths come from timeline.ts and match the
@@ -30,15 +30,7 @@ const armenian = loadArmenian("normal", {
  */
 export function Promo() {
   return (
-    <AbsoluteFill
-      className="font-sans text-foreground antialiased"
-      style={
-        {
-          "--font-outfit": outfit.fontFamily,
-          "--font-noto-armenian": armenian.fontFamily,
-        } as CSSProperties
-      }
-    >
+    <AbsoluteFill className="font-sans text-foreground antialiased">
       <Series>
         <Series.Sequence durationInFrames={SCENES.hook} name="1 Hook">
           <HookScene />

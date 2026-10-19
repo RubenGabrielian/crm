@@ -15,7 +15,7 @@ export function EmptyState({
 }) {
   return (
     <section className="flex flex-col items-center rounded-3xl bg-card px-6 py-16 text-center shadow-soft sm:px-10">
-      <span className="flex size-14 items-center justify-center rounded-full bg-apricot text-primary">
+      <span className="flex size-14 items-center justify-center rounded-full bg-apricot text-foreground">
         <Icon className="size-6" strokeWidth={1.75} aria-hidden />
       </span>
       <h2 className="mt-5 text-lg font-semibold">{title}</h2>

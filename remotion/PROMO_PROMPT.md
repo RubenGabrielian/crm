@@ -1,4 +1,4 @@
-Create a new, fast, high-energy promo video for Mardouk with Remotion, replacing the current `remotion/` composition. It will be used as a paid Instagram / Facebook ad (Reels, Stories, Feed). I will add an Armenian voice-over and music myself afterwards, so the video must be built around the voice-over script below and leave room for it.
+Create a new, fast, high-energy promo video for Numa with Remotion, replacing the current `remotion/` composition. It will be used as a paid Instagram / Facebook ad (Reels, Stories, Feed). I will add an Armenian voice-over and music myself afterwards, so the video must be built around the voice-over script below and leave room for it.
 
 ## Goal
 In 30 seconds, make an Instagram shop owner in Armenia feel: "this is exactly my mess", then "this fixes it", then "I want this now". Show the real product, not abstract shapes.
@@ -10,8 +10,8 @@ In 30 seconds, make an Instagram shop owner in Armenia feel: "this is exactly my
 - No audio in the render. Export a `remotion/voiceover-timing.md` that lists each scene with its start/end time in seconds and the exact line of voice-over it belongs to, so I can record to it.
 
 ## Style (match the landing page, it is the brand)
-- Background paper `#eef0f3` with a faint dot grid; ink `#141416`; violet accent `#7c5cf5`, lavender `#c9bcff`; status colours amber (Նոր), blue (Հաստատված), emerald (Առաքված / profit), rose (Չվճարված).
-- Fonts: Outfit for Latin and digits, Noto Sans Armenian for Armenian (via `@remotion/google-fonts`).
+- Background paper `#eef0f3` with a faint dot grid; ink `#141416`; brand blue `#185aef`, brand yellow `#fed740`, white; status colours amber (Նոր), blue (Հաստատված), emerald (Առաքված / profit), rose (Չվճարված).
+- Fonts: Fedra Sans Arm for text (Armenian and Latin), Montserrat for digits (files in `src/app/fonts`).
 - Realistic device mockups: the phone and browser frames from `src/components/landing/devices.tsx` and the screens from `src/components/landing/sale-story.tsx` and `feature-demos.tsx`. Rebuild them for Remotion where needed (no hooks/timers; everything must be driven by `useCurrentFrame()`), but keep them visually identical to the site.
 - Motion: snappy springs, fast cuts every 1–2 s, whip/slide transitions, zoom-ins on the exact UI detail being talked about, number counters, kinetic typography for the key words. Energetic but readable: every on-screen word must stay up long enough to read (min ~0.8 s for 3–4 words).
 - Big burned-in Armenian captions on every scene (they double as subtitles for people watching without sound), max 2 short lines, high contrast.
@@ -24,8 +24,8 @@ Shop "Փափուկ աշխարհ", product "Փափուկ արջուկ, 40 սմ" (
    VO: «Instagram-ով վաճառո՞ւմ եք։»
 2. 3–6 s, PAIN. Quick cuts: "who paid?" crossed-out notebook, "how many bags left?", "real profit = ???". Caption: «Պատվերները՝ DM-ում, հաշիվը՝ տետրում»
    VO: «Պատվերները կորչում են DM-ում, իսկ շահույթը՝ տետրում։»
-3. 6–8 s, TURN. Everything gets swept away, logo "Mardouk" snaps in. Caption: «Ծանոթացեք՝ Mardouk»
-   VO: «Ծանոթացեք՝ Mardouk։»
+3. 6–8 s, TURN. Everything gets swept away, logo "Numa" snaps in. Caption: «Ծանոթացեք՝ Numa»
+   VO: «Ծանոթացեք՝ Numa։»
 4. 8–12 s, SALE LINK. Browser: catalog → "Վճարման հղում" dialog, type 15 % and 0 ֏ delivery, "Պատճենվեց", link lands in a DM bubble. Caption: «Մեկ հղում՝ զեղչով»
    VO: «Ուղարկեք ապրանքի հղումը՝ զեղչով և առաքմամբ։»
 5. 12–16 s, CUSTOMER ORDERS. Customer phone: checkout page, qty 2, name/phone/address typing fast, "Պատվիրել" → "Պատվերն ընդունված է". Caption: «Հաճախորդն ինքն է պատվիրում»
@@ -36,8 +36,8 @@ Shop "Փափուկ աշխարհ", product "Փափուկ արջուկ, 40 սմ" (
    VO: «Պահեստը, նույնիսկ տոպրակներն ու պիտակները, հաշվվում են ինքնաբերաբար։»
 8. 22–26 s, PROFIT. Dashboard: counters 742 300 / 422 380 / 56,9 %, chart draws, "Հասավ 4-ին", +9 630 ֏ flies into the profit tile. Caption: «Իրական մաքուր շահույթ»
    VO: «Եվ տեսնում եք իրական մաքուր շահույթը, ոչ թե պարզապես վաճառքը։»
-9. 26–30 s, CTA. Price card "13 000 ֏ / ամիս", rotating "30 օր" guarantee seal, button "Ստեղծել խանութը", URL "mardouk.am". Caption: «30 օր՝ գումարի վերադարձի երաշխիքով»
-   VO: «Mardouk՝ 13 000 դրամ ամսական։ Չհավանեք՝ 30 օրում կվերադարձնենք գումարը։»
+9. 26–30 s, CTA. Price card "13 000 ֏ / ամիս", rotating "30 օր" guarantee seal, button "Ստեղծել խանութը", URL "numa.am". Caption: «30 օր՝ գումարի վերադարձի երաշխիքով»
+   VO: «Numa՝ 13 000 դրամ ամսական։ Չհավանեք՝ 30 օրում կվերադարձնենք գումարը։»
 
 Total VO must fit comfortably inside 30 s at a natural pace; if a line is too long for its scene, shorten the line, don't speed up the scene unreadably. Put the final VO text into `voiceover-timing.md`.
 

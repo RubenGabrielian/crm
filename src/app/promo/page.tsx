@@ -6,7 +6,7 @@ import {
 } from "@/components/promo/promo-player";
 
 export const metadata: Metadata = {
-  title: "Mardouk – գովազդային տեսանյութ",
+  title: "Numa – գովազդային տեսանյութ",
   // A production tool, not a page for visitors or search engines.
   robots: { index: false, follow: false },
 };

@@ -3,6 +3,7 @@ import { Bell, Check, Lock, Menu, Minus, Plus } from "lucide-react";
 import { cn } from "cn";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { BearArt, StatusBar } from "./devices";
+import { NumaMark } from "@/components/brand/numa-logo";
 import { easeOut, lerp, progress, typed, within } from "./timeline";
 
 /**
@@ -125,9 +126,7 @@ export function CustomerScreen({
         )}
       >
         <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-          <span className="flex size-4 items-center justify-center rounded-[5px] bg-primary text-[8px] font-semibold text-white">
-            M
-          </span>
+          <NumaMark className="size-4" />
           Էլ. նամակ, հիմա
         </span>
         <span className="mt-1 block text-[12px] font-semibold">
@@ -140,7 +139,7 @@ export function CustomerScreen({
 
       <div className="mx-3 flex shrink-0 items-center justify-center gap-1 rounded-full bg-muted px-3 py-1.5 text-[10px] text-muted-foreground">
         <Lock className="size-2.5" />
-        mardouk.am/checkout/…
+        numa.am/checkout/…
       </div>
 
       {success ? (
@@ -179,7 +178,7 @@ export function CustomerScreen({
           >
             <div className="relative flex h-[8.5rem] items-end justify-center overflow-hidden rounded-2xl bg-[#f4ece2]">
               <BearArt className="h-[8.25rem]" />
-              <span className="absolute top-2 left-2 rounded-full bg-[#7c5cf5] px-2 py-0.5 text-[10px] font-semibold text-white">
+              <span className="absolute top-2 left-2 rounded-full bg-[#185aef] px-2 py-0.5 text-[10px] font-semibold text-white">
                 −15%
               </span>
             </div>
@@ -285,7 +284,7 @@ function FakeField({
         className={cn(
           "mt-0.5 flex h-[30px] items-center rounded-lg border px-2.5 text-[12px] transition-[border-color,box-shadow] duration-300",
           active
-            ? "border-[#7c5cf5] shadow-[0_0_0_3px_rgb(124_92_245/0.18)]"
+            ? "border-[#185aef] shadow-[0_0_0_3px_rgb(24_90_239/0.18)]"
             : "border-border",
         )}
       >
@@ -349,7 +348,7 @@ export function OwnerScreen({
         )}
       >
         <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/10">
-          <Bell className="size-3.5 text-[#c9bcff]" />
+          <Bell className="size-3.5 text-[#fed740]" />
         </span>
         <span className="min-w-0 text-[11px] leading-tight">
           <span className="block font-semibold">Նոր պատվեր՝ 16 830 ֏</span>
@@ -367,7 +366,7 @@ export function OwnerScreen({
         <span className="relative flex size-7 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-white">
           Փ
           {arrived && !delivered && (
-            <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[#eef0f3] bg-[#8b6ff7]" />
+            <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[#eef0f3] bg-[#185aef]" />
           )}
         </span>
       </div>
@@ -459,7 +458,7 @@ function MiniStat({
     <span
       className={cn(
         "rounded-xl px-2.5 py-2 transition-colors duration-500",
-        flash ? "bg-[#ece8ff]" : "bg-white",
+        flash ? "bg-[#e8efff]" : "bg-white",
       )}
     >
       <span className="block text-[9.5px] text-muted-foreground">{label}</span>
@@ -491,7 +490,7 @@ function OrderCard({
     <span
       className={cn(
         "grid grid-cols-[1fr_auto] items-center gap-2 rounded-xl bg-white px-3 py-2 transition-shadow duration-700",
-        fresh && "order-in shadow-[0_0_0_2px_#c9bcff]",
+        fresh && "order-in shadow-[0_0_0_2px_#fed740]",
       )}
     >
       <span className="min-w-0">
@@ -549,7 +548,7 @@ function StockRow({
       </span>
       <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-muted">
         <span
-          className="block h-full rounded-full bg-[#7c5cf5] transition-[width] duration-700"
+          className="block h-full rounded-full bg-[#185aef] transition-[width] duration-700"
           style={{ width: `${(value / of) * 100}%` }}
         />
       </span>

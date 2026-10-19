@@ -64,12 +64,12 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
                 "relative flex cursor-pointer flex-col gap-3 rounded-3xl border-2 bg-card p-5 shadow-soft transition-[border-color,box-shadow]",
                 "has-focus-visible:ring-2 has-focus-visible:ring-ring",
                 type === value
-                  ? "border-[#7c5cf5] shadow-[0_18px_40px_-24px_rgb(124_92_245/0.6)]"
+                  ? "border-[#185aef] shadow-[0_18px_40px_-24px_rgb(24_90_239/0.6)]"
                   : "border-transparent hover:border-border",
               )}
             >
               {type === value && (
-                <span className="success-pop absolute top-4 right-4 flex size-6 items-center justify-center rounded-full bg-[#7c5cf5] text-white">
+                <span className="success-pop absolute top-4 right-4 flex size-6 items-center justify-center rounded-full bg-[#185aef] text-white">
                   <Check className="size-3.5" strokeWidth={3} aria-hidden />
                 </span>
               )}
@@ -85,7 +85,7 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
                 className={cn(
                   "flex size-12 items-center justify-center rounded-xl",
                   type === value
-                    ? "bg-[#ece8ff] text-[#5b45d6]"
+                    ? "bg-[#e8efff] text-[#1146c4]"
                     : "bg-muted text-muted-foreground",
                 )}
               >

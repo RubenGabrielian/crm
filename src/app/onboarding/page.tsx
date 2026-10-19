@@ -26,7 +26,7 @@ export default async function OnboardingPage() {
         Ի՞նչ եք վաճառում
       </h1>
       <p className="mt-3 text-muted-foreground">
-        Ընտրությունից կախված՝ Mardouk-ը կհարմարվի ձեր բիզնեսին։
+        Ընտրությունից կախված՝ Numa-ը կհարմարվի ձեր բիզնեսին։
       </p>
       {/* The company name was entered at registration; it can still be corrected here. */}
       <div className="mt-8">

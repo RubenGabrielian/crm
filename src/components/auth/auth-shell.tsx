@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AuthShowcase } from "./auth-showcase";
+import { NumaLogo } from "@/components/brand/numa-logo";
 
 /**
  * Layout of the sign-in, sign-up and business-setup pages: the form on the
@@ -18,15 +19,9 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <header className="flex items-center justify-between gap-4">
           <Link
             href="/"
-            className="flex items-center gap-2 text-lg font-semibold tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex items-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <span
-              aria-hidden
-              className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm text-primary-foreground"
-            >
-              M
-            </span>
-            Mardouk
+            <NumaLogo size={34} />
           </Link>
           <Link
             href="/"
@@ -41,7 +36,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           <div className="w-full max-w-[26rem]">{children}</div>
         </main>
 
-        <footer className="text-xs text-muted-foreground">© Mardouk</footer>
+        <footer className="text-xs text-muted-foreground">© Numa</footer>
       </div>
 
       <aside className="hidden p-3 lg:block">

@@ -7,8 +7,8 @@ export function Paper({ dark }: { dark?: boolean }) {
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: dark ? "#141416" : "#eef0f3",
-        backgroundImage: `radial-gradient(${dark ? "rgb(255 255 255 / 0.08)" : "rgb(20 20 22 / 0.09)"} 1.5px, transparent 1.5px)`,
+        backgroundColor: dark ? "#185aef" : "#eef0f3",
+        backgroundImage: `radial-gradient(${dark ? "rgb(255 255 255 / 0.12)" : "rgb(20 20 22 / 0.09)"} 1.5px, transparent 1.5px)`,
         backgroundSize: "34px 34px",
       }}
     />

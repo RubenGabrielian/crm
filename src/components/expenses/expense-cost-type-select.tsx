@@ -42,7 +42,7 @@ export function ExpenseCostTypeSelect({
             "focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-70",
             shown === "fixed"
               ? "bg-sky-100 text-sky-900"
-              : "bg-violet-100 text-violet-900",
+              : "bg-[#e8efff] text-[#1146c4]",
           )}
         >
           {COST_TYPES.map((type) => (

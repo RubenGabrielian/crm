@@ -7,7 +7,7 @@ type Item = { q: string; a: string };
 
 /**
  * Questions as incoming DMs. Opening one shows a short "typing…" and then
- * the answer as Mardouk's reply, the way shop owners already talk to buyers.
+ * the answer as Numa's reply, the way shop owners already talk to buyers.
  */
 export function ChatFaq({ items }: { items: Item[] }) {
   const [open, setOpen] = useState<number | null>(0);
@@ -46,7 +46,7 @@ export function ChatFaq({ items }: { items: Item[] }) {
               aria-controls={`faq-answer-${index}`}
               className={cn(
                 "max-w-[88%] self-start rounded-3xl rounded-bl-md px-4 py-2.5 text-left text-[15px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-                isOpen ? "bg-[#ece8ff]" : "bg-muted hover:bg-[#ece8ff]",
+                isOpen ? "bg-[#e8efff]" : "bg-muted hover:bg-[#e8efff]",
               )}
             >
               {item.q}

@@ -19,7 +19,7 @@ export function PhoneFrame({
   return (
     <div
       className={cn(
-        "relative h-[35rem] w-[17.25rem] shrink-0 rounded-[2.75rem] bg-[#141416] p-[9px] shadow-[0_50px_90px_-40px_rgb(36_24_96/0.55)] ring-1 ring-black/10",
+        "relative h-[35rem] w-[17.25rem] shrink-0 rounded-[2.75rem] bg-[#141416] p-[9px] shadow-[0_50px_90px_-40px_rgb(17_40_110/0.55)] ring-1 ring-black/10",
         className,
       )}
     >
@@ -161,8 +161,8 @@ export function BearArt({ className }: { className?: string }) {
       <circle cx="124.5" cy="85.5" r="2" fill="#fff" />
       <ellipse cx="64" cy="110" rx="9" ry="6" fill="#f08f86" opacity="0.45" />
       <ellipse cx="136" cy="110" rx="9" ry="6" fill="#f08f86" opacity="0.45" />
-      <path d="M100 152l-22-11v22zM100 152l22-11v22z" fill="#8b6ff7" />
-      <circle cx="100" cy="152" r="6" fill="#7c5cf5" />
+      <path d="M100 152l-22-11v22zM100 152l22-11v22z" fill="#185aef" />
+      <circle cx="100" cy="152" r="6" fill="#185aef" />
     </svg>
   );
 }

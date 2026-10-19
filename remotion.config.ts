@@ -14,5 +14,13 @@ Config.overrideWebpackConfig((config) => {
         "@": path.join(process.cwd(), "src"),
       },
     },
+    module: {
+      ...withTailwind.module,
+      rules: [
+        ...(withTailwind.module?.rules ?? []),
+        // The brand fonts in src/app/fonts, referenced from remotion/style.css.
+        { test: /\.(otf|woff2)$/, type: "asset/resource" },
+      ],
+    },
   };
 });
