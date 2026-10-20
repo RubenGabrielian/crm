@@ -1,6 +1,6 @@
 import "server-only";
 
-import { expenseGroup } from "@/config/expenses";
+import { expenseGroup, RETIRED_PERSONAL_CATEGORY } from "@/config/expenses";
 import { listRecurringExpenses, monthlyCharges } from "@/lib/expenses/queries";
 import { supabase } from "@/lib/supabase";
 import {
@@ -18,7 +18,7 @@ import {
  * Net profit, as the owner defines it:
  *   contribution margin = sales − product cost − materials used
  *   net profit = contribution margin − marketing
- * Other business expenses and personal spending are shown below it,
+ * Other business expenses are shown below it,
  * leading to "remaining after all expenses".
  */
 export type Analytics = {
@@ -50,22 +50,35 @@ export type Analytics = {
   marketingSpend: number;
   /** Business expenses that are not marketing; shown below net profit. */
   otherExpenses: number;
-  /** The owner's personal spending. */
-  personalExpenses: number;
   /** Contribution − marketing. */
   netProfit: number;
-  /** Net profit − other expenses − personal expenses. */
+  /** Net profit − other expenses. */
   remainingAfterExpenses: number;
+  /**
+   * Business expenses marked "fixed" (marketing, rent, salaries, ...): paid
+   * whatever the sales. The break-even point has to cover them.
+   */
+  fixedCosts: number;
+  /**
+   * Break-even point: units = fixed costs ÷ (price − variable cost) per unit,
+   * both per average unit sold in the period.
+   */
   breakEven: {
-    /** First day in the period whose running contribution covered marketing. */
+    /** First day in the period whose running contribution covered fixed costs. */
     date: string | null;
-    /** Contribution of one average unit sold. Null when nothing was sold. */
+    /** Average sales per unit sold. Null when nothing was sold. */
+    pricePerUnit: number | null;
+    /** Average variable cost (product cost + materials) per unit sold. */
+    variableCostPerUnit: number | null;
+    /** Price − variable cost per unit. Null when nothing was sold. */
     contributionPerUnit: number | null;
-    /** Units needed in the period to cover marketing. */
+    /** Units needed in the period to cover fixed costs. */
     unitsNeeded: number | null;
+    /** Sales needed to cover fixed costs: fixed ÷ (1 − variable ÷ sales). */
+    salesNeeded: number | null;
     /** Money still missing to reach zero (0 once reached). */
     remaining: number;
-    /** Contribution ÷ marketing, capped at 1. */
+    /** Contribution ÷ fixed costs, capped at 1. */
     progress: number;
   };
   /** Marketing spend ÷ total orders. Null when there are no orders. */
@@ -110,6 +123,7 @@ export async function getAnalytics(
       .from("expenses")
       .select("amount, expense_category, expense_date, cost_type")
       .eq("tenant_id", tenantId)
+      .neq("expense_category", RETIRED_PERSONAL_CATEGORY)
       // Unpaid expenses are not money spent yet.
       .eq("is_paid", true)
       .gte("expense_date", range.from)
@@ -226,13 +240,12 @@ export async function getAnalytics(
   const marketing = new Map<string, number>();
   let marketingSpend = 0;
   let otherExpenses = 0;
-  let personalExpenses = 0;
+  let fixedCosts = 0;
   for (const expense of expenseRows) {
     const group = expenseGroup(expense.category);
-    if (group === "personal") {
-      personalExpenses += expense.amount;
-      continue;
-    }
+    // Variable expense entries are purchases (packaging, materials) whose use
+    // is already counted per unit sold, so only fixed ones go here.
+    if (expense.costType === "fixed") fixedCosts += expense.amount;
     if (group === "marketing") {
       marketingSpend += expense.amount;
       marketing.set(
@@ -253,18 +266,21 @@ export async function getAnalytics(
   // Break-even: walk the days until the running contribution covers the
   // period's fixed costs.
   let breakEvenDate: string | null = null;
-  if (marketingSpend > 0) {
+  if (fixedCosts > 0) {
     let running = 0;
     for (const date of daysBetween(range.from, range.to)) {
       running += dailyContribution.get(date) ?? 0;
-      if (running >= marketingSpend) {
+      if (running >= fixedCosts) {
         breakEvenDate = date;
         break;
       }
     }
   }
+  const pricePerUnit = unitsSold > 0 ? sales / unitsSold : null;
+  const variableCostPerUnit = unitsSold > 0 ? variableCosts / unitsSold : null;
   const contributionPerUnit =
-    unitsSold > 0 ? (sales - cogs - materialsCost) / unitsSold : null;
+    unitsSold > 0 ? (sales - variableCosts) / unitsSold : null;
+  const contributionRatio = sales > 0 ? contribution / sales : null;
   const byRevenue = (a: { revenue: number }, b: { revenue: number }) =>
     b.revenue - a.revenue;
 
@@ -286,20 +302,26 @@ export async function getAnalytics(
       contributionMargin: sales > 0 ? (contribution / sales) * 100 : null,
       marketingSpend,
       otherExpenses,
-      personalExpenses,
       netProfit,
-      remainingAfterExpenses: netProfit - otherExpenses - personalExpenses,
+      remainingAfterExpenses: netProfit - otherExpenses,
+      fixedCosts,
       breakEven: {
         date: breakEvenDate,
+        pricePerUnit,
+        variableCostPerUnit,
         contributionPerUnit,
         unitsNeeded:
           contributionPerUnit && contributionPerUnit > 0
-            ? Math.ceil(marketingSpend / contributionPerUnit)
+            ? Math.ceil(fixedCosts / contributionPerUnit)
             : null,
-        remaining: Math.max(marketingSpend - contribution, 0),
+        salesNeeded:
+          contributionRatio && contributionRatio > 0
+            ? fixedCosts / contributionRatio
+            : null,
+        remaining: Math.max(fixedCosts - contribution, 0),
         progress:
-          marketingSpend > 0
-            ? Math.min(Math.max(contribution / marketingSpend, 0), 1)
+          fixedCosts > 0
+            ? Math.min(Math.max(contribution / fixedCosts, 0), 1)
             : 1,
       },
       cac: orders.length ? marketingSpend / orders.length : null,

@@ -16,6 +16,7 @@ import { getCustomer } from "@/lib/customers/queries";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/format";
 import { listOrders } from "@/lib/orders/queries";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { ITEM_LABELS } from "@/lib/tenant/features";
 
 // Reads live data for the current tenant on every request.
 export const instant = false;
@@ -23,7 +24,7 @@ export const instant = false;
 export default async function CustomerPage({ params }: PageProps<"/customers/[id]">) {
   const { id } = await params;
   const tenant = await getCurrentTenant();
-  const isShop = tenant.businessType === "ecommerce";
+  const isShop = tenant.businessType !== "service";
 
   const customer = await getCustomer(tenant.id, id);
   if (!customer) notFound();
@@ -128,7 +129,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="px-5">Ամսաթիվ</TableHead>
-                  <TableHead className="px-3">{isShop ? "Ապրանք" : "Դասընթաց"}</TableHead>
+                  <TableHead className="px-3">{ITEM_LABELS[tenant.businessType]}</TableHead>
                   <TableHead className="px-3 text-right">Քանակ</TableHead>
                   <TableHead className="px-3 text-right">Զեղչ</TableHead>
                   <TableHead className="px-3 text-right">Ընդամենը</TableHead>

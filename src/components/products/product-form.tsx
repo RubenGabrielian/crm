@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -13,7 +14,8 @@ import {
 import { Input } from "@/components/ui/input";
 import {
   BASE_PRODUCT_FIELDS,
-  PRODUCT_FIELDS,
+  ITEM_KIND_LABELS,
+  productFields,
   type ProductField,
 } from "@/config/product-fields";
 import {
@@ -27,6 +29,7 @@ import {
   type ProductFormState,
 } from "@/lib/products/actions";
 import type { Product } from "@/lib/products/queries";
+import { itemKind, type ItemKind } from "@/lib/tenant/features";
 import { useTenant } from "@/lib/tenant/tenant-context";
 import { MaterialUsesField } from "@/components/materials/material-uses-field";
 
@@ -58,7 +61,14 @@ export function ProductForm({
   onSaved: () => void;
 }) {
   const { businessType } = useTenant();
-  const fields = [...BASE_PRODUCT_FIELDS, ...PRODUCT_FIELDS[businessType]];
+  // A mixed business picks the kind of a new item; an existing one keeps it.
+  const [kind, setKind] = useState<ItemKind>(
+    product
+      ? itemKind(businessType, product.stock)
+      : itemKind(businessType, 0),
+  );
+  const choosesKind = businessType === "mixed" && !product;
+  const fields = [...BASE_PRODUCT_FIELDS, ...productFields(businessType, kind)];
 
   const [state, formAction, pending] = useActionState(
     async (prev: ProductFormState, formData: FormData) => {
@@ -88,19 +98,23 @@ export function ProductForm({
   return (
     <form action={formAction} noValidate className="grid gap-4">
       <FieldGroup className="gap-4">
+        {choosesKind && (
+          <KindPicker value={kind} onChange={setKind} />
+        )}
         {fields.map((field, index) => (
           <ProductFieldInput
-            key={field.name}
+            key={`${kind}-${field.name}`}
             field={field}
             defaultValue={
               state.values[field.name] ?? initialValue(field, product)
             }
             error={state.errors[field.name]}
-            autoFocus={index === 0}
+            autoFocus={index === 0 && !choosesKind}
           />
         ))}
 
-        {businessType === "ecommerce" && (
+        {/* Materials: packaging for goods, consumables (glue, …) for services. */}
+        {businessType !== "service" && (
           <MaterialUsesField
             initial={product?.materials ?? []}
             error={state.errors.materials}
@@ -147,6 +161,52 @@ export function ProductForm({
         </Button>
       </DialogFooter>
     </form>
+  );
+}
+
+/** Good or service; only shown when a mixed business adds a new item. */
+function KindPicker({
+  value,
+  onChange,
+}: {
+  value: ItemKind;
+  onChange: (kind: ItemKind) => void;
+}) {
+  const hints: Record<ItemKind, string> = {
+    product: "Ունի պահեստային մնացորդ",
+    service: "Առանց պահեստի, օր.՝ տեղադրում",
+  };
+  return (
+    <fieldset className="grid gap-2">
+      <legend className="mb-2 text-sm font-medium">Ի՞նչ եք ավելացնում</legend>
+      <input type="hidden" name="kind" value={value} />
+      <div className="grid grid-cols-2 gap-2">
+        {(["product", "service"] as const).map((option) => (
+          <label
+            key={option}
+            className={cn(
+              "flex cursor-pointer flex-col gap-0.5 rounded-2xl border px-3.5 py-2.5 text-sm transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+              value === option
+                ? "border-primary bg-primary/5"
+                : "border-input hover:bg-muted",
+            )}
+          >
+            <input
+              type="radio"
+              name="kind-choice"
+              value={option}
+              checked={value === option}
+              onChange={() => onChange(option)}
+              className="sr-only"
+            />
+            <span className="font-medium">{ITEM_KIND_LABELS[option]}</span>
+            <span className="text-xs text-muted-foreground">
+              {hints[option]}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 

@@ -47,6 +47,7 @@ import {
 } from "@/lib/orders/queries";
 import { listProducts } from "@/lib/products/queries";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { ITEM_LABELS } from "@/lib/tenant/features";
 
 // Reads live data for the current tenant on every request.
 export const instant = false;
@@ -55,7 +56,8 @@ export default async function OrdersPage({
   searchParams,
 }: PageProps<"/orders">) {
   const tenant = await getCurrentTenant();
-  const isShop = tenant.businessType === "ecommerce";
+  const isShop = tenant.businessType !== "service";
+  const itemLabel = ITEM_LABELS[tenant.businessType];
   const query = await searchParams;
   const page = parsePage(query.page);
   const view = query.view === "calendar" ? "calendar" : "list";
@@ -68,7 +70,7 @@ export default async function OrdersPage({
     customer: "Հաճախորդի անուն",
     phone: "Հեռախոս",
     email: "Էլ. փոստ",
-    product: isShop ? "Ապրանք" : "Դասընթաց",
+    product: itemLabel,
     order: "Պատվերի համար (#)",
     address: "Հասցե",
     comment: "Մեկնաբանություն",
@@ -210,6 +212,7 @@ export default async function OrdersPage({
           today={today}
           selected={selectedDay}
           isShop={isShop}
+          itemLabel={itemLabel}
           sourceNames={sourceNames}
           statusLabels={ORDER_STATUS_LABELS[tenant.businessType]}
           keep={searchParamsToKeep}
@@ -253,6 +256,7 @@ export default async function OrdersPage({
             <OrdersTable
               orders={orders}
               isShop={isShop}
+              itemLabel={itemLabel}
               sourceNames={sourceNames}
             />
           )}
@@ -274,6 +278,7 @@ function CalendarView({
   today,
   selected,
   isShop,
+  itemLabel,
   sourceNames,
   statusLabels,
   keep,
@@ -284,6 +289,7 @@ function CalendarView({
   today: Ymd;
   selected: Ymd | null;
   isShop: boolean;
+  itemLabel: string;
   sourceNames: string[];
   statusLabels: Record<OrderStatus, string>;
   keep: Record<string, string | undefined>;
@@ -361,6 +367,7 @@ function CalendarView({
             <OrdersTable
               orders={dayOrders}
               isShop={isShop}
+              itemLabel={itemLabel}
               sourceNames={sourceNames}
             />
           ) : (

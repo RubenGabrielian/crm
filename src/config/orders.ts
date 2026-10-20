@@ -6,6 +6,7 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export const ORDER_STATUS_LABELS: Record<BusinessType, Record<OrderStatus, string>> = {
   ecommerce: { new: "Նոր", confirmed: "Հաստատված", completed: "Առաքված" },
   service: { new: "Նոր", confirmed: "Հաստատված", completed: "Ավարտված" },
+  mixed: { new: "Նոր", confirmed: "Հաստատված", completed: "Ավարտված" },
 };
 
 export function isOrderStatus(value: unknown): value is OrderStatus {

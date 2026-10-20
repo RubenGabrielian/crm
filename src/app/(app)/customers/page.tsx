@@ -46,7 +46,7 @@ export default async function CustomersPage({
   // Sorting and search come from the URL, so this page is rendered per request.
   await connection();
   const tenant = await getCurrentTenant();
-  const isShop = tenant.businessType === "ecommerce";
+  const isShop = tenant.businessType !== "service";
   const { customers: allCustomers, error } = await listCustomers(tenant.id);
 
   const query = await searchParams;

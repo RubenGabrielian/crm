@@ -24,6 +24,7 @@ import { ORDER_STATUSES, ORDER_STATUS_LABELS } from "@/config/orders";
 import { formatMoney } from "@/lib/format";
 import { updateOrder, type OrderFormState } from "@/lib/orders/actions";
 import type { Order } from "@/lib/orders/queries";
+import { scheduleToInput } from "@/lib/orders/schedule";
 import { computeOrderTotals } from "@/lib/orders/totals";
 import { useRefreshNewOrders } from "@/components/layout/new-orders";
 import { useTenant } from "@/lib/tenant/tenant-context";
@@ -42,7 +43,7 @@ function shortId(id: string) {
 export function EditOrderDialog({ order }: { order: Order }) {
   const { businessType } = useTenant();
   const [open, setOpen] = useState(false);
-  const isShop = businessType === "ecommerce";
+  const isShop = businessType !== "service";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -87,7 +88,7 @@ function EditOrderForm({
   onSaved: () => void;
 }) {
   const { businessType } = useTenant();
-  const isShop = businessType === "ecommerce";
+  const isShop = businessType !== "service";
 
   const refreshNewOrders = useRefreshNewOrders();
   const [state, formAction, pending] = useActionState(
@@ -106,6 +107,10 @@ function EditOrderForm({
   const [phone, setPhone] = useState(order.customerPhone ?? "");
   const [address, setAddress] = useState(order.address ?? "");
   const [qty, setQty] = useState(String(order.qty));
+  const [unitPrice, setUnitPrice] = useState(String(order.unitPrice));
+  const [scheduledAt, setScheduledAt] = useState(
+    scheduleToInput(order.scheduledAt),
+  );
   const [percent, setPercent] = useState(
     order.discountPercent > 0 ? String(order.discountPercent) : "",
   );
@@ -118,7 +123,7 @@ function EditOrderForm({
   const percentActive = toNumber(percent) > 0;
   const totals = computeOrderTotals({
     qty: Math.max(Math.trunc(toNumber(qty)), 0),
-    unitPrice: order.unitPrice,
+    unitPrice: toNumber(unitPrice),
     discountPercent: toNumber(percent),
     discountAmount: toNumber(amount),
     deliveryFee: toNumber(deliveryFee),
@@ -174,6 +179,25 @@ function EditOrderForm({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          name="unit_price"
+          label="Միավորի գին (֏)"
+          type="number"
+          min={0}
+          step="any"
+          value={unitPrice}
+          onChange={setUnitPrice}
+          error={errors.unit_price}
+        />
+        <TextField
+          name="scheduled_at"
+          label="Օր և ժամ"
+          type="datetime-local"
+          value={scheduledAt}
+          onChange={setScheduledAt}
+          error={errors.scheduled_at}
+          description="Ոչ պարտադիր, օր.՝ տեղադրման ժամը"
+        />
         <TextField
           name="qty"
           label="Քանակ"
@@ -232,7 +256,7 @@ function EditOrderForm({
         className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-2xl bg-muted px-4 py-3 text-sm tabular-nums"
       >
         <dt className="text-muted-foreground">
-          {formatMoney(order.unitPrice)} ×{" "}
+          {formatMoney(toNumber(unitPrice))} ×{" "}
           {Math.max(Math.trunc(toNumber(qty)), 0)}
         </dt>
         <dd className="text-right">{formatMoney(totals.subtotal)}</dd>

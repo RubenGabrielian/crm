@@ -23,6 +23,7 @@ import { formatMoney, formatNumber } from "@/lib/format";
 import { listProducts } from "@/lib/products/queries";
 import { listReinvestments } from "@/lib/reinvestments/queries";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { ITEM_LABELS } from "@/lib/tenant/features";
 
 function displayDate(date: string) {
   const [year, month, day] = date.split("-");
@@ -36,7 +37,6 @@ export default async function ReinvestmentsPage() {
   // "Today" is used as the default date in the form.
   await connection();
   const tenant = await getCurrentTenant();
-  const isShop = tenant.businessType === "ecommerce";
   const today = resolveRange({ range: "today" }).to;
 
   const [{ reinvestments, error }, { products }] = await Promise.all([
@@ -98,7 +98,7 @@ export default async function ReinvestmentsPage() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="px-4">Ամսաթիվ</TableHead>
                   <TableHead className="px-4">Ինչի համար</TableHead>
-                  <TableHead className="px-4">{isShop ? "Ապրանք" : "Դասընթաց"}</TableHead>
+                  <TableHead className="px-4">{ITEM_LABELS[tenant.businessType]}</TableHead>
                   <TableHead className="px-4 text-right">Գումար</TableHead>
                   <TableHead className="px-4">Կարգավիճակ</TableHead>
                   <TableHead className="px-4">

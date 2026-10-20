@@ -27,6 +27,8 @@ export type Order = {
   paymentMethod: PaymentMethod | null;
   /** Saved as metadata.paid; orders without it count as paid once delivered. */
   paid: boolean;
+  /** Appointment, e.g. when a service is done (metadata.scheduled_at). */
+  scheduledAt: string | null;
 };
 
 export type OrderSource = { id: string; name: string };
@@ -201,6 +203,8 @@ export async function listOrders(
         typeof metadata.note === "string" && metadata.note.trim()
           ? metadata.note
           : null,
+      scheduledAt:
+        typeof metadata.scheduled_at === "string" ? metadata.scheduled_at : null,
     };
   });
 

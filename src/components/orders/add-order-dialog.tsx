@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Plus } from "lucide-react";
+import { Fragment, useActionState, useState } from "react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,6 +18,7 @@ import { formatMoney } from "@/lib/format";
 import { createManualOrder, type OrderFormState } from "@/lib/orders/actions";
 import { computeOrderTotals } from "@/lib/orders/totals";
 import { useRefreshNewOrders } from "@/components/layout/new-orders";
+import { ITEM_LABELS } from "@/lib/tenant/features";
 import { useTenant } from "@/lib/tenant/tenant-context";
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS } from "@/config/payments";
 
@@ -50,7 +51,7 @@ export function AddOrderDialog({
   const { businessType } = useTenant();
   const [open, setOpen] = useState(false);
   const title =
-    businessType === "ecommerce" ? "Ավելացնել պատվեր" : "Ավելացնել գրանցում";
+    businessType === "service" ? "Ավելացնել գրանցում" : "Ավելացնել պատվեր";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -73,6 +74,8 @@ export function AddOrderDialog({
   );
 }
 
+type Line = { key: number; productId: string; qty: string; price: string };
+
 function AddOrderForm({
   products,
   sources,
@@ -83,7 +86,8 @@ function AddOrderForm({
   onSaved: () => void;
 }) {
   const { businessType } = useTenant();
-  const isShop = businessType === "ecommerce";
+  const isShop = businessType !== "service";
+  const itemLabel = ITEM_LABELS[businessType];
 
   const refreshNewOrders = useRefreshNewOrders();
   const [state, formAction, pending] = useActionState(
@@ -100,8 +104,9 @@ function AddOrderForm({
   const { errors } = state;
 
   // Controlled, so nothing is lost when validation fails and the total is live.
-  const [productId, setProductId] = useState("");
-  const [qty, setQty] = useState("1");
+  const [lines, setLines] = useState<Line[]>([
+    { key: 0, productId: "", qty: "1", price: "" },
+  ]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -110,71 +115,176 @@ function AddOrderForm({
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paid, setPaid] = useState("no");
   const [discount, setDiscount] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
 
-  const product = products.find((item) => item.id === productId);
-  const quantity = Math.max(Math.trunc(Number(qty)) || 0, 0);
-  const totals = computeOrderTotals({
-    qty: quantity,
-    unitPrice: product?.price ?? 0,
-    discountPercent: Math.min(Math.max(Number(discount) || 0, 0), 100),
-    discountAmount: 0,
-    deliveryFee: product?.deliveryFee ?? 0,
+  function updateLine(key: number, change: Partial<Line>) {
+    setLines((current) =>
+      current.map((line) => (line.key === key ? { ...line, ...change } : line)),
+    );
+  }
+
+  // Totals and stock, line by line; delivery is paid once per visit.
+  const discountPercent = Math.min(Math.max(Number(discount) || 0, 0), 100);
+  const used = new Map<string, number>();
+  const rows = lines.map((line) => {
+    const product = products.find((item) => item.id === line.productId);
+    const quantity = Math.max(Math.trunc(Number(line.qty)) || 0, 0);
+    const price = line.price === "" ? (product?.price ?? 0) : Math.max(Number(line.price) || 0, 0);
+    if (product) used.set(product.id, (used.get(product.id) ?? 0) + quantity);
+    const overStock =
+      product?.stock != null && (used.get(product.id) ?? 0) > product.stock;
+    return { line, product, quantity, price, overStock };
   });
-  const overStock = product?.stock != null && quantity > product.stock;
+  const chosen = rows.filter((row) => row.product);
+  const deliveryFee = chosen.find((row) => row.product!.deliveryFee > 0)?.product!.deliveryFee ?? 0;
+  const totals = computeOrderTotals({
+    qty: 1,
+    unitPrice: chosen.reduce((sum, row) => sum + row.quantity * row.price, 0),
+    discountPercent,
+    discountAmount: 0,
+    deliveryFee,
+  });
+  const overStock = rows.some((row) => row.overStock);
 
   if (products.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        {isShop
-          ? "Նախ ավելացրեք ապրանք «Ապրանքներ» բաժնում։"
-          : "Նախ ավելացրեք դասընթաց «Դասընթացներ» բաժնում։"}
+        {businessType === "mixed"
+          ? "Նախ ավելացրեք ապրանք կամ ծառայություն «Կատալոգ» բաժնում։"
+          : isShop
+            ? "Նախ ավելացրեք ապրանք «Ապրանքներ» բաժնում։"
+            : "Նախ ավելացրեք դասընթաց «Դասընթացներ» բաժնում։"}
       </p>
     );
   }
 
   return (
     <form action={formAction} noValidate className="grid gap-4">
-      <div className="grid gap-4 sm:grid-cols-[1fr_7rem]">
-        <Field data-invalid={errors.product_id ? true : undefined}>
-          <FieldLabel htmlFor="new-order-product">
-            {isShop ? "Ապրանք" : "Դասընթաց"}
-          </FieldLabel>
-          <select
-            id="new-order-product"
-            name="product_id"
-            required
-            value={productId}
-            onChange={(event) => setProductId(event.currentTarget.value)}
-            aria-invalid={errors.product_id ? true : undefined}
-            className={SELECT_CLASS}
-          >
-            <option value="" disabled>
-              Ընտրեք
-            </option>
-            {products.map((item) => (
-              <option key={item.id} value={item.id} disabled={item.stock === 0}>
-                {item.title}, {formatMoney(item.price)}
-                {item.stock === 0 ? " (սպառված է)" : ""}
-              </option>
-            ))}
-          </select>
-          {errors.product_id && <FieldError>{errors.product_id}</FieldError>}
-        </Field>
-        <TextField
-          name="qty"
-          label="Քանակ"
-          type="number"
-          min={1}
-          max={product?.stock ?? undefined}
-          step={1}
-          value={qty}
-          onChange={setQty}
-          error={
-            errors.qty ??
-            (overStock ? `Առկա է միայն ${product?.stock}` : undefined)
+      <input
+        type="hidden"
+        name="lines"
+        value={JSON.stringify(
+          lines.map(({ productId, qty, price }) => ({ productId, qty, price })),
+        )}
+      />
+
+      <fieldset className="grid gap-3">
+        <legend className="sr-only">{itemLabel}</legend>
+        <div
+          aria-hidden
+          className="-mb-1 grid grid-cols-[1fr_4.5rem_6.5rem_2.25rem] gap-2 text-sm font-medium"
+        >
+          <span>{itemLabel}</span>
+          <span>Քանակ</span>
+          <span>Գին, ֏</span>
+        </div>
+        {rows.map(({ line, product, overStock: lineOver }, index) => {
+          const productError = errors[`line-${index}-product`];
+          const qtyError =
+            errors[`line-${index}-qty`] ??
+            (lineOver ? `Առկա է ${product?.stock}` : undefined);
+          const priceError = errors[`line-${index}-price`];
+          return (
+            <div
+              key={line.key}
+              className="grid grid-cols-[1fr_4.5rem_6.5rem_2.25rem] items-start gap-2"
+            >
+              <Field data-invalid={productError ? true : undefined}>
+                <select
+                  aria-label={`${itemLabel} ${index + 1}`}
+                  value={line.productId}
+                  onChange={(event) => {
+                    const next = products.find(
+                      (item) => item.id === event.currentTarget.value,
+                    );
+                    updateLine(line.key, {
+                      productId: event.currentTarget.value,
+                      price: next ? String(next.price) : "",
+                    });
+                  }}
+                  aria-invalid={productError ? true : undefined}
+                  className={SELECT_CLASS}
+                >
+                  <option value="" disabled>
+                    Ընտրեք
+                  </option>
+                  {products.map((item) => (
+                    <option key={item.id} value={item.id} disabled={item.stock === 0}>
+                      {item.title}
+                      {item.stock === 0 ? " (սպառված է)" : ""}
+                    </option>
+                  ))}
+                </select>
+                {productError && <FieldError>{productError}</FieldError>}
+              </Field>
+              <Field data-invalid={qtyError ? true : undefined}>
+                <Input
+                  aria-label="Քանակ"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={line.qty}
+                  onChange={(event) =>
+                    updateLine(line.key, { qty: event.currentTarget.value })
+                  }
+                  aria-invalid={qtyError ? true : undefined}
+                />
+                {qtyError && <FieldError>{qtyError}</FieldError>}
+              </Field>
+              <Field data-invalid={priceError ? true : undefined}>
+                <Input
+                  aria-label="Գին, ֏"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  value={line.price}
+                  onChange={(event) =>
+                    updateLine(line.key, { price: event.currentTarget.value })
+                  }
+                  aria-invalid={priceError ? true : undefined}
+                />
+                {priceError && <FieldError>{priceError}</FieldError>}
+              </Field>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Հեռացնել տողը"
+                disabled={lines.length === 1}
+                onClick={() =>
+                  setLines((current) =>
+                    current.filter((item) => item.key !== line.key),
+                  )
+                }
+              >
+                <X />
+              </Button>
+            </div>
+          );
+        })}
+        <Button
+          type="button"
+          variant="outline"
+          className="justify-self-start"
+          onClick={() =>
+            setLines((current) => [
+              ...current,
+              {
+                key: Math.max(...current.map((line) => line.key)) + 1,
+                productId: "",
+                qty: "1",
+                price: "",
+              },
+            ])
           }
-        />
-      </div>
+        >
+          <Plus />
+          {businessType === "mixed"
+            ? "Ավելացնել ևս ապրանք կամ ծառայություն"
+            : "Ավելացնել ևս մեկը"}
+        </Button>
+      </fieldset>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
@@ -220,6 +330,16 @@ function AddOrderForm({
           error={errors.discount_percent}
         />
       </div>
+
+      <TextField
+        name="scheduled_at"
+        label="Օր և ժամ"
+        optional
+        type="datetime-local"
+        value={scheduledAt}
+        onChange={setScheduledAt}
+        error={errors.scheduled_at}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
@@ -290,25 +410,29 @@ function AddOrderForm({
         </Field>
       </div>
 
-      {product && (
+      {chosen.length > 0 && (
         <dl
           aria-live="polite"
           className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-2xl bg-muted px-4 py-3 text-sm tabular-nums"
         >
-          <dt className="text-muted-foreground">
-            {formatMoney(product.price)} × {quantity}
-          </dt>
-          <dd className="text-right">{formatMoney(totals.subtotal)}</dd>
+          {chosen.map(({ line, product, quantity, price }) => (
+            <Fragment key={line.key}>
+              <dt className="truncate text-muted-foreground">
+                {product!.title}, {formatMoney(price)} × {quantity}
+              </dt>
+              <dd className="text-right">{formatMoney(price * quantity)}</dd>
+            </Fragment>
+          ))}
           {totals.discount > 0 && (
             <>
               <dt className="text-muted-foreground">Զեղչ</dt>
               <dd className="text-right">−{formatMoney(totals.discount)}</dd>
             </>
           )}
-          {isShop && (
+          {isShop && deliveryFee > 0 && (
             <>
               <dt className="text-muted-foreground">Առաքում</dt>
-              <dd className="text-right">{formatMoney(product.deliveryFee)}</dd>
+              <dd className="text-right">{formatMoney(deliveryFee)}</dd>
             </>
           )}
           <dt className="mt-1 border-t pt-2 text-base font-semibold">

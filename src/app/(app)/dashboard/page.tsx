@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "cn";
+import { BreakEvenChart } from "@/components/dashboard/break-even-chart";
 import { DailyRevenueChart } from "@/components/dashboard/daily-revenue-chart";
 import { RangeFilter } from "@/components/dashboard/range-filter";
 import { SourceBreakdown } from "@/components/dashboard/source-breakdown";
@@ -26,11 +27,11 @@ import {
 } from "@/components/ui/table";
 import { expenseCategoryLabel } from "@/config/expenses";
 import { ORDER_STATUSES, ORDER_STATUS_LABELS } from "@/config/orders";
-import { getAnalytics } from "@/lib/analytics/queries";
+import { getAnalytics, type Analytics } from "@/lib/analytics/queries";
 import { resolveRange } from "@/lib/analytics/range";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { listInventory } from "@/lib/inventory/queries";
-import { hasFeature } from "@/lib/tenant/features";
+import { hasFeature, ITEM_LABELS } from "@/lib/tenant/features";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 // Reads live data for the current tenant on every request.
@@ -56,7 +57,7 @@ export default async function DashboardPage({
     Array.isArray(value) ? value[0] : value;
 
   const tenant = await getCurrentTenant();
-  const isShop = tenant.businessType === "ecommerce";
+  const isShop = tenant.businessType !== "service";
   const tracksStock = hasFeature(tenant.businessType, "inventory");
   const range = resolveRange({
     range: pick(params.range),
@@ -96,7 +97,7 @@ export default async function DashboardPage({
         />
       ) : (
         <>
-          {analytics.totalOrders === 0 && <GettingStarted isShop={isShop} />}
+          {analytics.totalOrders === 0 && <GettingStarted isShop={isShop} isMixed={tenant.businessType === "mixed"} />}
 
           {/* The path to net profit, read left to right as one equation */}
           <section aria-labelledby="profit-equation" className="flex flex-col gap-3">
@@ -226,7 +227,7 @@ export default async function DashboardPage({
 
           <BreakEvenCard
             breakEven={analytics.breakEven}
-            fixedCosts={analytics.marketingSpend}
+            fixedCosts={analytics.fixedCosts}
             contribution={analytics.contribution}
             unitsSold={analytics.unitsSold}
             unitLabel={isShop ? "հատ" : "գրանցում"}
@@ -235,7 +236,13 @@ export default async function DashboardPage({
           {/* Row 3: product performance | stock and marketing */}
           <div className="grid gap-4 lg:grid-cols-2">
             <Panel
-              title={isShop ? "Ապրանքների արդյունքը" : "Դասընթացների արդյունքը"}
+              title={
+                tenant.businessType === "mixed"
+                  ? "Ապրանքների և ծառայությունների արդյունքը"
+                  : isShop
+                    ? "Ապրանքների արդյունքը"
+                    : "Դասընթացների արդյունքը"
+              }
               flush
             >
               {analytics.products.length === 0 ? (
@@ -245,7 +252,7 @@ export default async function DashboardPage({
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="px-4">
-                        {isShop ? "Ապրանք" : "Դասընթաց"}
+                        {ITEM_LABELS[tenant.businessType]}
                       </TableHead>
                       <TableHead className="px-3 text-right">Քանակ</TableHead>
                       <TableHead className="px-3 text-right">Հասույթ</TableHead>
@@ -381,12 +388,6 @@ export default async function DashboardPage({
                   strong
                 />
                 <Line label="Այլ ծախսեր" amount={-analytics.otherExpenses} />
-                {analytics.personalExpenses > 0 && (
-                  <Line
-                    label="Անձնական ծախսեր"
-                    amount={-analytics.personalExpenses}
-                  />
-                )}
                 <Line
                   label="Մնացորդ բոլոր ծախսերից հետո"
                   amount={analytics.remainingAfterExpenses}
@@ -443,15 +444,7 @@ export default async function DashboardPage({
   );
 }
 
-function displayShortDate(date: string) {
-  const [, month, day] = date.split("-");
-  return `${day}.${month}`;
-}
-
-/**
- * Break-even: how much of the period's fixed costs the contribution margin
- * has covered, and the day it reached zero (or what is still missing).
- */
+/** Break-even: when sales cover the period's fixed costs, drawn as a chart. */
 function BreakEvenCard({
   breakEven,
   fixedCosts,
@@ -459,121 +452,68 @@ function BreakEvenCard({
   unitsSold,
   unitLabel,
 }: {
-  breakEven: {
-    date: string | null;
-    contributionPerUnit: number | null;
-    unitsNeeded: number | null;
-    remaining: number;
-    progress: number;
-  };
+  breakEven: Analytics["breakEven"];
   fixedCosts: number;
   contribution: number;
   unitsSold: number;
   unitLabel: string;
 }) {
-  const reached = fixedCosts > 0 && contribution >= fixedCosts;
-  const unitsLeft =
-    !reached &&
-    breakEven.contributionPerUnit &&
-    breakEven.contributionPerUnit > 0
-      ? Math.ceil(breakEven.remaining / breakEven.contributionPerUnit)
-      : null;
+  const ready =
+    fixedCosts > 0 &&
+    breakEven.contributionPerUnit !== null &&
+    breakEven.contributionPerUnit > 0;
+  const reached = ready && contribution >= fixedCosts;
 
   return (
     <section className="rounded-3xl bg-card p-5 shadow-soft">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold">Զրոյական կետ</h2>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Երբ վաճառքից ստացված մարժինալ շահույթը ծածկում է մարքեթինգի ծախսը,
-            բիզնեսը դուրս է գալիս զրոյի, և ամեն հաջորդ վաճառքը արդեն մաքուր
-            շահույթ է։
+            Քանի {unitLabel} պետք է վաճառել, որ վաճառքը ծածկի բոլոր ծախսերը։
+            Դրանից հետո ամեն հաջորդ վաճառքն արդեն մաքուր շահույթ է։
           </p>
         </div>
-        <p
-          className={cn(
-            "rounded-full px-3 py-1.5 text-sm font-semibold",
-            fixedCosts === 0
-              ? "bg-muted text-muted-foreground"
-              : reached
+        {ready && (
+          <p
+            className={cn(
+              "rounded-full px-3 py-1.5 text-sm font-semibold",
+              reached
                 ? "bg-emerald-100 text-emerald-900"
                 : "bg-amber-100 text-amber-900",
-          )}
-        >
-          {fixedCosts === 0
-            ? "Մարքեթինգի ծախս չկա"
-            : reached
-              ? breakEven.date
-                ? `Հասավ ${displayShortDate(breakEven.date)}-ին`
-                : "Հասավ"
-              : "Դեռ չի հասել"}
-        </p>
+            )}
+          >
+            {reached ? "Հասել եք զրոյի" : "Դեռ չի հասել"}
+          </p>
+        )}
       </div>
-
-      {fixedCosts > 0 && (
-        <>
-          <div className="mt-5 h-3 overflow-hidden rounded-full bg-muted">
-            <div
-              className={cn(
-                "source-bar h-full rounded-full",
-                reached ? "bg-emerald-500" : "bg-ring",
-              )}
-              style={{ width: `${breakEven.progress * 100}%` }}
-            />
-          </div>
-          <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-            <div>
-              <dt className="text-muted-foreground">Մարքեթինգ</dt>
-              <dd className="mt-0.5 font-semibold tabular-nums">
-                {formatMoney(fixedCosts)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Ծածկված</dt>
-              <dd className="mt-0.5 font-semibold tabular-nums">
-                {formatMoney(Math.max(Math.min(contribution, fixedCosts), 0))} (
-                {Math.round(breakEven.progress * 100)}%)
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">
-                {reached ? "Զրոյից վեր" : "Մնում է"}
-              </dt>
-              <dd
-                className={cn(
-                  "mt-0.5 font-semibold tabular-nums",
-                  reached && "text-emerald-700",
-                )}
-              >
-                {reached
-                  ? formatMoney(contribution - fixedCosts)
-                  : `${formatMoney(breakEven.remaining)}${unitsLeft !== null ? ` · ≈${formatNumber(unitsLeft)} ${unitLabel}` : ""}`}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Պետք է վաճառել</dt>
-              <dd className="mt-0.5 font-semibold tabular-nums">
-                {breakEven.unitsNeeded === null
-                  ? "—"
-                  : `${formatNumber(breakEven.unitsNeeded)} ${unitLabel}`}
-                <span className="ml-1 font-normal text-muted-foreground">
-                  (վաճառված՝ {formatNumber(unitsSold)})
-                </span>
-              </dd>
-            </div>
-          </dl>
-        </>
-      )}
+      <BreakEvenChart
+        breakEven={breakEven}
+        fixedCosts={fixedCosts}
+        contribution={contribution}
+        unitsSold={unitsSold}
+        unitLabel={unitLabel}
+      />
     </section>
   );
 }
 
 /** First visit, or a quiet period: what to do so the numbers fill in. */
-function GettingStarted({ isShop }: { isShop: boolean }) {
+function GettingStarted({
+  isShop,
+  isMixed,
+}: {
+  isShop: boolean;
+  isMixed: boolean;
+}) {
   const steps = [
     {
       href: "/catalog",
-      title: isShop ? "Ավելացրեք ապրանք" : "Ավելացրեք դասընթաց",
+      title: isMixed
+        ? "Ավելացրեք ապրանք կամ ծառայություն"
+        : isShop
+          ? "Ավելացրեք ապրանք"
+          : "Ավելացրեք դասընթաց",
       text: "Գնով և ինքնարժեքով, որ շահույթը ճիշտ հաշվվի",
     },
     {

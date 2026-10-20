@@ -15,7 +15,6 @@ import { placeOrder, type OrderFormState } from "@/lib/orders/actions";
 import { computeOrderTotals } from "@/lib/orders/totals";
 import type { LinkSale } from "@/lib/orders/sale-link";
 import type { CheckoutProduct } from "@/lib/products/queries";
-import type { BusinessType } from "@/lib/tenant/features";
 
 const INITIAL_STATE: OrderFormState = {
   ok: false,
@@ -27,20 +26,26 @@ const INITIAL_STATE: OrderFormState = {
 const MAX_QTY = 99;
 
 const COPY: Record<
-  BusinessType,
+  "goods" | "course" | "service",
   { qty: string; submit: string; doneTitle: string; doneText: string }
 > = {
-  ecommerce: {
+  goods: {
     qty: "Քանակ",
     submit: "Պատվիրել",
     doneTitle: "Պատվերն ընդունված է",
     doneText: "Շուտով կկապվենք ձեզ հետ՝ առաքումը հաստատելու համար։",
   },
-  service: {
+  course: {
     qty: "Տեղերի քանակ",
     submit: "Գրանցվել",
     doneTitle: "Գրանցումն ընդունված է",
     doneText: "Շուտով կկապվենք ձեզ հետ՝ մանրամասները հաստատելու համար։",
+  },
+  service: {
+    qty: "Քանակ",
+    submit: "Պատվիրել",
+    doneTitle: "Պատվերն ընդունված է",
+    doneText: "Շուտով կկապվենք ձեզ հետ՝ օրն ու ժամը համաձայնեցնելու համար։",
   },
 };
 
@@ -69,8 +74,9 @@ export function CheckoutForm({
   );
   const [qty, setQty] = useState(1);
 
-  const isShop = product.businessType === "ecommerce";
-  const copy = COPY[product.businessType];
+  const isShop = product.kind === "product";
+  const copy =
+    COPY[isShop ? "goods" : product.businessType === "service" ? "course" : "service"];
   const maxQty = Math.min(product.stock ?? MAX_QTY, MAX_QTY);
   const clampQty = (value: number) =>
     Math.min(Math.max(Number.isFinite(value) ? Math.trunc(value) : 1, 1), Math.max(maxQty, 1));

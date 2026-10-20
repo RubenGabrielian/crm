@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CalendarClock } from "lucide-react";
 import { cn } from "cn";
 import { DeleteOrderDialog } from "@/components/orders/delete-order-dialog";
 import { EditOrderDialog } from "@/components/orders/edit-order-dialog";
@@ -21,10 +22,13 @@ import type { Order } from "@/lib/orders/queries";
 export function OrdersTable({
   orders,
   isShop,
+  itemLabel,
   sourceNames,
 }: {
   orders: Order[];
   isShop: boolean;
+  /** Column title for what was ordered, e.g. "Ապրանք". */
+  itemLabel: string;
   sourceNames: string[];
 }) {
   const numeric = "px-2 text-right tabular-nums";
@@ -39,7 +43,7 @@ export function OrdersTable({
               <TableHead className="px-2 pl-4">Ամսաթիվ</TableHead>
               <TableHead className="px-2">Հաճախորդ</TableHead>
               <TableHead className="px-2">
-                {isShop ? "Ապրանք" : "Դասընթաց"}
+                {itemLabel}
               </TableHead>
               <TableHead className={numeric}>Քանակ</TableHead>
               <TableHead className={numeric}>Միավորի գին</TableHead>
@@ -87,6 +91,13 @@ export function OrdersTable({
                 </TableCell>
                 <TableCell className="max-w-44 px-2 whitespace-normal">
                   {order.productTitle}
+                  {order.scheduledAt && (
+                    <span className="mt-1 flex items-center gap-1 text-xs font-medium tabular-nums text-[#185aef]">
+                      <CalendarClock className="size-3.5 shrink-0" aria-hidden />
+                      <span className="sr-only">Օր և ժամ՝ </span>
+                      {formatDateTime(order.scheduledAt)}
+                    </span>
+                  )}
                   {order.comment && (
                     <span
                       title={order.comment}

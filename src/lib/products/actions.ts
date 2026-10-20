@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import {
   BASE_PRODUCT_FIELDS,
-  PRODUCT_FIELDS,
+  productFields,
   type ProductField,
 } from "@/config/product-fields";
 import {
@@ -13,7 +13,11 @@ import {
   PRODUCT_IMAGE_TYPES,
 } from "@/config/product-images";
 import { supabase } from "@/lib/supabase";
-import type { BusinessType } from "@/lib/tenant/features";
+import {
+  itemKind,
+  type BusinessType,
+  type ItemKind,
+} from "@/lib/tenant/features";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 export type ProductFormState = {
@@ -45,8 +49,12 @@ function parseField(field: ProductField, raw: string): Parsed {
   return { value: number };
 }
 
-function parseProductForm(formData: FormData, businessType: BusinessType) {
-  const typeFields = PRODUCT_FIELDS[businessType];
+function parseProductForm(
+  formData: FormData,
+  businessType: BusinessType,
+  kind: ItemKind,
+) {
+  const typeFields = productFields(businessType, kind);
   const values: Record<string, string> = {};
   const errors: Record<string, string> = {};
   const parsed: Record<string, string | number | null> = {};
@@ -186,9 +194,16 @@ export async function createProduct(
   _prev: ProductFormState,
   formData: FormData,
 ): Promise<ProductFormState> {
-  // The tenant and its business type come from the server, never the form.
+  // The tenant and its business type come from the server, never the form;
+  // only a mixed business picks per item whether it is a good or a service.
   const tenant = await getCurrentTenant();
-  const form = parseProductForm(formData, tenant.businessType);
+  const kind: ItemKind =
+    tenant.businessType === "mixed"
+      ? formData.get("kind") === "service"
+        ? "service"
+        : "product"
+      : itemKind(tenant.businessType, null);
+  const form = parseProductForm(formData, tenant.businessType, kind);
   const { values } = form;
   const materials = parseMaterials(formData);
   if (materials && "error" in materials)
@@ -250,7 +265,33 @@ export async function updateProduct(
   formData: FormData,
 ): Promise<ProductFormState> {
   const tenant = await getCurrentTenant();
-  const form = parseProductForm(formData, tenant.businessType);
+  const failWith = (formError: string): ProductFormState => ({
+    ok: false,
+    values: {},
+    errors: {},
+    formError,
+  });
+
+  // Only a product of the current tenant can be edited. Its kind stays as it
+  // was created: a good keeps its stock row, a service never gets one.
+  const { data: existing, error: loadError } = await supabase
+    .from("products")
+    .select("id, metadata, inventory(stock_quantity)")
+    .eq("id", productId)
+    .eq("tenant_id", tenant.id)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (loadError) {
+    console.error("loading product failed:", loadError);
+    return failWith(SAVE_FAILED);
+  }
+  if (!existing) return failWith("Ապրանքը չի գտնվել։ Թարմացրեք էջը։");
+  const stockRow = Array.isArray(existing.inventory)
+    ? existing.inventory[0]
+    : existing.inventory;
+  const kind = itemKind(tenant.businessType, stockRow?.stock_quantity ?? null);
+
+  const form = parseProductForm(formData, tenant.businessType, kind);
   const { values } = form;
   const materials = parseMaterials(formData);
   if (materials && "error" in materials)
@@ -265,26 +306,12 @@ export async function updateProduct(
     formError,
   });
 
-  // Only a product of the current tenant can be edited.
-  const { data: existing, error: loadError } = await supabase
-    .from("products")
-    .select("id, metadata")
-    .eq("id", productId)
-    .eq("tenant_id", tenant.id)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (loadError) {
-    console.error("loading product failed:", loadError);
-    return fail(SAVE_FAILED);
-  }
-  if (!existing) return fail("Ապրանքը չի գտնվել։ Թարմացրեք էջը։");
-
   // Keep metadata keys this form doesn't manage; replace the ones it does,
   // so clearing an optional field removes it.
   const metadata = {
     ...((existing.metadata ?? {}) as Record<string, unknown>),
   };
-  for (const field of PRODUCT_FIELDS[tenant.businessType]) {
+  for (const field of productFields(tenant.businessType, kind)) {
     if (field.target === "metadata") delete metadata[field.name];
   }
   Object.assign(metadata, form.metadata);

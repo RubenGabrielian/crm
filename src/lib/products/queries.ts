@@ -1,7 +1,7 @@
 import "server-only";
 
 import { supabase } from "@/lib/supabase";
-import type { BusinessType } from "@/lib/tenant/features";
+import { itemKind, type BusinessType, type ItemKind } from "@/lib/tenant/features";
 
 export type Product = {
   id: string;
@@ -26,6 +26,8 @@ export type CheckoutProduct = {
   deliveryFee: number;
   tenantName: string;
   businessType: BusinessType;
+  /** Goods are delivered (address needed); services are not. */
+  kind: ItemKind;
 };
 
 // PostgREST returns an embedded relation as an array or a single object
@@ -91,16 +93,19 @@ export async function getCheckoutProduct(
   const deliveryFee = Number(
     (data.metadata as Record<string, unknown>)?.delivery_cost,
   );
+  const businessType = tenant.business_type as BusinessType;
+  const stock = one(data.inventory)?.stock_quantity ?? null;
 
   return {
     id: data.id,
     title: data.title,
     price: Number(data.price),
     imageUrl: data.image_url,
-    stock: one(data.inventory)?.stock_quantity ?? null,
+    stock,
     deliveryFee:
       Number.isFinite(deliveryFee) && deliveryFee > 0 ? deliveryFee : 0,
     tenantName: tenant.name,
-    businessType: tenant.business_type as BusinessType,
+    businessType,
+    kind: itemKind(businessType, stock),
   };
 }

@@ -9,23 +9,30 @@ import {
   useState,
 } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { cn } from "cn";
 import { PageSkeleton } from "./page-skeletons";
 
-/** Path being navigated to, or null when nothing is loading. */
-const PendingPathContext = createContext<string | null>(null);
+/** The navigation in flight, or null when nothing is loading. */
+type Pending = { path: string; samePage: boolean } | null;
+
+const PendingPathContext = createContext<Pending>(null);
+
+/** Cached pages arrive within this time, so they swap in without a skeleton. */
+const SKELETON_DELAY = 200;
 
 /**
  * Watches every in-app navigation (sidebar links, filters, sorting, search
- * forms). The moment one starts, a progress bar runs across the top and the
- * page is swapped for the destination's skeleton, so there is never a pause
- * with nothing happening while the server prepares the next page.
+ * forms). The moment one starts, a progress bar runs across the top. Going to
+ * another page swaps in its skeleton if the page isn't there almost at once;
+ * staying on the same page (a filter, a search, the next page of a list) keeps
+ * everything on screen and only fades the content until the new data lands.
  */
 export function NavigationProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [pendingPath, setPendingPath] = useState<Pending>(null);
   return (
     <PendingPathContext value={pendingPath}>
       <Suspense fallback={null}>
@@ -38,12 +45,22 @@ export function NavigationProvider({
 
 /** Page content, replaced by a skeleton while the next page loads. */
 export function PageContent({ children }: { children: React.ReactNode }) {
-  const pendingPath = use(PendingPathContext);
+  const pending = use(PendingPathContext);
+  const skeleton = pending !== null && !pending.samePage;
   return (
     <>
       {/* Kept mounted while hidden, so a cancelled navigation loses nothing. */}
-      <div hidden={pendingPath !== null}>{children}</div>
-      {pendingPath !== null && <PageSkeleton pathname={pendingPath} />}
+      <div
+        hidden={skeleton}
+        aria-busy={pending?.samePage || undefined}
+        className={cn(
+          "transition-opacity duration-200",
+          pending?.samePage && "pointer-events-none opacity-60",
+        )}
+      >
+        {children}
+      </div>
+      {skeleton && <PageSkeleton pathname={pending.path} />}
     </>
   );
 }
@@ -51,7 +68,7 @@ export function PageContent({ children }: { children: React.ReactNode }) {
 function Progress({
   onPendingChange,
 }: {
-  onPendingChange: (path: string | null) => void;
+  onPendingChange: (pending: Pending) => void;
 }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -81,15 +98,22 @@ function Progress({
       if (target.origin !== here.origin) return;
       if (target.pathname === here.pathname && target.search === here.search)
         return;
-      // Only pages inside the app have skeletons; the rest just get the bar.
-      if (
+      clearTimers();
+      const samePage = target.pathname === here.pathname;
+      if (samePage) {
+        onPendingChange({ path: target.pathname, samePage });
+      } else if (
+        // Only pages inside the app have skeletons; the rest just get the bar.
         !target.pathname.startsWith("/checkout") &&
         !target.pathname.startsWith("/auth")
       ) {
-        onPendingChange(target.pathname);
-        window.scrollTo({ top: 0 });
+        timers.current.push(
+          window.setTimeout(() => {
+            onPendingChange({ path: target.pathname, samePage });
+            window.scrollTo({ top: 0 });
+          }, SKELETON_DELAY),
+        );
       }
-      clearTimers();
       setProgress(0.12);
       // Creep towards the end without reaching it until the page arrives.
       [

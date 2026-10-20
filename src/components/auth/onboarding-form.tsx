@@ -6,6 +6,7 @@ import {
   Check,
   GraduationCap,
   Package,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "cn";
@@ -33,6 +34,12 @@ const OPTIONS: {
     title: "Ծառայություններ / Դասընթացներ",
     examples: "Անգլերենի դպրոց, խորհրդատվություն",
   },
+  {
+    type: "mixed",
+    icon: Wrench,
+    title: "Ապրանք + ծառայություն",
+    examples: "Ավտոապակի և տեղադրում, կահույք և հավաքում",
+  },
 ];
 
 export function OnboardingForm({ defaultName }: { defaultName: string }) {
@@ -56,12 +63,12 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
     <form onSubmit={submit} noValidate className="grid gap-6">
       <fieldset>
         <legend className="sr-only">Բիզնեսի տեսակ</legend>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3">
           {OPTIONS.map(({ type: value, icon: Icon, title, examples }) => (
             <label
               key={value}
               className={cn(
-                "relative flex cursor-pointer flex-col gap-3 rounded-3xl border-2 bg-card p-5 shadow-soft transition-[border-color,box-shadow]",
+                "relative flex cursor-pointer items-center gap-4 rounded-3xl border-2 bg-card p-4 pr-12 shadow-soft transition-[border-color,box-shadow]",
                 "has-focus-visible:ring-2 has-focus-visible:ring-ring",
                 type === value
                   ? "border-[#185aef] shadow-[0_18px_40px_-24px_rgb(24_90_239/0.6)]"
@@ -69,7 +76,7 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
               )}
             >
               {type === value && (
-                <span className="success-pop absolute top-4 right-4 flex size-6 items-center justify-center rounded-full bg-[#185aef] text-white">
+                <span className="success-pop absolute top-1/2 right-4 flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#185aef] text-white">
                   <Check className="size-3.5" strokeWidth={3} aria-hidden />
                 </span>
               )}
@@ -83,7 +90,7 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
               />
               <span
                 className={cn(
-                  "flex size-12 items-center justify-center rounded-xl",
+                  "flex size-12 shrink-0 items-center justify-center rounded-xl",
                   type === value
                     ? "bg-[#e8efff] text-[#1146c4]"
                     : "bg-muted text-muted-foreground",
@@ -91,8 +98,10 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
               >
                 <Icon className="size-6" strokeWidth={1.75} aria-hidden />
               </span>
-              <span className="text-base font-semibold">{title}</span>
-              <span className="text-sm text-muted-foreground">{examples}</span>
+              <span className="flex flex-col gap-0.5">
+                <span className="text-base font-semibold">{title}</span>
+                <span className="text-sm text-muted-foreground">{examples}</span>
+              </span>
             </label>
           ))}
         </div>

@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { DateRange } from "@/lib/analytics/range";
+import { RETIRED_PERSONAL_CATEGORY } from "@/config/expenses";
 import { supabase } from "@/lib/supabase";
 import { chargeDates, type RecurringExpense } from "./recurring";
 
@@ -27,6 +28,7 @@ export async function listExpenses(
       "id, expense_date, expense_category, description, amount, is_paid, cost_type",
     )
     .eq("tenant_id", tenantId)
+    .neq("expense_category", RETIRED_PERSONAL_CATEGORY)
     .gte("expense_date", range.from)
     .lte("expense_date", range.to)
     .order("expense_date", { ascending: false })
@@ -59,6 +61,7 @@ export async function listRecurringExpenses(
       "id, expense_category, description, amount, start_date, end_date, cost_type",
     )
     .eq("tenant_id", tenantId)
+    .neq("expense_category", RETIRED_PERSONAL_CATEGORY)
     .order("created_at");
 
   if (error) {

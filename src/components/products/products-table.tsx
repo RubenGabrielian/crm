@@ -6,10 +6,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PRODUCT_FIELDS, type ProductField } from "@/config/product-fields";
+import {
+  ITEM_KIND_LABELS,
+  productColumns,
+  type ProductField,
+} from "@/config/product-fields";
 import { formatMoney, formatNumber } from "@/lib/format";
 import type { Product } from "@/lib/products/queries";
-import type { BusinessType } from "@/lib/tenant/features";
+import { itemKind, type BusinessType } from "@/lib/tenant/features";
 import { ProductRowActions } from "./product-row-actions";
 import { ProductThumb } from "./product-thumb";
 
@@ -29,7 +33,8 @@ export function ProductsTable({
   products: Product[];
   businessType: BusinessType;
 }) {
-  const fields = PRODUCT_FIELDS[businessType];
+  const fields = productColumns(businessType);
+  const showsKind = businessType === "mixed";
 
   return (
     <div className="overflow-hidden rounded-3xl bg-card p-3 shadow-soft">
@@ -37,6 +42,7 @@ export function ProductsTable({
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead className="px-4">Անվանում</TableHead>
+            {showsKind && <TableHead className="px-4">Տեսակ</TableHead>}
             <TableHead className="px-4 text-right">Գին</TableHead>
             {fields.map((field) => (
               <TableHead
@@ -60,6 +66,11 @@ export function ProductsTable({
                   {product.title}
                 </span>
               </TableCell>
+              {showsKind && (
+                <TableCell className="px-4 text-muted-foreground">
+                  {ITEM_KIND_LABELS[itemKind(businessType, product.stock)]}
+                </TableCell>
+              )}
               <TableCell className="px-4 text-right tabular-nums">
                 {formatMoney(product.price)}
               </TableCell>

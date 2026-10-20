@@ -20,9 +20,9 @@ import {
   ProfitDemo,
   StockDemo,
 } from "@/components/landing/feature-demos";
+import { FeatureGrid } from "@/components/landing/feature-grid";
 import { HeroShowcase } from "@/components/landing/hero-showcase";
 import { Pricing } from "@/components/landing/pricing";
-import { ProfitCalculator } from "@/components/landing/profit-calculator";
 import { Reveal } from "@/components/landing/reveal";
 import { SalePipeline } from "@/components/landing/sale-pipeline";
 import { REVIEWS } from "@/config/reviews";
@@ -60,7 +60,7 @@ const FAQ = [
   },
   {
     q: "Ինչպե՞ս եք հաշվում մաքուր շահույթը",
-    a: "Վաճառքից (առանց առաքման վճարի) հանվում են ինքնարժեքը և նյութերը, հետո՝ մարքեթինգը։ Մնացած և անձնական ծախսերը երևում են առանձին։",
+    a: "Վաճառքից (առանց առաքման վճարի) հանվում են ինքնարժեքը և նյութերը, հետո՝ մարքեթինգը։ Մնացած ծախսերը երևում են առանձին։",
   },
   {
     q: "Ես դասընթացներ եմ անցկացնում, ինձ մոտ պահեստ չկա",
@@ -85,7 +85,7 @@ export default function LandingPage() {
             {[
               ["#features", "Հնարավորություններ"],
               ["#how", "Ինչպես է աշխատում"],
-              ["#pricing", "Գինը"],
+              ["#pricing", "Բաժանորդագրություն"],
               ["#faq", "Հարցեր"],
             ].map(([href, label]) => (
               <a
@@ -117,16 +117,20 @@ export default function LandingPage() {
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-36 px-4 pt-6 pb-20 sm:px-6 sm:pt-10">
         {/* ── Hero: a real sale, on the customer's phone and yours ── */}
         <HeroShowcase>
-          <h1 className="animate-rise text-[2.6rem] leading-[1.06] font-semibold tracking-tight text-balance sm:text-6xl xl:text-[3.5rem]">
-            Վաճառեք <span className="whitespace-nowrap">Instagram-ում,</span>{" "}
-            հաշվարկը թողեք մեզ
+          {/* Long Armenian words: set smaller than a short slogan and broken
+              after "՝", so each line reads as one thought. */}
+          <h1 className="animate-rise mx-auto max-w-3xl text-[1.7rem] leading-[1.15] font-semibold tracking-tight text-balance sm:text-5xl xl:text-[2.4rem]">
+            <span className="block">Մեկ բաժանորդագրություն՝</span>
+            <span className="block">բիզնեսիդ ամբողջ պատկերը տեսնելու համար</span>
           </h1>
           <p
             style={delay(120)}
-            className="animate-rise mx-auto mt-6 max-w-xl text-lg text-muted-foreground"
+            className="animate-rise mx-auto mt-6 max-w-[38rem] text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg"
           >
-            Ուղարկեք ապրանքի հղումը, և պատվերը կգրանցվի ինքնաբերաբար, պահեստը
-            կնվազի, իսկ վահանակը ցույց կտա իրական մաքուր շահույթը։
+            Գրանցիր պատվերները, հետևիր պահեստի մնացորդներին և վերահսկիր
+            վաճառքներն ու ծախսերը մեկ հարթակում։ Numa-ն միավորում է բիզնեսիդ
+            տվյալները, որպեսզի հստակ տեսնես աշխատանքի արդյունքը և կայացնես
+            հիմնավորված որոշումներ։
           </p>
           <div
             style={delay(200)}
@@ -136,7 +140,7 @@ export default function LandingPage() {
               href="/auth/register"
               className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 font-medium text-primary-foreground shadow-[0_14px_30px_-14px_rgb(20_20_22/0.7)] outline-none hover:bg-primary/85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              Ստեղծել խանութը
+              Միանալ Numa-ին
               <ArrowRight className="size-4" aria-hidden />
             </Link>
             <a
@@ -150,7 +154,7 @@ export default function LandingPage() {
             style={delay(260)}
             className="animate-rise mt-4 text-sm text-muted-foreground"
           >
-            13 000 ֏ ամսական՝ 30 օրվա գումարի վերադարձի երաշխիքով։
+            Բաժանորդագրվիր և փորձիր 30 օր։ Չհավանելու դեպքում գումարդ կվերադարձնենք։
           </p>
         </HeroShowcase>
 
@@ -158,7 +162,8 @@ export default function LandingPage() {
         <Reveal as="section">
           <SectionHeader
             title="Տետրը, DM-ները և Excel-ը՝ մեկ էկրանում"
-            text="Քաշեք սլաքը։ Նույն օրը՝ երկու կերպ. չգիտեք՝ ով է վճարել, քանի տոպրակ է մնացել և որքան է իրականում մնում ձեզ, կամ տեսնում եք դա միանգամից։"
+            text="Numa-ն բիզնեսի հաշվառման և կառավարման հարթակ է, որտեղ կարող ես գրանցել պատվերները, կառավարել պահեստը, հետևել վճարումներին ու հաշվարկել վաճառքներն ու ծախսերը։ Բոլոր տվյալները հավաքվում են մեկ տեղում՝ օգնելով տեսնել բիզնեսիդ ամբողջ պատկերը և կայացնել հիմնավորված որոշումներ։"
+            wide
           />
           <div className="mx-auto mt-12 max-w-4xl">
             <BeforeAfter />
@@ -170,18 +175,19 @@ export default function LandingPage() {
           <Reveal>
             <SectionHeader
               title="Ամեն ինչ, ինչ պետք է Instagram խանութին"
-              text="Չորս գործիք, որոնք կապված են իրար. պատվերը նվազեցնում է պահեստը, կարգավիճակը նամակ է ուղարկում, ծախսը փոխում է շահույթը։"
+              text="Ութ գործիք, որոնք կապված են իրար. պատվերը նվազեցնում է պահեստը, ծախսը փոխում է շահույթը, իսկ վահանակը ցույց է տալիս ամբողջ պատկերը։"
             />
+            <div className="mt-12">
+              <FeatureGrid />
+            </div>
           </Reveal>
           <FeatureRow
             icon={Link2}
             label="Պատվեր հղումով"
-            title="Մեկ հղում՝ զեղչով և առաքման գնով"
-            text="Պատճենում եք ապրանքի հղումը, ընտրում զեղչը և առաքումը, ուղարկում DM-ով կամ Story-ում։ Հաճախորդն ինքն է լրացնում պատվերը՝ առանց հարց ու պատասխանի։"
             points={[
-              "Հաճախորդը չի կարող փոխել զեղչը հղման մեջ",
-              "Անվճար առաքում՝ մեկ թվով",
-              "Աշխատում է ցանկացած հեռախոսում, առանց հավելվածի",
+              "Սահմանիր զեղչն ու առաքման արժեքը։",
+              "Ստացիր պատվերի տվյալները մեկ տեղում։",
+              "Հաճախորդը պատվիրում է առանց գրանցվելու կամ հավելված ներբեռնելու։",
             ]}
             demo={<LinkDemo />}
           />
@@ -189,24 +195,20 @@ export default function LandingPage() {
             flip
             icon={ShoppingBag}
             label="Պատվերներ"
-            title="Կարգավիճակ, վճարում և նամակ՝ մեկ սեղմումով"
-            text="Փոխեք կարգավիճակը հենց աղյուսակից. «Առաքված» ընտրելիս հաճախորդը նամակ է ստանում։ Նշեք՝ վճարվա՞ծ է, թե՞ ոչ, և ինչպես։"
             points={[
-              "Կանխիկ, քարտով, փոխանցում կամ POS",
+              "Վճարման եղանակ և վճարման կարգավիճակ",
               "Մեկնաբանություն յուրաքանչյուր պատվերի համար",
-              "Պատվեր ձեռքով՝ զանգի կամ DM-ի դեպքում",
+              "Զանգով կամ նամակով ստացած պատվերի գրանցում",
             ]}
             demo={<OrdersDemo />}
           />
           <FeatureRow
             icon={Warehouse}
             label="Պահեստ և նյութեր"
-            title="Պահեստը նվազում է ինքը, տոպրակներն ու պիտակները՝ նույնպես"
-            text="Ամեն վաճառքից դուրս է գրվում ոչ միայն ապրանքը, այլև այն նյութերը, որոնք ծախսվում են դրա վրա։ Տեսնում եք՝ ինչ է վերջանում, նախքան վերջանալը։"
             points={[
-              "Նյութեր՝ հատով, գրամով կամ մետրով",
-              "Նվերները դուրս են գրվում առանձին",
-              "Պատվերը ջնջելիս ամեն ինչ վերադառնում է պահեստ",
+              "Նյութերի հաշվառում",
+              "Պատվերը գրանցելիս ապրանքների և նյութերի մնացորդներն ավտոմատ թարմացվում են",
+              "Պատվերը ջնջելիս ապրանքներն ու նյութերն ավտոմատ վերադառնում են պահեստ",
             ]}
             demo={<StockDemo />}
           />
@@ -214,12 +216,10 @@ export default function LandingPage() {
             flip
             icon={BarChart3}
             label="Վահանակ"
-            title="Իրական մաքուր շահույթ, ոչ թե պարզապես վաճառք"
-            text="Վաճառքից հանվում են ինքնարժեքը, նյութերը և մարքեթինգը։ Տեսնում եք, թե ամսվա որ օրն եք դուրս եկել զրոյի, և որ աղբյուրն է իրոք բերում պատվերներ։"
             points={[
-              "Մաքուր շահույթ, շահութաբերություն, ROAS և CAC",
-              "Զրոյական կետ՝ ամսվա որ օրն է",
-              "Աղբյուրներ՝ Instagram DM, Meta Ads, խանութ",
+              "Տես՝ որքան մաքուր շահույթ է բերում բիզնեսդ",
+              "Հետևիր ծախսերին ու շահույթին՝ քո ընտրած ժամանակահատվածով",
+              "Վերահսկիր մարքեթինգային բյուջեն և գնահատիր դրա արդյունքը",
             ]}
             demo={<ProfitDemo />}
           />
@@ -228,30 +228,19 @@ export default function LandingPage() {
         {/* ── One sale, step by step ────────────────────── */}
         <Reveal as="section" id="how" className="scroll-mt-24">
           <SectionHeader
-            title="DM-ից մինչև մաքուր շահույթ"
-            text="Նույն պատվերը՝ քայլ առ քայլ. նամակագրությունից մինչև այն պահը, երբ շահույթն արդեն հաշվված է վահանակում։"
+            title="Մեկ հղում՝ երկար նամակագրության փոխարեն"
+            text="Ուղարկիր հղումը, և հաճախորդն ինքնուրույն կլրացնի իր տվյալներն ու պատվերը։ Տվյալներն ավտոմատ կավելանան քո հաճախորդների բազայում։"
           />
           <div className="mt-12">
             <SalePipeline />
           </div>
         </Reveal>
 
-        {/* ── Profit calculator ─────────────────────────── */}
-        <Reveal as="section" id="calculator" className="scroll-mt-24">
-          <SectionHeader
-            title="Որքա՞ն է իրականում մնում ձեզ"
-            text="Շարժեք թվերը՝ ձեր խանութի չափով։ Նույն բանաձևն աշխատում է վահանակում, միայն թե այնտեղ ամեն ինչ հաշվվում է իրական պատվերներից։"
-          />
-          <div className="mt-12">
-            <ProfitCalculator />
-          </div>
-        </Reveal>
-
         {/* ── Pricing ───────────────────────────────────── */}
         <Reveal as="section" id="pricing" className="scroll-mt-24">
           <SectionHeader
-            title="Մեկ գին՝ ամեն ինչ ներառված"
-            text="Փաթեթներ ընտրելու կարիք չկա։ Բոլոր հնարավորությունները՝ մեկ ամսական վճարով, և 30 օր՝ համոզվելու համար։"
+            title="Բոլոր հնարավորությունները՝ մեկ բաժանորդագրությամբ"
+            text="Օգտվիր Numa-ի բոլոր գործիքներից ամսական 13 000 դրամով։ Փորձիր 30 օր. չհավանելու դեպքում գումարդ կվերադարձնենք։"
           />
           <div className="mt-12">
             <Pricing />
@@ -327,7 +316,7 @@ export default function LandingPage() {
                 href="/auth/register"
                 className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 font-medium text-primary-foreground outline-none hover:bg-primary/85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                Ստեղծել խանութը
+                Միանալ Numa-ին
                 <ArrowRight className="size-4" aria-hidden />
               </Link>
             </div>
@@ -376,13 +365,27 @@ function Logo() {
   );
 }
 
-function SectionHeader({ title, text }: { title: string; text: string }) {
+function SectionHeader({
+  title,
+  text,
+  wide,
+}: {
+  title: string;
+  text: string;
+  /** For a longer text: a wider column, so it doesn't run down the page. */
+  wide?: boolean;
+}) {
   return (
-    <div className="mx-auto max-w-2xl text-center">
+    <div className={cn("mx-auto text-center", wide ? "max-w-3xl" : "max-w-2xl")}>
       <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
         {title}
       </h2>
-      <p className="mx-auto mt-4 max-w-xl text-muted-foreground sm:text-lg">
+      <p
+        className={cn(
+          "mx-auto mt-4 text-muted-foreground sm:text-lg",
+          wide ? "max-w-[44rem] leading-relaxed text-pretty" : "max-w-xl",
+        )}
+      >
         {text}
       </p>
     </div>
@@ -400,8 +403,9 @@ function FeatureRow({
 }: {
   icon: LucideIcon;
   label: string;
-  title: string;
-  text: string;
+  /** Optional: without a title and text the row is just the points. */
+  title?: string;
+  text?: string;
   points: string[];
   demo: ReactNode;
   /** Demo on the left instead of the right. */
@@ -415,18 +419,38 @@ function FeatureRow({
       )}
     >
       <div className={flip ? "lg:order-2" : undefined}>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs font-medium shadow-soft">
-          <Icon className="size-3.5" aria-hidden />
-          {label}
-        </span>
-        <h3 className="mt-5 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          {title}
-        </h3>
-        <p className="mt-4 text-muted-foreground sm:text-lg">{text}</p>
-        <ul className="mt-7 flex flex-col gap-3">
+        {/* Without a title, the label pill is the row's heading. */}
+        {title ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs font-medium shadow-soft">
+            <Icon className="size-3.5" aria-hidden />
+            {label}
+          </span>
+        ) : (
+          <h3 className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs font-medium shadow-soft">
+            <Icon className="size-3.5" aria-hidden />
+            {label}
+          </h3>
+        )}
+        {title && (
+          <h3 className="mt-5 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+            {title}
+          </h3>
+        )}
+        {text && <p className="mt-4 text-muted-foreground sm:text-lg">{text}</p>}
+        <ul
+          className={cn(
+            "flex flex-col",
+            title ? "mt-7 gap-3" : "mt-6 gap-5 text-lg sm:text-xl",
+          )}
+        >
           {points.map((point) => (
             <li key={point} className="flex gap-3">
-              <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <span
+                className={cn(
+                  "flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground",
+                  title ? "mt-0.5" : "mt-1",
+                )}
+              >
                 <Check className="size-3" strokeWidth={3} aria-hidden />
               </span>
               {point}

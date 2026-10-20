@@ -111,6 +111,18 @@
     animation-delay: var(--delay, 0ms);
   }
 
+  /* The features panel: the newly picked feature fades in. */
+  @keyframes feature-swap {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+
+  .feature-swap {
+    animation: feature-swap 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
   @keyframes float {
     50% {
       transform: translateY(-8px);

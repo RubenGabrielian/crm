@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { Receipt, TriangleAlert } from "lucide-react";
 import { cn } from "cn";
@@ -21,7 +22,8 @@ import {
 import {
   expenseCategoryLabel,
   COST_TYPE_LABELS,
-  expenseGroup,
+  isCostType,
+  type CostType,
 } from "@/config/expenses";
 import { resolveRange } from "@/lib/analytics/range";
 import {
@@ -32,12 +34,13 @@ import {
 import { formatMoney, formatNumber } from "@/lib/format";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
-type Tile = "fixed" | "variable" | "personal";
+/** A tile is also a filter: "all" shows every expense. */
+type Tile = "all" | CostType;
 
 const TILE_LABELS: Record<Tile, { title: string; note: string }> = {
+  all: { title: "Բոլոր ծախսերը", note: "Ֆիքսված և փոփոխական" },
   fixed: { title: "Ֆիքսված ծախսեր", note: "Վճարվում են՝ վաճառք լինի թե ոչ" },
   variable: { title: "Փոփոխական ծախսեր", note: "Աճում են վաճառքի հետ" },
-  personal: { title: "Անձնական ծախսեր", note: "Բիզնեսի հաշվարկից դուրս" },
 };
 
 function displayDate(date: string) {
@@ -76,17 +79,31 @@ export default async function ExpensesPage({
     items.reduce((all, item) => all + item.amount, 0);
   const unpaid = expenses.filter((expense) => !expense.paid);
   const paid = expenses.filter((expense) => expense.paid);
-  const tileOf = (expense: (typeof expenses)[number]): Tile =>
-    expenseGroup(expense.category) === "personal"
-      ? "personal"
-      : expense.costType;
-  const groups = (["fixed", "variable", "personal"] as const)
-    .map((group) => {
-      const items = paid.filter((expense) => tileOf(expense) === group);
-      return { group, amount: sum(items), count: items.length };
-    })
-    // Personal spending only appears once there is some.
-    .filter((tile) => tile.group !== "personal" || tile.count > 0);
+  const groups = (["all", "fixed", "variable"] as const).map((group) => {
+    const items =
+      group === "all"
+        ? paid
+        : paid.filter((expense) => expense.costType === group);
+    return { group, amount: sum(items), count: items.length };
+  });
+
+  // Clicking a tile shows only that type; the period stays as it is.
+  const typeParam = pick(params.type);
+  const filter: Tile = isCostType(typeParam) ? typeParam : "all";
+  const shown =
+    filter === "all"
+      ? expenses
+      : expenses.filter((expense) => expense.costType === filter);
+  const hrefFor = (tile: Tile) => {
+    const query = new URLSearchParams();
+    for (const key of ["range", "from", "to"] as const) {
+      const value = pick(params[key]);
+      if (value) query.set(key, value);
+    }
+    if (tile !== "all") query.set("type", tile);
+    const text = query.toString();
+    return text ? `/expenses?${text}` : "/expenses";
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -111,28 +128,40 @@ export default async function ExpensesPage({
       ) : (
         <>
           <div className="flex flex-col gap-3">
-            <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              {groups.map((tile) => (
-                <div
-                  key={tile.group}
-                  className={cn(
-                    "rounded-3xl p-5 shadow-soft",
-                    tile.group === "fixed" ? "bg-apricot" : "bg-card",
-                  )}
-                >
-                  <dt className="text-sm font-medium">
-                    {TILE_LABELS[tile.group].title}
-                  </dt>
-                  <dd className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">
-                    {formatMoney(tile.amount)}
-                  </dd>
-                  <dd className="mt-1 text-xs tabular-nums opacity-70">
-                    {formatNumber(tile.count)} գրառում ·{" "}
-                    {TILE_LABELS[tile.group].note}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            <nav
+              aria-label="Ծախսերի տեսակ"
+              className="grid gap-3 sm:grid-cols-3 sm:gap-4"
+            >
+              {groups.map((tile) => {
+                const active = filter === tile.group;
+                return (
+                  <Link
+                    key={tile.group}
+                    href={hrefFor(tile.group)}
+                    scroll={false}
+                    aria-current={active ? "true" : undefined}
+                    className={cn(
+                      "rounded-3xl p-5 shadow-soft outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+                      active
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card hover:bg-muted",
+                    )}
+                  >
+                    <span className="block text-sm font-medium">
+                      {TILE_LABELS[tile.group].title}
+                    </span>
+                    <span className="mt-3 block text-2xl font-semibold tracking-tight tabular-nums">
+                      {formatMoney(tile.amount)}
+                    </span>
+                    <span className="mt-1 block text-xs tabular-nums opacity-70">
+                      {formatNumber(tile.count)} գրառում ·{" "}
+                      {TILE_LABELS[tile.group].note}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+            <CostTypeGuide />
             {unpaid.length > 0 && (
               <p className="text-sm tabular-nums text-muted-foreground">
                 Չվճարված՝ {formatMoney(sum(unpaid))} (
@@ -142,7 +171,13 @@ export default async function ExpensesPage({
             )}
           </div>
 
-          {expenses.length === 0 ? (
+          {shown.length === 0 && expenses.length > 0 ? (
+            <EmptyState
+              icon={Receipt}
+              title={`Այս ժամանակահատվածում ${filter === "fixed" ? "ֆիքսված" : "փոփոխական"} ծախսեր չկան`}
+              description="Ընտրեք «Բոլոր ծախսերը»՝ ամբողջ ցանկը տեսնելու համար։"
+            />
+          ) : expenses.length === 0 ? (
             <EmptyState
               icon={Receipt}
               title="Այս ժամանակահատվածում ծախսեր չկան"
@@ -165,7 +200,7 @@ export default async function ExpensesPage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {expenses.map((expense) => {
+                  {shown.map((expense) => {
                     const category = expenseCategoryLabel(expense.category);
                     return (
                       <TableRow key={expense.id}>
@@ -298,5 +333,44 @@ export default async function ExpensesPage({
         </>
       )}
     </div>
+  );
+}
+
+/** What counts as fixed and what as variable, with everyday examples. */
+function CostTypeGuide() {
+  return (
+    <details className="rounded-3xl bg-card px-5 py-4 text-sm shadow-soft">
+      <summary className="cursor-pointer font-medium outline-none focus-visible:underline">
+        Ո՞րն է ֆիքսված ծախս, որը՝ փոփոխական
+      </summary>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl bg-muted p-4">
+          <p className="font-semibold">Ֆիքսված</p>
+          <p className="mt-1 text-muted-foreground">
+            Վճարում ես ամեն ամիս՝ վաճառք լինի թե ոչ։ Մեկ պատվեր ունենաս թե հարյուր,
+            գումարը նույնն է։
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            Օրինակ՝ վարձ, աշխատավարձ, գովազդի բյուջե, ծրագրերի և ինտերնետի
+            վճար, կոմունալ։
+          </p>
+        </div>
+        <div className="rounded-2xl bg-muted p-4">
+          <p className="font-semibold">Փոփոխական</p>
+          <p className="mt-1 text-muted-foreground">
+            Մեծանում է վաճառքի հետ՝ որքան շատ ես վաճառում, այնքան շատ ես
+            ծախսում։ Վաճառք չկա՝ ծախս էլ չկա։
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            Օրինակ՝ ապրանքի գնում, փաթեթավորում, տոպրակ ու պիտակ, առաքում,
+            բանկի միջնորդավճար։
+          </p>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Ֆիքսված ծախսերն օգտագործվում են զրոյական կետը հաշվելու համար՝ քանի հատ
+        պետք է վաճառես, որ դրանք ծածկվեն։
+      </p>
+    </details>
   );
 }

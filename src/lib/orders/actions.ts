@@ -8,6 +8,7 @@ import { verifySale, type LinkSale } from "./sale-link";
 import { getCheckoutProduct } from "@/lib/products/queries";
 import { supabase } from "@/lib/supabase";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { scheduleFromInput } from "./schedule";
 
 export type OrderFormState = {
   ok: boolean;
@@ -79,7 +80,7 @@ export async function placeOrder(
 
   const product = await getCheckoutProduct(productId);
   if (!product) return fail("Այս ապրանքն այլևս հասանելի չէ։");
-  const needsAddress = product.businessType === "ecommerce";
+  const needsAddress = product.kind === "product";
 
   const errors: Record<string, string> = {};
   if (!values.name) errors.name = REQUIRED;
@@ -186,7 +187,9 @@ export async function updateOrder(
     discount_percent: read("discount_percent"),
     discount_amount: read("discount_amount"),
     delivery_fee: read("delivery_fee"),
+    unit_price: read("unit_price"),
     status: read("status"),
+    scheduled_at: read("scheduled_at"),
   };
   const fail = (formError: string): OrderFormState => ({
     ok: false,
@@ -197,7 +200,7 @@ export async function updateOrder(
 
   const errors: Record<string, string> = {};
   const amount = (
-    name: "discount_percent" | "discount_amount" | "delivery_fee",
+    name: "discount_percent" | "discount_amount" | "delivery_fee" | "unit_price",
   ) => {
     const number = values[name] === "" ? 0 : Number(values[name]);
     if (!Number.isFinite(number) || number < 0) {
@@ -218,6 +221,10 @@ export async function updateOrder(
   if (discountPercent > 100) errors.discount_percent = "Առավելագույնը 100%";
   const discountAmount = amount("discount_amount");
   const deliveryFee = amount("delivery_fee");
+  // Left empty, the price stays as it is.
+  const unitPrice = values.unit_price === "" ? null : amount("unit_price");
+  const scheduledAt = scheduleFromInput(values.scheduled_at);
+  if (scheduledAt === "invalid") errors.scheduled_at = "Ընտրեք օրը և ժամը";
 
   if (!isOrderStatus(values.status)) errors.status = REQUIRED;
 
@@ -238,6 +245,7 @@ export async function updateOrder(
     p_discount_amount: discountAmount,
     p_delivery_fee: deliveryFee,
     p_status: values.status,
+    p_unit_price: unitPrice,
   });
 
   if (error) {
@@ -266,6 +274,10 @@ export async function updateOrder(
     console.error("update_order failed:", error);
     return fail("Չհաջողվեց պահպանել։ Փորձեք կրկին։");
   }
+
+  await mergeOrderMetadata(tenant.id, orderId, {
+    scheduled_at: scheduledAt === "invalid" ? null : scheduledAt,
+  });
 
   if (previousStatus !== null && previousStatus !== values.status) {
     // Awaited on purpose: background sending did not run reliably on the host.
@@ -313,16 +325,37 @@ export async function updateOrderStatus(
 }
 
 // ── Admin: add an order by hand (phone call, Instagram DM, ...) ──
+/** One line of a manual order, as sent by the form in its "lines" field. */
+type OrderLineInput = { productId: string; qty: string; price: string };
+
+function parseLines(raw: string): OrderLineInput[] {
+  try {
+    const list: unknown = JSON.parse(raw || "[]");
+    if (!Array.isArray(list)) return [];
+    return list.map((item) => ({
+      productId: String(item?.productId ?? "").trim(),
+      qty: String(item?.qty ?? "").trim(),
+      price: String(item?.price ?? "").trim(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Saves every line (e.g. car glass + fitting) as its own order row for the
+ * same customer, so stock, cost and profit stay per item. Rows of one visit
+ * share metadata.group_id.
+ */
 export async function createManualOrder(
   _prev: OrderFormState,
   formData: FormData,
 ): Promise<OrderFormState> {
   const tenant = await getCurrentTenant();
-  const isShop = tenant.businessType === "ecommerce";
+  const takesAddress = tenant.businessType !== "service";
   const read = (name: string) => String(formData.get(name) ?? "").trim();
   const values = {
-    product_id: read("product_id"),
-    qty: read("qty") || "1",
+    lines: read("lines"),
     name: read("name"),
     phone: read("phone"),
     email: read("email"),
@@ -331,6 +364,7 @@ export async function createManualOrder(
     discount_percent: read("discount_percent"),
     payment_method: read("payment_method"),
     paid: read("paid"),
+    scheduled_at: read("scheduled_at"),
   };
   const fail = (formError: string): OrderFormState => ({
     ok: false,
@@ -340,7 +374,9 @@ export async function createManualOrder(
   });
 
   const errors: Record<string, string> = {};
-  if (!values.product_id) errors.product_id = REQUIRED;
+  // Error keys use the row's place in the form; empty extra rows are skipped.
+  const lines = parseLines(values.lines);
+  if (lines.length === 0) errors["line-0-product"] = REQUIRED;
   if (!values.name) errors.name = REQUIRED;
 
   const phone = normalizePhone(values.phone);
@@ -350,9 +386,6 @@ export async function createManualOrder(
   if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
     errors.email = "Մուտքագրեք ճիշտ էլ. հասցե";
   }
-
-  const qty = parseQty(values.qty);
-  if (!qty) errors.qty = "Մուտքագրեք 1 կամ ավելի";
 
   const discountPercent =
     values.discount_percent === "" ? 0 : Number(values.discount_percent);
@@ -364,71 +397,129 @@ export async function createManualOrder(
     errors.discount_percent = "Մուտքագրեք 0-ից 100";
   }
 
+  const scheduledAt = scheduleFromInput(values.scheduled_at);
+  if (scheduledAt === "invalid") errors.scheduled_at = "Ընտրեք օրը և ժամը";
+
+  // Only this tenant's active items can be ordered.
+  const ids = [...new Set(lines.map((line) => line.productId).filter(Boolean))];
+  const { data: products } = ids.length
+    ? await supabase
+        .from("products")
+        .select("id, title, price, inventory(stock_quantity)")
+        .eq("tenant_id", tenant.id)
+        .eq("is_active", true)
+        .in("id", ids)
+    : { data: [] };
+  const byId = new Map((products ?? []).map((row) => [row.id, row]));
+
+  const parsed: { productId: string; title: string; qty: number; price: number; listPrice: number }[] = [];
+  const wanted = new Map<string, number>();
+  lines.forEach((line, index) => {
+    if (index > 0 && !line.productId) return;
+    const product = byId.get(line.productId);
+    if (!line.productId) errors[`line-${index}-product`] = REQUIRED;
+    else if (!product) errors[`line-${index}-product`] = "Ընտրեք ցանկից";
+
+    const qty = parseQty(line.qty || "1");
+    if (!qty) errors[`line-${index}-qty`] = "1 կամ ավելի";
+
+    const listPrice = Number(product?.price ?? 0);
+    const price = line.price === "" ? listPrice : Number(line.price);
+    if (!Number.isFinite(price) || price < 0)
+      errors[`line-${index}-price`] = "0 կամ ավելի";
+
+    if (product && qty) {
+      wanted.set(product.id, (wanted.get(product.id) ?? 0) + qty);
+      const stockRow = Array.isArray(product.inventory)
+        ? product.inventory[0]
+        : product.inventory;
+      if (stockRow && (wanted.get(product.id) ?? 0) > stockRow.stock_quantity)
+        errors[`line-${index}-qty`] = `Առկա է ${stockRow.stock_quantity}`;
+      parsed.push({ productId: product.id, title: product.title, qty, price, listPrice });
+    }
+  });
+
   if (Object.keys(errors).length > 0) {
     return { ok: false, values, errors, formError: null };
   }
 
-  // The product must belong to this tenant; place_order itself only takes an id.
-  const { data: product } = await supabase
-    .from("products")
-    .select("id")
-    .eq("id", values.product_id)
-    .eq("tenant_id", tenant.id)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (!product) {
-    return {
-      ok: false,
-      values,
-      errors: { product_id: "Ընտրեք ապրանքը ցանկից" },
-      formError: null,
-    };
-  }
+  const groupId = parsed.length > 1 ? crypto.randomUUID() : null;
+  let deliveryCharged = false;
 
-  // Same path as the public checkout: price and delivery fee come from the
-  // product, stock is reserved, and the customer is matched by phone.
-  const { data: orderId, error } = await supabase.rpc("place_order", {
-    p_product_id: product.id,
-    p_name: values.name,
-    p_email: values.email,
-    p_phone: phone,
-    p_address: isShop ? values.address : "",
-    p_qty: qty,
-    p_discount_percent: discountPercent,
-  });
+  for (const [index, line] of parsed.entries()) {
+    // Same path as the public checkout: stock and materials are taken, and
+    // the customer is matched by phone. Price and delivery are set after.
+    const { data: orderId, error } = await supabase.rpc("place_order", {
+      p_product_id: line.productId,
+      p_name: values.name,
+      p_email: values.email,
+      p_phone: phone,
+      p_address: takesAddress ? values.address : "",
+      p_qty: line.qty,
+      p_discount_percent: discountPercent,
+    });
 
-  if (error) {
-    if (error.message.includes("out_of_stock")) return fail(NOT_ENOUGH_STOCK);
-    console.error("place_order (manual) failed:", error);
-    return fail("Չհաջողվեց պահպանել։ Փորձեք կրկին։");
-  }
+    if (error || !orderId) {
+      if (error) console.error("place_order (manual) failed:", error);
+      const reason = error?.message.includes("out_of_stock")
+        ? NOT_ENOUGH_STOCK
+        : "Փորձեք կրկին։";
+      if (index === 0) {
+        return fail(
+          error?.message.includes("out_of_stock")
+            ? NOT_ENOUGH_STOCK
+            : "Չհաջողվեց պահպանել։ Փորձեք կրկին։",
+        );
+      }
+      revalidateOrderPages();
+      return fail(
+        `Պահպանվեց ${index} դիրք, բայց «${line.title}»-ը՝ ոչ։ ${reason} Ավելացրեք այն առանձին։`,
+      );
+    }
 
-  // Payment details live in metadata next to the address.
-  if (isPaymentMethod(values.payment_method) || values.paid) {
+    const columns: Record<string, unknown> = {};
+    if (line.price !== line.listPrice) {
+      columns.unit_price = line.price;
+      columns.discount_amount =
+        Math.round(line.qty * line.price * discountPercent) / 100;
+    }
+    // One visit pays delivery once, on the first line that has it.
+    const { data: placed } = await supabase
+      .from("orders")
+      .select("delivery_fee")
+      .eq("id", orderId)
+      .maybeSingle();
+    if (Number(placed?.delivery_fee ?? 0) > 0) {
+      if (deliveryCharged) columns.delivery_fee = 0;
+      deliveryCharged = true;
+    }
+    if (values.source) {
+      const { data: option } = await supabase
+        .from("order_sources")
+        .select("name")
+        .eq("tenant_id", tenant.id)
+        .eq("name", values.source)
+        .maybeSingle();
+      if (option) columns.source = option.name;
+    }
+    if (Object.keys(columns).length > 0) {
+      const { error: columnsError } = await supabase
+        .from("orders")
+        .update(columns)
+        .eq("id", orderId)
+        .eq("tenant_id", tenant.id);
+      if (columnsError)
+        console.error("updating manual order failed:", columnsError);
+    }
+
     await mergeOrderMetadata(tenant.id, orderId, {
       payment_method: isPaymentMethod(values.payment_method)
         ? values.payment_method
         : null,
       paid: values.paid === "yes",
+      scheduled_at: scheduledAt,
+      group_id: groupId,
     });
-  }
-
-  if (values.source) {
-    const { data: option } = await supabase
-      .from("order_sources")
-      .select("name")
-      .eq("tenant_id", tenant.id)
-      .eq("name", values.source)
-      .maybeSingle();
-    if (option) {
-      const { error: sourceError } = await supabase
-        .from("orders")
-        .update({ source: option.name })
-        .eq("id", orderId)
-        .eq("tenant_id", tenant.id);
-      if (sourceError)
-        console.error("setting order source failed:", sourceError);
-    }
   }
 
   revalidateOrderPages();
@@ -436,10 +527,49 @@ export async function createManualOrder(
 }
 
 // ── Admin: delete an order ───────────────────────────────────
+/**
+ * What the delete dialog needs to know: how many other orders the customer
+ * has (removing the customer is offered only at 0, so no history is lost),
+ * and whether the item keeps stock (services have nothing to put back).
+ */
+export async function getOrderDeleteInfo(
+  orderId: string,
+): Promise<{ otherOrders: number; tracksStock: boolean } | null> {
+  const tenant = await getCurrentTenant();
+  const { data: order } = await supabase
+    .from("orders")
+    .select("customer_id, product_id")
+    .eq("id", orderId)
+    .eq("tenant_id", tenant.id)
+    .maybeSingle();
+  if (!order) return null;
+
+  const [orders, stock] = await Promise.all([
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.id)
+      .eq("customer_id", order.customer_id)
+      .neq("id", orderId),
+    supabase
+      .from("inventory")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.id)
+      .eq("product_id", order.product_id),
+  ]);
+  if (orders.error || stock.error) {
+    console.error("loading order delete info failed:", orders.error ?? stock.error);
+    return null;
+  }
+  return { otherOrders: orders.count ?? 0, tracksStock: (stock.count ?? 0) > 0 };
+}
+
 export async function deleteOrder(
   orderId: string,
   /** Put the order's quantity back into stock. */
   restock: boolean,
+  /** Remove the customer from CRM too, if this was their only order. */
+  deleteCustomer = false,
 ): Promise<{ ok: boolean; error: string | null }> {
   const tenant = await getCurrentTenant();
 
@@ -448,7 +578,7 @@ export async function deleteOrder(
     .delete()
     .eq("id", orderId)
     .eq("tenant_id", tenant.id)
-    .select("product_id, qty");
+    .select("product_id, qty, customer_id");
 
   if (error || data.length === 0) {
     if (error) console.error("deleting order failed:", error);
@@ -484,7 +614,43 @@ export async function deleteOrder(
     }
   }
 
+  // After the stock, so a problem with the customer never skips the restock.
+  if (deleteCustomer) {
+    const customerError = await deleteCustomerWithoutOrders(
+      tenant.id,
+      data[0].customer_id,
+    );
+    if (customerError) return { ok: false, error: customerError };
+  }
+
   return { ok: true, error: null };
+}
+
+/** Deletes a customer who has no orders left; returns an error message or null. */
+async function deleteCustomerWithoutOrders(
+  tenantId: string,
+  customerId: string,
+): Promise<string | null> {
+  // Checked again here: an order may have arrived since the dialog opened.
+  const { count } = await supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .eq("customer_id", customerId);
+  if ((count ?? 0) > 0) {
+    return "Պատվերը ջնջվեց, բայց հաճախորդն ունի այլ պատվերներ, դրա համար մնաց CRM-ում։";
+  }
+
+  const { error } = await supabase
+    .from("customers")
+    .delete()
+    .eq("id", customerId)
+    .eq("tenant_id", tenantId);
+  if (error) {
+    console.error("deleting customer failed:", error);
+    return "Պատվերը ջնջվեց, բայց հաճախորդին չհաջողվեց ջնջել։ Ջնջեք նրան CRM-ից։";
+  }
+  return null;
 }
 
 // ── Admin: a free-text comment on an order ───────────────────

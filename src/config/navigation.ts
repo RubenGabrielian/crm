@@ -39,13 +39,13 @@ const NAVIGATION: NavConfigItem[] = [
   { href: "/dashboard", label: "Գլխավոր", icon: House },
   {
     href: "/catalog",
-    label: { ecommerce: "Ապրանքներ", service: "Դասընթացներ" },
-    icon: { ecommerce: Package, service: GraduationCap },
+    label: { ecommerce: "Ապրանքներ", service: "Դասընթացներ", mixed: "Կատալոգ" },
+    icon: { ecommerce: Package, service: GraduationCap, mixed: Package },
   },
   {
     href: "/orders",
-    label: { ecommerce: "Պատվերներ", service: "Գրանցումներ" },
-    icon: { ecommerce: ShoppingBag, service: ClipboardList },
+    label: { ecommerce: "Պատվերներ", service: "Գրանցումներ", mixed: "Պատվերներ" },
+    icon: { ecommerce: ShoppingBag, service: ClipboardList, mixed: ShoppingBag },
     showsNewOrders: true,
   },
   { href: "/inventory", label: "Պահեստ", icon: Warehouse, requires: "inventory" },

@@ -59,7 +59,7 @@ async function sendStatusEmail(
     return;
   }
 
-  const isShop = tenant.businessType === "ecommerce";
+  const isShop = tenant.businessType !== "service";
   const statusLabel = ORDER_STATUS_LABELS[tenant.businessType][status];
   const orderWord = isShop ? "պատվերի" : "գրանցման";
   const product = one(order.products)?.title ?? "";

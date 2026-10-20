@@ -33,6 +33,7 @@ import {
   type ReinvestmentFormState,
 } from "@/lib/reinvestments/actions";
 import { useTenant } from "@/lib/tenant/tenant-context";
+import { ITEM_LABELS } from "@/lib/tenant/features";
 
 const INITIAL_STATE: ReinvestmentFormState = {
   ok: false,
@@ -118,7 +119,7 @@ function ReinvestmentForm({
 
         <Field data-invalid={errors.product_id ? true : undefined}>
           <FieldLabel htmlFor="reinvestment-product">
-            {businessType === "ecommerce" ? "Ապրանք" : "Դասընթաց"}
+            {ITEM_LABELS[businessType]}
             <span className="font-normal text-muted-foreground">(ոչ պարտադիր)</span>
           </FieldLabel>
           <select

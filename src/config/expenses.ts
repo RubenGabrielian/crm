@@ -6,7 +6,6 @@ export const EXPENSE_CATEGORIES = [
   "packaging",
   "rent",
   "other",
-  "personal",
 ] as const;
 export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
 
@@ -18,7 +17,6 @@ export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   packaging: "Փաթեթավորում",
   rent: "Վարձակալություն",
   other: "Այլ",
-  personal: "Անձնական ծախսեր",
 };
 
 export function isExpenseCategory(value: unknown): value is ExpenseCategory {
@@ -37,14 +35,16 @@ export const MARKETING_CATEGORIES: readonly string[] = [
   "marketing",
 ];
 
-/** The owner's personal spending: shown apart from business expenses. */
-export const PERSONAL_CATEGORY = "personal";
+/**
+ * Personal spending is no longer tracked. Entries saved under it earlier are
+ * kept in the database but left out of every list and total.
+ */
+export const RETIRED_PERSONAL_CATEGORY = "personal";
 
-export type ExpenseGroup = "marketing" | "other" | "personal";
+export type ExpenseGroup = "marketing" | "other";
 
 export function expenseGroup(category: string): ExpenseGroup {
-  if (MARKETING_CATEGORIES.includes(category)) return "marketing";
-  return category === PERSONAL_CATEGORY ? "personal" : "other";
+  return MARKETING_CATEGORIES.includes(category) ? "marketing" : "other";
 }
 
 /** Fixed: paid whatever the sales (marketing budget, rent). Variable: grows with sales. */

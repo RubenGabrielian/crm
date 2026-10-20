@@ -15,7 +15,7 @@ export default async function CatalogPage() {
   const tenant = await getCurrentTenant();
   const [{ products, error }, { materials }] = await Promise.all([
     listProducts(tenant.id),
-    tenant.businessType === "ecommerce"
+    tenant.businessType !== "service"
       ? listMaterials(tenant.id)
       : Promise.resolve({ materials: [] }),
   ]);
@@ -50,7 +50,7 @@ export default async function CatalogPage() {
 
         {products.length === 0 ? (
           <EmptyState
-            icon={tenant.businessType === "ecommerce" ? Package : GraduationCap}
+            icon={tenant.businessType === "service" ? GraduationCap : Package}
             title={copy.emptyTitle}
             description={copy.emptyDescription}
           />

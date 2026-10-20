@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -65,6 +66,52 @@ async function confirmUrl() {
 const SEND_FAILED = "Չհաջողվեց ուղարկել նամակը։ Փորձեք մի փոքր ուշ։";
 
 /**
+ * Local development only (`next dev`): any email signs in straight away, no
+ * code to type. Production builds always run with NODE_ENV=production.
+ */
+const SKIP_EMAIL_CODE = process.env.NODE_ENV === "development";
+
+/** Dev shortcut: create the account if needed, sign in and go on. */
+async function devSignIn(
+  email: string,
+  profile: Record<string, string | null> | undefined,
+): Promise<Result> {
+  const admin = getAdminClient();
+  if (!admin) {
+    return { ok: false, error: "Dev մուտքի համար .env.local-ում պետք է SUPABASE_SECRET_KEY" };
+  }
+  const { error: createError } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    user_metadata: profile ?? {},
+  });
+  if (createError && createError.code !== "email_exists") {
+    console.error("dev sign-in: creating user failed:", createError);
+    return { ok: false, error: authErrorMessage(createError) };
+  }
+
+  const { data, error } = await admin.auth.admin.generateLink({ type: "magiclink", email });
+  if (error || !data.properties) {
+    console.error("dev sign-in: generating link failed:", error);
+    return { ok: false, error: "Dev մուտքը չհաջողվեց" };
+  }
+  // Uses the token right here, so the session cookie is set without an email.
+  const auth = await createAuthClient();
+  const { error: verifyError } = await auth.auth.verifyOtp({
+    token_hash: data.properties.hashed_token,
+    type: "email",
+  });
+  if (verifyError) {
+    console.error("dev sign-in: verifying failed:", verifyError);
+    return { ok: false, error: "Dev մուտքը չհաջողվեց" };
+  }
+  console.warn(`[dev] signed in as ${email} without an email code`);
+  // New accounts continue to onboarding from there.
+  revalidatePath("/", "layout");
+  redirect("/dashboard");
+}
+
+/**
  * Creates a one-time code for the address and emails it.
  *
  * Preferred path: Supabase only generates the code and we send the email
@@ -75,6 +122,8 @@ async function issueCode(
   email: string,
   options: { profile?: Record<string, string | null>; allowNewAccount: boolean },
 ): Promise<Result> {
+  if (SKIP_EMAIL_CODE) return devSignIn(email, options.profile);
+
   const admin = getAdminClient();
 
   if (!admin || !resendConfigured) {
@@ -186,12 +235,16 @@ export async function verifyEmailCode(email: string, code: string): Promise<Resu
     console.error("verifying email code failed:", error);
     return { ok: false, error: authErrorMessage(error) };
   }
+  // Pages cached for the signed-out visitor must not be shown to the user.
+  revalidatePath("/", "layout");
   redirect("/dashboard");
 }
 
 export async function signOut() {
   const auth = await createAuthClient();
   await auth.auth.signOut();
+  // Forget the signed-in pages, so the next person can't go back to them.
+  revalidatePath("/", "layout");
   redirect("/auth/login");
 }
 
@@ -225,5 +278,8 @@ export async function createTenant(name: string, businessType: string): Promise<
   ]);
   if (sourcesError) console.error("seeding order sources failed:", sourcesError);
 
+  // The browser may still remember "/dashboard → /onboarding" from a moment
+  // ago (client cache, see staleTimes); clear it so the redirect lands.
+  revalidatePath("/", "layout");
   redirect("/dashboard");
 }
