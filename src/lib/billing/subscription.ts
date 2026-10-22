@@ -14,6 +14,18 @@ export type Subscription = {
   customerPortalUrl: string | null;
 };
 
+/**
+ * TEMPORARY, for testing: while false, every account gets every Pro feature
+ * (no demo pages, no expense limit, sale links and public checkout open).
+ * Set back to true to enforce the free/Pro limits again.
+ */
+export const PRO_LIMITS_ENABLED = false;
+
+/** Whether this subscription unlocks Pro features (always, while limits are off). */
+export function hasProAccess(subscription: Subscription | null): boolean {
+  return !PRO_LIMITS_ENABLED || isProSubscription(subscription);
+}
+
 /** Lemon Squeezy statuses that still give access. past_due is the retry window. */
 const PAID_STATUSES = new Set(["active", "on_trial", "past_due"]);
 
@@ -65,7 +77,7 @@ async function readSubscription(
 
 /** Whether the signed-in user has Pro. Server actions check this before paid features. */
 export async function isCurrentUserPro(): Promise<boolean> {
-  return isProSubscription(await getCurrentSubscription());
+  return hasProAccess(await getCurrentSubscription());
 }
 
 /**
@@ -73,6 +85,7 @@ export async function isCurrentUserPro(): Promise<boolean> {
  * signed in: read with the secret key. Only Pro sellers can take orders there.
  */
 export const isOwnerPro = cache(async (ownerId: string): Promise<boolean> => {
+  if (!PRO_LIMITS_ENABLED) return true;
   return isProSubscription(await readSubscription(requireAdminClient(), ownerId));
 });
 

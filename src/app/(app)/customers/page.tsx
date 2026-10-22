@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Search, TriangleAlert, Users } from "lucide-react";
 import { cn } from "cn";
 import { CustomerCommentDialog } from "@/components/customers/customer-comment-dialog";
+import { CustomerProductFilter } from "@/components/customers/customer-product-filter";
 import { EmptyState } from "@/components/layout/empty-state";
 import {
   PAGE_SIZE,
@@ -23,6 +24,8 @@ import { listCustomers, type Customer } from "@/lib/customers/queries";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/format";
 import { demoCustomers } from "@/lib/billing/demo-data";
 import { isCurrentUserPro } from "@/lib/billing/subscription";
+import { listProducts } from "@/lib/products/queries";
+import { ITEM_LABELS } from "@/lib/tenant/features";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 // Reads live data for the current tenant on every request.
@@ -50,9 +53,12 @@ export default async function CustomersPage({
   const tenant = await getCurrentTenant();
   const isShop = tenant.businessType !== "service";
   // Free accounts see the page with sample data (ProGate labels it as a demo).
-  const { customers: allCustomers, error } = (await isCurrentUserPro())
-    ? await listCustomers(tenant.id)
-    : { customers: demoCustomers(), error: null };
+  const [{ customers: allCustomers, error }, { products }] = await Promise.all([
+    (await isCurrentUserPro())
+      ? listCustomers(tenant.id)
+      : { customers: demoCustomers(), error: null },
+    listProducts(tenant.id),
+  ]);
 
   const query = await searchParams;
   const sort: SortKey =
@@ -60,6 +66,12 @@ export default async function CustomersPage({
       ? (query.sort as SortKey)
       : "recent";
   const search = typeof query.q === "string" ? query.q.trim() : "";
+  // Only customers who ordered this product, when one is picked.
+  const product =
+    typeof query.product === "string" &&
+    products.some((item) => item.id === query.product)
+      ? query.product
+      : "";
 
   const sortLabels: Record<SortKey, string> = {
     recent: "Վերջին ակտիվները",
@@ -71,21 +83,25 @@ export default async function CustomersPage({
     const params = new URLSearchParams();
     if (key !== "recent") params.set("sort", key);
     if (search) params.set("q", search);
+    if (product) params.set("product", product);
     const text = params.toString();
     return text ? `/customers?${text}` : "/customers";
   };
 
   const needle = search.toLowerCase();
   const digits = search.replace(/\D/g, "");
+  const ofProduct = product
+    ? allCustomers.filter((customer) => customer.productIds.includes(product))
+    : allCustomers;
   let customers = needle
-    ? allCustomers.filter(
+    ? ofProduct.filter(
         (customer) =>
           customer.name.toLowerCase().includes(needle) ||
           customer.email?.toLowerCase().includes(needle) ||
           customer.comment?.toLowerCase().includes(needle) ||
           (digits.length > 0 && customer.phone?.includes(digits)),
       )
-    : allCustomers;
+    : ofProduct;
   const compare = SORTS[sort];
   if (compare) customers = [...customers].sort(compare);
 
@@ -155,6 +171,7 @@ export default async function CustomersPage({
           {sort !== "recent" && (
             <input type="hidden" name="sort" value={sort} />
           )}
+          {product && <input type="hidden" name="product" value={product} />}
           <label htmlFor="customer-search" className="sr-only">
             Որոնել հաճախորդ
           </label>
@@ -175,21 +192,39 @@ export default async function CustomersPage({
             <Search />
           </Button>
         </form>
+
+        {products.length > 0 && (
+          <CustomerProductFilter
+            value={product}
+            products={products.map(({ id, title }) => ({ id, title }))}
+            itemLabel={ITEM_LABELS[tenant.businessType]}
+            allItemsLabel={
+              tenant.businessType === "service"
+                ? "Բոլոր դասընթացները"
+                : tenant.businessType === "mixed"
+                  ? "Բոլոր ապրանքներն ու ծառայությունները"
+                  : "Բոլոր ապրանքները"
+            }
+            keep={{ sort: sort === "recent" ? undefined : sort, q: search || undefined }}
+          />
+        )}
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {search
+        {search || product
           ? `Գտնվեց՝ ${formatNumber(found)} / ${formatNumber(allCustomers.length)}`
           : `Ընդամենը՝ ${formatNumber(found)}`}
       </p>
       {customers.length === 0 ? (
         <p className="rounded-3xl bg-card px-6 py-10 text-center text-sm text-muted-foreground shadow-soft">
-          Այս որոնմամբ հաճախորդ չգտնվեց։{" "}
+          {search
+            ? "Այս որոնմամբ հաճախորդ չգտնվեց։ "
+            : "Այս ապրանքը պատվիրած հաճախորդ չկա։ "}
           <Link
             href={sort === "recent" ? "/customers" : `/customers?sort=${sort}`}
             className="font-medium text-foreground underline underline-offset-2"
           >
-            Մաքրել որոնումը
+            {search ? "Մաքրել որոնումը" : "Ցույց տալ բոլորին"}
           </Link>
         </p>
       ) : (
@@ -275,6 +310,7 @@ export default async function CustomersPage({
         params={{
           sort: sort === "recent" ? undefined : sort,
           q: search || undefined,
+          product: product || undefined,
         }}
         page={page}
         total={found}

@@ -174,6 +174,7 @@ export function demoCustomers(): Customer[] {
     orderCount: customer.orders,
     totalSpent: customer.spent,
     lastOrderAt: daysAgo(customer.ago),
+    productIds: [],
   }));
 }
 

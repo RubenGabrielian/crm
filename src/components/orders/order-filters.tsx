@@ -2,12 +2,12 @@
 
 import { useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Popover } from "@base-ui/react/popover";
 import {
   CalendarRange,
   ChevronDown,
   CircleDot,
+  LoaderCircle,
   Megaphone,
   Package,
   Wallet,
@@ -27,6 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useNavigate } from "@/components/layout/navigation-progress";
 import { STATUS_DOT } from "@/components/orders/orders-calendar";
 import {
   NO_SOURCE,
@@ -78,8 +79,10 @@ export function OrderFilterBar({
   /** Today in Yerevan, YYYY-MM-DD, for the date shortcuts. */
   today: string;
 }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [pending, startTransition] = useTransition();
+  // The filter being applied gets the spinner until the results arrive.
+  const [changing, setChanging] = useState<string | null>(null);
 
   function hrefWith(changes: Partial<Record<keyof OrderFilters, string>>) {
     const params = new URLSearchParams();
@@ -94,8 +97,10 @@ export function OrderFilterBar({
   }
 
   function apply(changes: Partial<Record<keyof OrderFilters, string>>) {
-    startTransition(() => router.push(hrefWith(changes)));
+    setChanging(Object.keys(changes)[0] ?? null);
+    startTransition(() => navigate(hrefWith(changes)));
   }
+  const loading = (key: keyof OrderFilters) => pending && changing === key;
 
   const active = ORDER_FILTER_KEYS.filter(
     (key) => filters[key] && (showDates || (key !== "from" && key !== "to")),
@@ -118,6 +123,7 @@ export function OrderFilterBar({
       options={options}
       value={filters[key] ?? ""}
       onChange={(value) => apply({ [key]: value })}
+      loading={loading(key)}
     />
   );
 
@@ -126,10 +132,7 @@ export function OrderFilterBar({
       role="group"
       aria-label="Ֆիլտրեր"
       aria-busy={pending}
-      className={cn(
-        "flex flex-wrap items-center gap-2 transition-opacity",
-        pending && "opacity-60",
-      )}
+      className="flex flex-wrap items-center gap-2"
     >
       {menu(
         "status",
@@ -174,6 +177,7 @@ export function OrderFilterBar({
           to={filters.to}
           today={today}
           onChange={(from, to) => apply({ from, to })}
+          loading={loading("from")}
         />
       )}
 
@@ -186,7 +190,21 @@ export function OrderFilterBar({
           Մաքրել ({active})
         </Link>
       )}
+      {pending && <SearchingNote />}
     </div>
+  );
+}
+
+/** "Searching…" with a spinner, shown next to the filters while results load. */
+export function SearchingNote() {
+  return (
+    <span
+      role="status"
+      className="flex h-11 items-center gap-2 px-2 text-sm font-medium text-primary"
+    >
+      <LoaderCircle className="size-4 animate-spin" aria-hidden />
+      Որոնում…
+    </span>
   );
 }
 
@@ -194,11 +212,14 @@ function ChipContent({
   icon: Icon,
   name,
   value,
+  loading,
 }: {
   icon: LucideIcon;
   name: string;
   /** The chosen option's label; the filter's name when nothing is chosen. */
   value: ReactNode | null;
+  /** Spinner instead of the chevron while this filter's results load. */
+  loading?: boolean;
 }) {
   return (
     <>
@@ -211,21 +232,26 @@ function ChipContent({
         <Icon className="size-3.5" aria-hidden />
       </span>
       <span className="min-w-0 truncate">{value ?? name}</span>
-      <ChevronDown
-        className="size-4 shrink-0 text-muted-foreground transition-transform group-data-popup-open/chip:rotate-180"
-        aria-hidden
-      />
+      {loading ? (
+        <LoaderCircle className="size-4 shrink-0 animate-spin text-primary" aria-hidden />
+      ) : (
+        <ChevronDown
+          className="size-4 shrink-0 text-muted-foreground transition-transform group-data-popup-open/chip:rotate-180"
+          aria-hidden
+        />
+      )}
     </>
   );
 }
 
-function FilterMenu({
+export function FilterMenu({
   icon,
   name,
   allLabel,
   options,
   value,
   onChange,
+  loading = false,
 }: {
   icon: LucideIcon;
   name: string;
@@ -233,6 +259,7 @@ function FilterMenu({
   options: Option[];
   value: string;
   onChange: (value: string) => void;
+  loading?: boolean;
 }) {
   const current = options.find((option) => option.value === value);
 
@@ -245,6 +272,7 @@ function FilterMenu({
         <ChipContent
           icon={icon}
           name={name}
+          loading={loading}
           value={
             current ? (
               <>
@@ -307,11 +335,13 @@ function DateFilter({
   to,
   today,
   onChange,
+  loading,
 }: {
   from: string | undefined;
   to: string | undefined;
   today: string;
   onChange: (from: string, to: string) => void;
+  loading: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [draftFrom, setDraftFrom] = useState(from ?? "");
@@ -358,7 +388,7 @@ function DateFilter({
         aria-label={value ? `Ամսաթիվ՝ ${value}` : "Ամսաթիվ"}
         className={cn(CHIP, value ? CHIP_ACTIVE : CHIP_IDLE)}
       >
-        <ChipContent icon={CalendarRange} name="Ամսաթիվ" value={value} />
+        <ChipContent icon={CalendarRange} name="Ամսաթիվ" value={value} loading={loading} />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner align="start" sideOffset={8} className="isolate z-50">

@@ -13,6 +13,8 @@ export type Customer = {
   orderCount: number;
   totalSpent: number;
   lastOrderAt: string | null;
+  /** Every product or course this customer has ordered. */
+  productIds: string[];
 };
 
 export async function listCustomers(
@@ -21,7 +23,7 @@ export async function listCustomers(
   const supabase = await createAuthClient();
   const { data, error } = await supabase
     .from("customers")
-    .select("id, name, phone, email, comment, created_at, orders(order_total, created_at, metadata)")
+    .select("id, name, phone, email, comment, created_at, orders(order_total, created_at, metadata, product_id)")
     .eq("tenant_id", tenantId);
 
   if (error) return { customers: [], error: error.message };
@@ -46,6 +48,7 @@ export async function listCustomers(
       orderCount: orders.length,
       totalSpent: orders.reduce((sum, order) => sum + Number(order.order_total), 0),
       lastOrderAt: orders[0]?.created_at ?? null,
+      productIds: [...new Set(orders.map((order) => order.product_id as string))],
       createdAt: row.created_at as string,
     };
   });

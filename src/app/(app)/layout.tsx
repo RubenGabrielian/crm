@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { NewOrdersProvider } from "@/components/layout/new-orders";
 import { ProProvider } from "@/lib/billing/pro-context";
-import { getCurrentSubscription, isProSubscription } from "@/lib/billing/subscription";
+import { getCurrentSubscription, hasProAccess } from "@/lib/billing/subscription";
 import { getNewOrderCount } from "@/lib/orders/new-count";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 import { TenantProvider } from "@/lib/tenant/tenant-context";
@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <TenantProvider tenant={tenant}>
-      <ProProvider isPro={isProSubscription(subscription)}>
+      <ProProvider isPro={hasProAccess(subscription)}>
         {/* Keyed by tenant so switching business type restarts the count. */}
         <NewOrdersProvider key={tenant.id} initialCount={newOrders}>
           <AppShell>{children}</AppShell>

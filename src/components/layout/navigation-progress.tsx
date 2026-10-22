@@ -8,9 +8,24 @@ import {
   useRef,
   useState,
 } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cn } from "cn";
 import { PageSkeleton } from "./page-skeletons";
+
+/** Fired by useNavigate, so code-driven navigations get the bar and fade too. */
+const NAVIGATE_EVENT = "app:navigate";
+
+/**
+ * router.push that also shows the progress bar and fades the page, like a
+ * link click does. For filters and other controls that navigate in code.
+ */
+export function useNavigate() {
+  const router = useRouter();
+  return (href: string) => {
+    window.dispatchEvent(new CustomEvent(NAVIGATE_EVENT, { detail: href }));
+    router.push(href);
+  };
+}
 
 /** The navigation in flight, or null when nothing is loading. */
 type Pending = { path: string; samePage: boolean } | null;
@@ -169,11 +184,18 @@ function Progress({
       start(url);
     }
 
+    function onNavigate(event: Event) {
+      const href = (event as CustomEvent<string>).detail;
+      start(new URL(href, window.location.href));
+    }
+
     document.addEventListener("click", onClick, true);
     document.addEventListener("submit", onSubmit, true);
+    window.addEventListener(NAVIGATE_EVENT, onNavigate);
     return () => {
       document.removeEventListener("click", onClick, true);
       document.removeEventListener("submit", onSubmit, true);
+      window.removeEventListener(NAVIGATE_EVENT, onNavigate);
       clearTimers();
     };
   }, [onPendingChange]);
