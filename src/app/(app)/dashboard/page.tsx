@@ -16,6 +16,7 @@ import { BreakEvenChart } from "@/components/dashboard/break-even-chart";
 import { DailyRevenueChart } from "@/components/dashboard/daily-revenue-chart";
 import { RangeFilter } from "@/components/dashboard/range-filter";
 import { SourceBreakdown } from "@/components/dashboard/source-breakdown";
+import { StockList } from "@/components/dashboard/stock-list";
 import { EmptyState } from "@/components/layout/empty-state";
 import {
   Table,
@@ -303,26 +304,7 @@ export default async function DashboardPage({
                   {inventory.rows.length === 0 ? (
                     <Empty />
                   ) : (
-                    <ul className="divide-y divide-border/70 px-2 text-sm">
-                      {inventory.rows.map((row) => (
-                        <li
-                          key={row.productId}
-                          className="flex items-center justify-between gap-4 py-3"
-                        >
-                          <span className="min-w-0 truncate">{row.title}</span>
-                          <span
-                            className={cn(
-                              "shrink-0 font-semibold tabular-nums",
-                              row.available === 0 && "text-destructive",
-                            )}
-                          >
-                            {row.available === 0
-                              ? "Սպառված է"
-                              : formatNumber(row.available)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                    <StockList rows={inventory.rows} />
                   )}
                 </Panel>
               )}
@@ -474,7 +456,7 @@ function BreakEvenCard({
   const reached = ready && contribution >= fixedCosts;
 
   return (
-    <section className="rounded-3xl bg-card p-5 shadow-soft">
+    <section className="rounded-xl bg-card p-5 shadow-soft">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold">Զրոյական կետ</h2>
@@ -539,7 +521,7 @@ function GettingStarted({
     },
   ];
   return (
-    <section className="rounded-3xl bg-primary p-5 text-primary-foreground shadow-soft sm:p-6">
+    <section className="rounded-xl bg-primary p-5 text-primary-foreground shadow-soft sm:p-6">
       <h2 className="text-lg font-semibold">
         Այս ժամանակահատվածում դեռ {isShop ? "պատվեր" : "գրանցում"} չկա
       </h2>
@@ -551,7 +533,7 @@ function GettingStarted({
           <li key={step.title}>
             <Link
               href={step.href}
-              className="flex h-full gap-3 rounded-2xl bg-white/10 p-4 outline-none transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-apricot"
+              className="flex h-full gap-3 rounded-lg bg-white/10 p-4 outline-none transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-apricot"
             >
               <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-apricot text-sm font-semibold text-foreground">
                 {index + 1}
@@ -592,7 +574,7 @@ function MoneyStep({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-3xl p-5 shadow-soft",
+        "flex flex-col rounded-xl p-5 shadow-soft",
         result ? "bg-primary text-primary-foreground" : "bg-card",
       )}
     >
@@ -675,7 +657,7 @@ function MetricCard({
   negative?: boolean;
 }) {
   return (
-    <div className="flex flex-col rounded-3xl bg-card p-5 shadow-soft">
+    <div className="flex flex-col rounded-xl bg-card p-5 shadow-soft">
       <dt className="flex items-start justify-between gap-3 text-sm font-medium">
         <span>
           {label}
@@ -717,7 +699,7 @@ function Panel({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-3xl bg-card shadow-soft",
+        "overflow-hidden rounded-xl bg-card shadow-soft",
         className,
       )}
     >

@@ -185,7 +185,7 @@ export function BreakEvenChart({
       </dl>
 
       {/* The formula, for those who want it */}
-      <details className="rounded-2xl bg-muted px-4 py-3 text-sm">
+      <details className="rounded-lg bg-muted px-4 py-3 text-sm">
         <summary className="cursor-pointer font-medium outline-none marker:text-muted-foreground focus-visible:underline">
           Ինչպես է հաշվվում
         </summary>
@@ -222,7 +222,7 @@ function Stat({
   tone?: "accent" | "good";
 }) {
   return (
-    <div className="rounded-2xl bg-muted px-3 py-2.5 sm:px-4">
+    <div className="rounded-lg bg-muted px-3 py-2.5 sm:px-4">
       <dt className="text-xs leading-tight text-muted-foreground">{label}</dt>
       <dd
         className={cn(
@@ -242,7 +242,7 @@ function Stat({
 
 function Note({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-2xl bg-muted px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+    <p className="rounded-lg bg-muted px-4 py-3 text-sm leading-relaxed text-muted-foreground">
       {children}
     </p>
   );

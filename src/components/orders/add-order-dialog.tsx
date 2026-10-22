@@ -230,7 +230,7 @@ function AddOrderForm({
             <legend className="sr-only">{itemLabel}</legend>
             <div
               aria-hidden
-              className="-mb-1 grid grid-cols-[1fr_4.5rem_6.5rem_2.25rem] gap-2 text-sm font-medium"
+              className="-mb-1 grid grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.25rem] gap-2 text-sm font-medium"
             >
               <span>{itemLabel}</span>
               <span>Քանակ</span>
@@ -247,7 +247,7 @@ function AddOrderForm({
               return (
                 <div
                   key={line.key}
-                  className="grid grid-cols-[1fr_4.5rem_6.5rem_2.25rem] items-start gap-2"
+                  className="grid grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.25rem] items-start gap-2"
                 >
                   <Field data-invalid={productError ? true : undefined}>
                     <SearchSelect

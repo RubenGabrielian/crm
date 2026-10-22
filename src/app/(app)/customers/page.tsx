@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { TriangleAlert, Users } from "lucide-react";
+import { AddCustomerDialog } from "@/components/customers/add-customer-dialog";
 import { CommentLabelHeader } from "@/components/customers/comment-label-header";
 import { CustomerCommentDialog } from "@/components/customers/customer-comment-dialog";
 import { CustomerToolbar } from "@/components/customers/customer-toolbar";
@@ -55,8 +56,9 @@ export default async function CustomersPage({
   const tenant = await getCurrentTenant();
   const isShop = tenant.businessType !== "service";
   // Free accounts see the page with sample data (ProGate labels it as a demo).
+  const isPro = await isCurrentUserPro();
   const [{ customers: allCustomers, error }, { products }] = await Promise.all([
-    (await isCurrentUserPro())
+    isPro
       ? listCustomers(tenant.id)
       : { customers: demoCustomers(), error: null },
     listProducts(tenant.id),
@@ -97,8 +99,7 @@ export default async function CustomersPage({
     ? ofProduct.filter(
         (customer) =>
           (want("name") && customer.name.toLowerCase().includes(needle)) ||
-          (want("email") &&
-            customer.email?.toLowerCase().includes(needle)) ||
+          (want("email") && customer.email?.toLowerCase().includes(needle)) ||
           (want("comment") &&
             customer.comment?.toLowerCase().includes(needle)) ||
           (want("address") &&
@@ -132,15 +133,22 @@ export default async function CustomersPage({
 
   if (allCustomers.length === 0) {
     return (
-      <EmptyState
-        icon={Users}
-        title="Դեռ հաճախորդներ չկան"
-        description={
-          isShop
-            ? "Յուրաքանչյուր պատվերի հաճախորդն ինքնաբերաբար կավելանա այստեղ։"
-            : "Յուրաքանչյուր գրանցման հաճախորդն ինքնաբերաբար կավելանա այստեղ։"
-        }
-      />
+      <div className="flex flex-col gap-5">
+        {isPro && (
+          <div className="flex justify-end">
+            <AddCustomerDialog />
+          </div>
+        )}
+        <EmptyState
+          icon={Users}
+          title="Դեռ հաճախորդներ չկան"
+          description={
+            isShop
+              ? "Յուրաքանչյուր պատվերի հաճախորդն ինքնաբերաբար կավելանա այստեղ։"
+              : "Յուրաքանչյուր գրանցման հաճախորդն ինքնաբերաբար կավելանա այստեղ։"
+          }
+        />
+      </div>
     );
   }
 
@@ -148,23 +156,28 @@ export default async function CustomersPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <CustomerToolbar
-        search={search}
-        searchBy={searchBy}
-        showAddress={isShop}
-        sort={sort}
-        sortLabels={sortLabels}
-        product={product}
-        products={products.map(({ id, title }) => ({ id, title }))}
-        itemLabel={ITEM_LABELS[tenant.businessType]}
-        allItemsLabel={
-          tenant.businessType === "service"
-            ? "Բոլոր դասընթացները"
-            : tenant.businessType === "mixed"
-              ? "Բոլոր ապրանքներն ու ծառայությունները"
-              : "Բոլոր ապրանքները"
-        }
-      />
+      <div className="flex flex-wrap items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <CustomerToolbar
+            search={search}
+            searchBy={searchBy}
+            showAddress={isShop}
+            sort={sort}
+            sortLabels={sortLabels}
+            product={product}
+            products={products.map(({ id, title }) => ({ id, title }))}
+            itemLabel={ITEM_LABELS[tenant.businessType]}
+            allItemsLabel={
+              tenant.businessType === "service"
+                ? "Բոլոր դասընթացները"
+                : tenant.businessType === "mixed"
+                  ? "Բոլոր ապրանքներն ու ծառայությունները"
+                  : "Բոլոր ապրանքները"
+            }
+          />
+        </div>
+        {isPro && <AddCustomerDialog />}
+      </div>
 
       <p className="-mt-2 text-sm text-muted-foreground">
         {search || product

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Combobox } from "@base-ui/react/combobox";
 import { CheckIcon, ChevronDown, Search } from "lucide-react";
 import { cn } from "cn";
@@ -34,6 +35,8 @@ export function SearchSelect({
   "aria-label"?: string;
 }) {
   const current = options.find((option) => option.value === value) ?? null;
+  // Every opening starts with an empty search box.
+  const [query, setQuery] = useState("");
 
   return (
     <Combobox.Root
@@ -44,6 +47,11 @@ export function SearchSelect({
       }}
       isItemEqualToValue={(a, b) => a?.value === b?.value}
       itemToStringLabel={(option) => option?.label ?? ""}
+      inputValue={query}
+      onInputValueChange={setQuery}
+      onOpenChange={(open) => {
+        if (!open) setQuery("");
+      }}
     >
       <Combobox.Trigger
         aria-label={ariaLabel}

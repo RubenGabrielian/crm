@@ -117,7 +117,7 @@ export function SourceBreakdown({
       </ul>
 
       {unknown && unknown.orders > 0 && (
-        <p className="rounded-2xl bg-muted px-4 py-3 text-xs text-muted-foreground">
+        <p className="rounded-lg bg-muted px-4 py-3 text-xs text-muted-foreground">
           {formatNumber(unknown.orders)} {ordersLabel.toLowerCase()}ի աղբյուրը
           նշված չէ։ Նշեք այն պատվերների աղյուսակում, որպեսզի վիճակագրությունը
           լինի ճշգրիտ։

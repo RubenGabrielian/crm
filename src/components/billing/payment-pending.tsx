@@ -22,7 +22,7 @@ export function PaymentPending() {
   }, [router]);
 
   return (
-    <section className="flex items-center gap-3 rounded-3xl bg-card p-5 shadow-soft">
+    <section className="flex items-center gap-3 rounded-xl bg-card p-5 shadow-soft">
       <LoaderCircle className="size-5 shrink-0 animate-spin text-muted-foreground" aria-hidden />
       <p className="text-sm">
         Վճարումը ստացվել է։ Ակտիվացնում ենք Pro-ն, դա կտևի մի քանի վայրկյան…

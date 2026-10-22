@@ -1,18 +1,29 @@
+import Link from "next/link";
+import { connection } from "next/server";
 import { GraduationCap, Package, TriangleAlert } from "lucide-react";
 import { ExcelImportDialog } from "@/components/import/excel-import-dialog";
 import { EmptyState } from "@/components/layout/empty-state";
+import { Pagination, parsePage } from "@/components/layout/pagination";
+import { CatalogSearch } from "@/components/products/catalog-search";
 import { AddProductDialog } from "@/components/products/product-dialogs";
 import { ProductsTable } from "@/components/products/products-table";
 import { PRODUCT_COPY } from "@/config/product-fields";
 import { listMaterials } from "@/lib/materials/queries";
 import { listProducts } from "@/lib/products/queries";
 import { MaterialsProvider } from "@/components/materials/materials-context";
+import { formatNumber } from "@/lib/format";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 // Reads live data for the current tenant on every request.
 export const instant = false;
 
-export default async function CatalogPage() {
+const CATALOG_PAGE_SIZE = 30;
+
+export default async function CatalogPage({
+  searchParams,
+}: PageProps<"/catalog">) {
+  // Search and page come from the URL, so this page is rendered per request.
+  await connection();
   const tenant = await getCurrentTenant();
   const [{ products, error }, { materials }] = await Promise.all([
     listProducts(tenant.id),
@@ -28,6 +39,19 @@ export default async function CatalogPage() {
   }));
   const copy = PRODUCT_COPY[tenant.businessType];
 
+  const query = await searchParams;
+  const search = typeof query.q === "string" ? query.q.trim() : "";
+  const needle = search.toLowerCase();
+  const found = needle
+    ? products.filter((product) => product.title.toLowerCase().includes(needle))
+    : products;
+  const lastPage = Math.max(Math.ceil(found.length / CATALOG_PAGE_SIZE), 1);
+  const page = Math.min(parsePage(query.page), lastPage);
+  const pageProducts = found.slice(
+    (page - 1) * CATALOG_PAGE_SIZE,
+    page * CATALOG_PAGE_SIZE,
+  );
+
   if (error) {
     console.error("listProducts failed:", error);
     return (
@@ -42,10 +66,19 @@ export default async function CatalogPage() {
   return (
     <MaterialsProvider materials={materialOptions}>
       <div className="flex flex-col gap-5">
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            Ընդամենը՝ {products.length}
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {products.length > 0 ? (
+            <CatalogSearch
+              search={search}
+              placeholder={
+                tenant.businessType === "service"
+                  ? "Որոնել դասընթաց անունով…"
+                  : "Որոնել անունով…"
+              }
+            />
+          ) : (
+            <span />
+          )}
           <div className="flex flex-wrap justify-end gap-2">
             <ExcelImportDialog
               target="catalog"
@@ -59,18 +92,43 @@ export default async function CatalogPage() {
           </div>
         </div>
 
+        {products.length > 0 && (
+          <p className="-mt-2 text-sm text-muted-foreground">
+            {search
+              ? `Գտնվեց՝ ${formatNumber(found.length)} / ${formatNumber(products.length)}`
+              : `Ընդամենը՝ ${formatNumber(products.length)}`}
+          </p>
+        )}
+
         {products.length === 0 ? (
           <EmptyState
             icon={tenant.businessType === "service" ? GraduationCap : Package}
             title={copy.emptyTitle}
             description={copy.emptyDescription}
           />
+        ) : found.length === 0 ? (
+          <p className="rounded-3xl bg-card px-6 py-10 text-center text-sm text-muted-foreground shadow-soft">
+            Այս անունով ոչինչ չգտնվեց։{" "}
+            <Link
+              href="/catalog"
+              className="font-medium text-foreground underline underline-offset-2"
+            >
+              Մաքրել որոնումը
+            </Link>
+          </p>
         ) : (
           <ProductsTable
-            products={products}
+            products={pageProducts}
             businessType={tenant.businessType}
           />
         )}
+        <Pagination
+          basePath="/catalog"
+          params={{ q: search || undefined }}
+          page={page}
+          total={found.length}
+          pageSize={CATALOG_PAGE_SIZE}
+        />
       </div>
     </MaterialsProvider>
   );

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isCurrentUserPro } from "@/lib/billing/subscription";
 import { createAuthClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
@@ -9,6 +10,8 @@ export type CustomerFormState = {
   values: Record<string, string>;
   errors: Record<string, string>;
   formError: string | null;
+  /** When the phone already belongs to a customer: that customer, to open instead. */
+  existingId?: string;
 };
 
 const REQUIRED = "Պարտադիր դաշտ է";
@@ -22,19 +25,15 @@ function parseInstagram(raw: string): string | null {
   return /^[A-Za-z0-9._]{1,30}$/.test(username) ? username : null;
 }
 
-export async function updateCustomer(
-  customerId: string,
-  _prev: CustomerFormState,
-  formData: FormData,
-): Promise<CustomerFormState> {
-  const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+/** Checks the shared customer fields; `fields` is null when something is wrong. */
+function readCustomerForm(formData: FormData) {
   const read = (name: string) => String(formData.get(name) ?? "").trim();
   const values = {
     name: read("name"),
     phone: read("phone"),
     email: read("email"),
     instagram: read("instagram"),
+    comment: read("comment"),
   };
   const errors: Record<string, string> = {};
 
@@ -52,19 +51,78 @@ export async function updateCustomer(
   if (values.instagram && !instagram) {
     errors.instagram = "Մուտքագրեք Instagram-ի օգտանունը, օրինակ՝ @anun";
   }
-
-  if (Object.keys(errors).length > 0) {
-    return { ok: false, values, errors, formError: null };
+  if (values.comment.length > 2000) {
+    errors.comment = "Առավելագույնը 2000 նիշ";
   }
+
+  const fields =
+    Object.keys(errors).length > 0
+      ? null
+      : {
+          name: values.name,
+          phone,
+          email: values.email || null,
+          social_handle: instagram,
+        };
+  return { values, errors, fields };
+}
+
+/** CRM: add a customer by hand, e.g. someone who bought before Numa. */
+export async function createCustomer(
+  _prev: CustomerFormState,
+  formData: FormData,
+): Promise<CustomerFormState> {
+  const supabase = await createAuthClient();
+  const tenant = await getCurrentTenant();
+  const { values, errors, fields } = readCustomerForm(formData);
+  if (!(await isCurrentUserPro())) {
+    return { ok: false, values, errors: {}, formError: "CRM-ը հասանելի է Pro փաթեթով։" };
+  }
+  if (!fields) return { ok: false, values, errors, formError: null };
+
+  const { error } = await supabase.from("customers").insert({
+    ...fields,
+    tenant_id: tenant.id,
+    comment: values.comment || null,
+  });
+
+  if (error?.code === "23505") {
+    const { data: existing } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("phone", fields.phone)
+      .maybeSingle();
+    return {
+      ok: false,
+      values,
+      errors: { phone: "Այս համարով հաճախորդ արդեն կա" },
+      formError: null,
+      existingId: existing?.id,
+    };
+  }
+  if (error) {
+    console.error("creating customer failed:", error);
+    return { ok: false, values, errors: {}, formError: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
+  }
+
+  revalidatePath("/customers", "layout");
+  return { ok: true, values: {}, errors: {}, formError: null };
+}
+
+export async function updateCustomer(
+  customerId: string,
+  _prev: CustomerFormState,
+  formData: FormData,
+): Promise<CustomerFormState> {
+  const supabase = await createAuthClient();
+  const tenant = await getCurrentTenant();
+  const { values, errors, fields } = readCustomerForm(formData);
+  if (!fields) return { ok: false, values, errors, formError: null };
 
   const { data, error } = await supabase
     .from("customers")
-    .update({
-      name: values.name,
-      phone,
-      email: values.email || null,
-      social_handle: instagram,
-    })
+    .update(fields)
     .eq("id", customerId)
     .eq("tenant_id", tenant.id)
     .select("id");

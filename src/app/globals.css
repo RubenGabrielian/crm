@@ -18,7 +18,7 @@
   --line: #e6e7eb;
   --surface: var(--paper);
 
-  --radius: 1rem;
+  --radius: 0.5rem;
   --background: var(--paper);
   --foreground: var(--ink);
   --card: #ffffff;
@@ -80,6 +80,9 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* Cards and panels: kept modest so the app reads calm and businesslike. */
+  --radius-2xl: calc(var(--radius) + 6px);
+  --radius-3xl: calc(var(--radius) + 8px);
 
   --shadow-soft: 0 1px 2px rgb(20 20 22 / 0.03), 0 8px 24px -20px rgb(20 20 22 / 0.12);
   --shadow-panel: 0 1px 2px rgb(20 20 22 / 0.04), 0 24px 48px -32px rgb(20 20 22 / 0.2);
@@ -251,7 +254,7 @@
 }
 
 .skeleton {
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   background-color: color-mix(in srgb, var(--primary) 9%, var(--card));
   background-image: linear-gradient(
     105deg,

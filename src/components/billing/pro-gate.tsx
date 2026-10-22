@@ -42,7 +42,7 @@ const DEMO_PITCH: Record<string, string> = {
 function DemoFrame({ pitch, children }: { pitch: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-6">
-      <section className="sticky top-20 z-20 flex flex-col gap-4 rounded-3xl bg-primary p-5 text-primary-foreground shadow-soft sm:flex-row sm:items-center sm:p-6">
+      <section className="sticky top-20 z-20 flex flex-col gap-4 rounded-xl bg-primary p-5 text-primary-foreground shadow-soft sm:flex-row sm:items-center sm:p-6">
         <span className="w-fit shrink-0 rounded-full bg-apricot px-3 py-1 text-xs font-semibold tracking-wide text-foreground uppercase">
           Դեմո
         </span>
@@ -96,7 +96,7 @@ export function UpgradePrompt({
     <section
       className={cn(
         "flex flex-col items-center text-center",
-        compact ? "py-2" : "rounded-3xl bg-card px-6 py-16 shadow-soft sm:px-10",
+        compact ? "py-2" : "rounded-xl bg-card px-6 py-16 shadow-soft sm:px-10",
         className,
       )}
     >
