@@ -16,10 +16,13 @@ import {
 } from "@/components/layout/pagination";
 import { AddOrderDialog } from "@/components/orders/add-order-dialog";
 import { ManageSourcesDialog } from "@/components/orders/manage-sources-dialog";
+import { OrderFilterBar } from "@/components/orders/order-filters";
 import { OrderSearch } from "@/components/orders/order-search";
 import {
+  ORDER_FILTER_KEYS,
   ORDER_STATUS_LABELS,
   isOrderSearchField,
+  parseOrderFilters,
   type OrderSearchField,
   type OrderStatus,
 } from "@/config/orders";
@@ -87,11 +90,24 @@ export default async function OrdersPage({
     comment: "Մեկնաբանության տեքստ",
     source: "օր.՝ Instagram",
   };
-  const searchParamsToKeep = {
+  const searchOnly = {
     q: search || undefined,
     by: search && searchBy !== "all" ? searchBy : undefined,
   };
   const searchFilter = search ? { by: searchBy, term: search } : undefined;
+
+  // The calendar shows one month, so the date filters only apply to the list.
+  const filters = parseOrderFilters(query);
+  if (view === "calendar") {
+    delete filters.from;
+    delete filters.to;
+  }
+  const filterParams = Object.fromEntries(
+    ORDER_FILTER_KEYS.map((key) => [key, filters[key]]),
+  ) as Record<string, string | undefined>;
+  const filtering = ORDER_FILTER_KEYS.some((key) => filters[key]);
+  // Kept by paging, the view tabs and the calendar's links.
+  const searchParamsToKeep = { ...searchOnly, ...filterParams };
 
   // Calendar: one month of orders (no paging), plus the picked day.
   const today = yerevanDate(new Date());
@@ -105,10 +121,16 @@ export default async function OrdersPage({
     view === "calendar"
       ? listOrders(tenant.id, {
           search: searchFilter,
+          filters,
           from: monthStart.toISOString(),
           to: monthEnd.toISOString(),
         })
-      : listOrders(tenant.id, { page, pageSize: PAGE_SIZE, search: searchFilter }),
+      : listOrders(tenant.id, {
+          page,
+          pageSize: PAGE_SIZE,
+          search: searchFilter,
+          filters,
+        }),
     listOrderSources(tenant.id),
     listProducts(tenant.id),
   ]);
@@ -190,6 +212,7 @@ export default async function OrdersPage({
             by={searchBy}
             q={search}
             view={view}
+            keep={filterParams}
             options={(Object.keys(searchLabels) as OrderSearchField[]).map(
               (value) => ({
                 value,
@@ -204,6 +227,29 @@ export default async function OrdersPage({
           <AddOrderDialog products={productOptions} sources={sourceNames} />
         </div>
       </div>
+
+      <OrderFilterBar
+        filters={filters}
+        keep={{
+          ...searchOnly,
+          view: view === "calendar" ? "calendar" : undefined,
+          month: view === "calendar" ? monthKey(month) : undefined,
+          day: view === "calendar" && selectedDay ? dayKey(selectedDay) : undefined,
+        }}
+        statusLabels={ORDER_STATUS_LABELS[tenant.businessType]}
+        sources={sourceNames}
+        products={products.map(({ id, title }) => ({ id, title }))}
+        allItemsLabel={
+          tenant.businessType === "service"
+            ? "Բոլոր դասընթացները"
+            : tenant.businessType === "mixed"
+              ? "Բոլոր ապրանքներն ու ծառայությունները"
+              : "Բոլոր ապրանքները"
+        }
+        itemLabel={itemLabel}
+        showDates={view === "list"}
+        today={dayKey(today)}
+      />
 
       {view === "calendar" ? (
         <CalendarView
@@ -223,21 +269,26 @@ export default async function OrdersPage({
           <p className="-mt-2 text-sm text-muted-foreground">
             {search
               ? `Գտնվեց՝ ${formatNumber(total)} · «${search}» · ${searchLabels[searchBy]}`
-              : `Ընդամենը՝ ${formatNumber(total)}`}
+              : filtering
+                ? `Գտնվեց՝ ${formatNumber(total)}`
+                : `Ընդամենը՝ ${formatNumber(total)}`}
           </p>
-          {search && orders.length === 0 && (
+          {(search || filtering) && orders.length === 0 && (
             <p className="rounded-3xl bg-card px-6 py-10 text-center text-sm text-muted-foreground shadow-soft">
-              Այս որոնմամբ պատվեր չգտնվեց։ Փորձեք այլ դաշտ կամ{" "}
+              {search
+                ? "Այս որոնմամբ պատվեր չգտնվեց։ Փորձեք այլ դաշտ կամ "
+                : "Այս ֆիլտրերով պատվեր չգտնվեց։ Փոխեք դրանք կամ "}
               <Link
                 href="/orders"
                 className="font-medium text-foreground underline underline-offset-2"
               >
-                մաքրեք որոնումը
+                {search ? "մաքրեք որոնումը" : "մաքրեք ֆիլտրերը"}
               </Link>
               ։
             </p>
           )}
           {!search &&
+            !filtering &&
             orders.length === 0 &&
             (isShop ? (
               <EmptyState

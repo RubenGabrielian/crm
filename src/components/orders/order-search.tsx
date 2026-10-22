@@ -54,14 +54,22 @@ export function OrderSearch({
   by: initialBy,
   q,
   view = "list",
+  keep = {},
 }: {
   options: OrderSearchOption[];
   by: OrderSearchField;
   q: string;
   /** Kept when searching, so the calendar stays the calendar. */
   view?: "list" | "calendar";
+  /** Other params kept by searching and by clearing the search (filters). */
+  keep?: Record<string, string | undefined>;
 }) {
-  const clearHref = view === "calendar" ? "/orders?view=calendar" : "/orders";
+  const kept = Object.entries(keep).filter(
+    (entry): entry is [string, string] => Boolean(entry[1]),
+  );
+  const clearParams = new URLSearchParams(kept);
+  if (view === "calendar") clearParams.set("view", "calendar");
+  const clearHref = clearParams.size ? `/orders?${clearParams}` : "/orders";
   const [by, setBy] = useState<OrderSearchField>(initialBy);
   const current = options.find((option) => option.value === by) ?? options[0];
   const CurrentIcon = ICONS[current.value];
@@ -74,6 +82,9 @@ export function OrderSearch({
     >
       {by !== "all" && <input type="hidden" name="by" value={by} />}
       {view === "calendar" && <input type="hidden" name="view" value="calendar" />}
+      {kept.map(([key, value]) => (
+        <input key={key} type="hidden" name={key} value={value} />
+      ))}
 
       <DropdownMenu>
         <DropdownMenuTrigger

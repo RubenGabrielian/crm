@@ -1,7 +1,14 @@
 import "server-only";
 
-import type { OrderSearchField, OrderStatus } from "@/config/orders";
+import {
+  NO_SOURCE,
+  type OrderFilters,
+  type OrderSearchField,
+  type OrderStatus,
+} from "@/config/orders";
 import { toPaymentMethod, type PaymentMethod } from "@/config/payments";
+import { addDays } from "@/lib/analytics/range";
+import { parseDay, startOfDayUtc } from "./calendar";
 import { createAuthClient } from "@/lib/supabase/server";
 
 export type Order = {
@@ -128,6 +135,38 @@ async function searchConditions(
   return conditions;
 }
 
+/** Stored payment_method values per method; imported sheets used other names. */
+const PAYMENT_VALUES: Record<PaymentMethod, string[]> = {
+  cash: ["cash"],
+  card: ["card", "idram", "telcell"],
+  transfer: ["transfer", "bank transfer"],
+  post: ["post"],
+  other: ["other"],
+};
+
+/**
+ * Filters that need an `or`, each as one comma-joined group. Orders without
+ * metadata.paid count as paid once delivered, like in the table.
+ */
+function filterGroups(filters: OrderFilters): string[] {
+  const groups: string[] = [];
+  if (filters.paid === "yes")
+    groups.push(
+      "metadata->>paid.eq.true,and(metadata->>paid.is.null,status.eq.completed)",
+    );
+  if (filters.paid === "no")
+    groups.push(
+      "metadata->>paid.eq.false,and(metadata->>paid.is.null,status.neq.completed)",
+    );
+  if (filters.payment)
+    groups.push(
+      PAYMENT_VALUES[filters.payment]
+        .map((value) => `metadata->>payment_method.ilike."${value}"`)
+        .join(","),
+    );
+  return groups;
+}
+
 export async function listOrders(
   tenantId: string,
   filter: {
@@ -138,6 +177,7 @@ export async function listOrders(
     /** created_at range, ISO timestamps: from inclusive, to exclusive. */
     from?: string;
     to?: string;
+    filters?: OrderFilters;
   } = {},
 ): Promise<{ orders: Order[]; total: number; error: string | null }> {
   const supabase = await createAuthClient();
@@ -160,9 +200,31 @@ export async function listOrders(
     // Same-time orders (e.g. imported by date) keep a stable order across pages.
     .order("id", { ascending: false });
   if (filter.customerId) query = query.eq("customer_id", filter.customerId);
-  if (conditions.length) query = query.or(conditions.join(","));
   if (filter.from) query = query.gte("created_at", filter.from);
   if (filter.to) query = query.lt("created_at", filter.to);
+
+  const filters = filter.filters ?? {};
+  if (filters.status) query = query.eq("status", filters.status);
+  if (filters.product) query = query.eq("product_id", filters.product);
+  if (filters.source === NO_SOURCE) query = query.is("source", null);
+  else if (filters.source) query = query.eq("source", filters.source);
+  // Days are Yerevan days; "to" includes the whole day.
+  const fromDay = parseDay(filters.from);
+  const toDay = parseDay(filters.to);
+  if (fromDay) query = query.gte("created_at", startOfDayUtc(fromDay).toISOString());
+  if (toDay && filters.to) {
+    const next = parseDay(addDays(filters.to, 1));
+    if (next) query = query.lt("created_at", startOfDayUtc(next).toISOString());
+  }
+
+  // Every `or` group must hold, so several are wrapped in one and(...).
+  const groups = [
+    ...(conditions.length ? [conditions.join(",")] : []),
+    ...filterGroups(filters),
+  ];
+  if (groups.length === 1) query = query.or(groups[0]);
+  else if (groups.length > 1)
+    query = query.or(`and(${groups.map((group) => `or(${group})`).join(",")})`);
   if (filter.page && filter.pageSize) {
     const from = (filter.page - 1) * filter.pageSize;
     query = query.range(from, from + filter.pageSize - 1);
