@@ -26,7 +26,10 @@ import {
   type CostType,
 } from "@/config/expenses";
 import { resolveRange } from "@/lib/analytics/range";
+import { FREE_EXPENSE_LIMIT } from "@/lib/billing/limits";
+import { isCurrentUserPro } from "@/lib/billing/subscription";
 import {
+  countAllExpenses,
   listExpenses,
   listRecurringExpenses,
   monthlyCharges,
@@ -66,10 +69,15 @@ export default async function ExpensesPage({
     "30d",
   );
   const today = resolveRange({ range: "today" }).to;
-  const [{ expenses: oneOff, error }, recurring] = await Promise.all([
+  const [{ expenses: oneOff, error }, recurring, isPro] = await Promise.all([
     listExpenses(tenant.id, range),
     listRecurringExpenses(tenant.id),
+    isCurrentUserPro(),
   ]);
+  // Free accounts can add a couple of expenses; addExpense checks it again.
+  const expenseCount = isPro ? null : await countAllExpenses(tenant.id);
+  const limitReached =
+    expenseCount !== null && expenseCount >= FREE_EXPENSE_LIMIT;
   // One-off entries plus this period's charges from monthly expenses, newest first.
   const expenses = [...oneOff, ...monthlyCharges(recurring, range, today)].sort(
     (a, b) => b.date.localeCompare(a.date),
@@ -116,7 +124,7 @@ export default async function ExpensesPage({
               : `${displayDate(range.from)} – ${displayDate(range.to)}`}
           </p>
         </div>
-        <AddExpenseDialog today={today} />
+        <AddExpenseDialog today={today} limitReached={limitReached} />
       </div>
 
       {error ? (

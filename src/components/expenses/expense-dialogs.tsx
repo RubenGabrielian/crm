@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { CircleStop, Plus, Trash2 } from "lucide-react";
 import { cn } from "cn";
+import { UpgradePrompt } from "@/components/billing/pro-gate";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +29,7 @@ import {
   EXPENSE_CATEGORY_LABELS,
   defaultCostType,
 } from "@/config/expenses";
+import { FREE_EXPENSE_LIMIT } from "@/lib/billing/limits";
 import {
   addExpense,
   deleteExpense,
@@ -45,7 +47,14 @@ const INITIAL_STATE: ExpenseFormState = {
   formError: null,
 };
 
-export function AddExpenseDialog({ today }: { today: string }) {
+export function AddExpenseDialog({
+  today,
+  limitReached = false,
+}: {
+  today: string;
+  /** A free account used up its expenses: the dialog asks to upgrade instead. */
+  limitReached?: boolean;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -58,8 +67,16 @@ export function AddExpenseDialog({ today }: { today: string }) {
         <DialogHeader>
           <DialogTitle>Ավելացնել ծախս</DialogTitle>
         </DialogHeader>
-        {/* Mounted only while open, so each opening starts with a clean form. */}
-        <ExpenseForm today={today} onSaved={() => setOpen(false)} />
+        {limitReached ? (
+          <UpgradePrompt
+            compact
+            title="Ավելացրու անսահմանափակ ծախսեր"
+            description={`Անվճար տարբերակում կարելի է ավելացնել ${FREE_EXPENSE_LIMIT} ծախս։ Ակտիվացրու Numa Pro-ն՝ ավելին ավելացնելու համար։`}
+          />
+        ) : (
+          // Mounted only while open, so each opening starts with a clean form.
+          <ExpenseForm today={today} onSaved={() => setOpen(false)} />
+        )}
       </DialogContent>
     </Dialog>
   );

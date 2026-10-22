@@ -2,7 +2,7 @@ import "server-only";
 
 import type { OrderSearchField, OrderStatus } from "@/config/orders";
 import { toPaymentMethod, type PaymentMethod } from "@/config/payments";
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 
 export type Order = {
   id: string;
@@ -49,6 +49,7 @@ async function matchingIds(
   columns: string[],
   term: string,
 ): Promise<string[]> {
+  const supabase = await createAuthClient();
   const conditions = columns
     .map((column) => `${column}.ilike.${orValue(term)}`)
     .join(",");
@@ -66,6 +67,7 @@ async function matchingIds(
 
 /** Order ids starting with the typed short id, e.g. "#3FA2" or "3fa2c1d0". */
 async function matchingOrderIds(tenantId: string, term: string) {
+  const supabase = await createAuthClient();
   const prefix = term.replace(/^#/, "").toLowerCase();
   if (!/^[0-9a-f-]+$/.test(prefix)) return [];
   const { data, error } = await supabase
@@ -138,6 +140,7 @@ export async function listOrders(
     to?: string;
   } = {},
 ): Promise<{ orders: Order[]; total: number; error: string | null }> {
+  const supabase = await createAuthClient();
   const term = filter.search?.term.trim() ?? "";
   const conditions = term
     ? await searchConditions(tenantId, filter.search!.by, term)
@@ -215,6 +218,7 @@ export async function listOrders(
 export async function listOrderSources(
   tenantId: string,
 ): Promise<OrderSource[]> {
+  const supabase = await createAuthClient();
   const { data, error } = await supabase
     .from("order_sources")
     .select("id, name")

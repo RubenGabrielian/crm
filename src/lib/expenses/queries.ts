@@ -2,7 +2,7 @@ import "server-only";
 
 import type { DateRange } from "@/lib/analytics/range";
 import { RETIRED_PERSONAL_CATEGORY } from "@/config/expenses";
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 import { chargeDates, type RecurringExpense } from "./recurring";
 
 export type Expense = {
@@ -22,6 +22,7 @@ export async function listExpenses(
   tenantId: string,
   range: DateRange,
 ): Promise<{ expenses: Expense[]; error: string | null }> {
+  const supabase = await createAuthClient();
   const { data, error } = await supabase
     .from("expenses")
     .select(
@@ -51,10 +52,34 @@ export async function listExpenses(
   };
 }
 
+/**
+ * How many expenses the tenant ever added, one-off and monthly together.
+ * Free accounts are limited by this number. Null (with a log line) if it can't be read.
+ */
+export async function countAllExpenses(tenantId: string): Promise<number | null> {
+  const supabase = await createAuthClient();
+  const [oneOff, monthly] = await Promise.all([
+    supabase
+      .from("expenses")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId),
+    supabase
+      .from("recurring_expenses")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId),
+  ]);
+  if (oneOff.error || monthly.error) {
+    console.error("countAllExpenses failed:", oneOff.error ?? monthly.error);
+    return null;
+  }
+  return (oneOff.count ?? 0) + (monthly.count ?? 0);
+}
+
 /** Monthly expenses of the tenant. Empty (with a log line) if they can't be read. */
 export async function listRecurringExpenses(
   tenantId: string,
 ): Promise<RecurringExpense[]> {
+  const supabase = await createAuthClient();
   const { data, error } = await supabase
     .from("recurring_expenses")
     .select(

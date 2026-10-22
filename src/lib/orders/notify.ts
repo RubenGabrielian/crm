@@ -2,7 +2,7 @@ import "server-only";
 
 import { ORDER_STATUS_LABELS, type OrderStatus } from "@/config/orders";
 import { emailConfigured, escapeHtml, sendEmail } from "@/lib/email/send";
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 import type { Tenant } from "@/lib/tenant/features";
 
 function one<T>(value: T | T[] | null | undefined): T | null {
@@ -32,6 +32,7 @@ async function sendStatusEmail(
   orderId: string,
   status: OrderStatus,
 ) {
+  const supabase = await createAuthClient();
   const shortId = `#${orderId.slice(0, 8).toUpperCase()}`;
   if (!emailConfigured) {
     console.warn(

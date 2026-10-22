@@ -8,7 +8,10 @@ import {
   type CostType,
 } from "@/config/expenses";
 import { addDays } from "@/lib/analytics/range";
-import { supabase } from "@/lib/supabase";
+import { FREE_EXPENSE_LIMIT } from "@/lib/billing/limits";
+import { isCurrentUserPro } from "@/lib/billing/subscription";
+import { countAllExpenses } from "@/lib/expenses/queries";
+import { createAuthClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 export type ExpenseFormState = {
@@ -29,6 +32,7 @@ export async function addExpense(
   _prev: ExpenseFormState,
   formData: FormData,
 ): Promise<ExpenseFormState> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const read = (name: string) => String(formData.get(name) ?? "").trim();
   const values = {
@@ -61,6 +65,26 @@ export async function addExpense(
 
   if (Object.keys(errors).length > 0) {
     return { ok: false, values, errors, formError: null };
+  }
+
+  if (!(await isCurrentUserPro())) {
+    const count = await countAllExpenses(tenant.id);
+    if (count === null) {
+      return {
+        ok: false,
+        values,
+        errors: {},
+        formError: "Չհաջողվեց պահպանել։ Փորձեք կրկին։",
+      };
+    }
+    if (count >= FREE_EXPENSE_LIMIT) {
+      return {
+        ok: false,
+        values,
+        errors: {},
+        formError: `Անվճար տարբերակում կարելի է ավելացնել ${FREE_EXPENSE_LIMIT} ծախս։ Ակտիվացրու Numa Pro-ն՝ ավելին ավելացնելու համար։`,
+      };
+    }
   }
 
   // "Repeat every month" saves a monthly expense starting on the chosen date
@@ -106,6 +130,7 @@ export async function setExpensePaid(
   expenseId: string,
   paid: boolean,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
 
   const { data, error } = await supabase
@@ -127,6 +152,7 @@ export async function setExpensePaid(
 export async function deleteExpense(
   expenseId: string,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
 
   const { error } = await supabase
@@ -153,6 +179,7 @@ export async function removeRecurringExpense(
   mode: "stop" | "delete",
   today: string,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const failed = { ok: false, error: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
 
@@ -199,6 +226,7 @@ export async function setExpenseCostType(
   expenseId: string,
   costType: CostType,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   if (!isCostType(costType)) return { ok: false, error: "Անհայտ տեսակ" };
 

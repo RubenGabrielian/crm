@@ -19,3 +19,13 @@ export function getAdminClient(): SupabaseClient | null {
       : null;
   return client;
 }
+
+/**
+ * The admin client for the public checkout, which has no session. Throws when
+ * SUPABASE_SECRET_KEY is missing, since checkout can't work without it.
+ */
+export function requireAdminClient(): SupabaseClient {
+  const admin = getAdminClient();
+  if (!admin) throw new Error("SUPABASE_SECRET_KEY is not set; the public checkout needs it.");
+  return admin;
+}

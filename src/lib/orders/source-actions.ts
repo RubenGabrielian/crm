@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 type Result = { ok: boolean; error: string | null };
@@ -13,6 +13,7 @@ export async function updateOrderSource(
   orderId: string,
   source: string,
 ): Promise<Result> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const name = source.trim();
   const failed = {
@@ -48,6 +49,7 @@ export async function updateOrderSource(
 }
 
 export async function addOrderSource(name: string): Promise<Result> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const trimmed = name.trim().replace(/\s+/g, " ");
 
@@ -73,6 +75,7 @@ export async function addOrderSource(name: string): Promise<Result> {
 
 /** Removes the option from the list. Orders that already use it keep the name. */
 export async function deleteOrderSource(sourceId: string): Promise<Result> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
 
   const { error } = await supabase

@@ -1,7 +1,12 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 
 const PRICE = 13000;
+
+/** The yellow full-width button under the price. */
+export const PRICING_CTA_CLASS =
+  "mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-apricot px-6 font-medium text-foreground outline-none hover:bg-apricot/85 focus-visible:ring-2 focus-visible:ring-apricot focus-visible:ring-offset-2 focus-visible:ring-offset-primary";
 
 // The same points as the feature rows on the page, so both say one thing.
 const INCLUDED: { title: string; items: string[] }[] = [
@@ -34,7 +39,8 @@ const INCLUDED: { title: string; items: string[] }[] = [
   },
 ];
 
-export function Pricing() {
+/** `cta` replaces the sign-up button, e.g. with a pay button inside the app. */
+export function Pricing({ cta }: { cta?: ReactNode }) {
   return (
     <div className="grid overflow-hidden rounded-[2.25rem] shadow-[0_40px_90px_-50px_rgb(20_20_22/0.55)] ring-1 ring-black/5 lg:grid-cols-[0.95fr_1.05fr]">
       {/* Price and guarantee */}
@@ -56,13 +62,12 @@ export function Pricing() {
           <p className="mt-2 text-sm text-primary-foreground/60">
             Օրական՝ մոտ {Math.round(PRICE / 30)} ֏
           </p>
-          <Link
-            href="/auth/register"
-            className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-apricot px-6 font-medium text-foreground outline-none hover:bg-apricot/85 focus-visible:ring-2 focus-visible:ring-apricot focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
-          >
-            Սկսել հիմա
-            <ArrowRight className="size-4" aria-hidden />
-          </Link>
+          {cta ?? (
+            <Link href="/auth/register" className={PRICING_CTA_CLASS}>
+              Սկսել հիմա
+              <ArrowRight className="size-4" aria-hidden />
+            </Link>
+          )}
 
           <div className="mt-8 flex items-center gap-5 rounded-3xl bg-white/[0.06] p-4 ring-1 ring-white/10 sm:p-5">
             <GuaranteeSeal className="size-24 shrink-0 sm:size-28" />

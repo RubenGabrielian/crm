@@ -2,7 +2,7 @@ import "server-only";
 
 import { expenseGroup, RETIRED_PERSONAL_CATEGORY } from "@/config/expenses";
 import { listRecurringExpenses, monthlyCharges } from "@/lib/expenses/queries";
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 import {
   dateStringOf,
   daysBetween,
@@ -108,6 +108,7 @@ export async function getAnalytics(
   tenantId: string,
   range: DateRange,
 ): Promise<{ analytics: Analytics | null; error: string | null }> {
+  const supabase = await createAuthClient();
   const { start, end } = rangeBounds(range);
 
   const [ordersResult, expensesResult, recurring] = await Promise.all([

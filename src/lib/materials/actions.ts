@@ -7,7 +7,7 @@ import {
   PRODUCT_IMAGE_MAX_BYTES,
   PRODUCT_IMAGE_TYPES,
 } from "@/config/product-images";
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 export type MaterialFormState = {
@@ -25,6 +25,7 @@ async function uploadMaterialImage(
   tenantId: string,
   file: File,
 ): Promise<string | null> {
+  const supabase = await createAuthClient();
   const bucket = supabase.storage.from(PRODUCT_IMAGE_BUCKET);
   const path = `${tenantId}/materials/${crypto.randomUUID()}.${PRODUCT_IMAGE_TYPES[file.type]}`;
   const { error } = await bucket.upload(path, file, { contentType: file.type });
@@ -91,6 +92,7 @@ export async function createMaterial(
   _prev: MaterialFormState,
   formData: FormData,
 ): Promise<MaterialFormState> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const { values, errors, quantity, unitCost, imageFile } = readForm(formData);
   if (quantity < 0) errors.quantity = "Մուտքագրեք 0 կամ ավելի";
@@ -127,6 +129,7 @@ export async function updateMaterial(
   _prev: MaterialFormState,
   formData: FormData,
 ): Promise<MaterialFormState> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const {
     values,
@@ -180,6 +183,7 @@ export async function receiveMaterial(
   materialId: string,
   quantity: number,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   if (!Number.isFinite(quantity) || quantity <= 0) {
     return { ok: false, error: "Մուտքագրեք 0-ից մեծ թիվ" };
@@ -201,6 +205,7 @@ export async function receiveMaterial(
 export async function deleteMaterial(
   materialId: string,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const { error } = await supabase
     .from("materials")

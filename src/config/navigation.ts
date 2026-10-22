@@ -1,5 +1,6 @@
 import {
   ClipboardList,
+  CreditCard,
   GraduationCap,
   House,
   Package,
@@ -52,6 +53,7 @@ const NAVIGATION: NavConfigItem[] = [
   { href: "/customers", label: "CRM", icon: Users },
   { href: "/expenses", label: "Ծախսեր", icon: Receipt },
   { href: "/reinvestments", label: "Վերաներդրում", icon: Sprout },
+  { href: "/billing", label: "Բաժանորդագրություն", icon: CreditCard },
 ];
 
 function isPerType<T>(value: PerType<T>): value is Record<BusinessType, T> {

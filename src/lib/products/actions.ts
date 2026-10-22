@@ -12,7 +12,7 @@ import {
   PRODUCT_IMAGE_MAX_BYTES,
   PRODUCT_IMAGE_TYPES,
 } from "@/config/product-images";
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 import {
   itemKind,
   type BusinessType,
@@ -103,6 +103,7 @@ async function uploadProductImage(
   tenantId: string,
   file: File,
 ): Promise<string | null> {
+  const supabase = await createAuthClient();
   const bucket = supabase.storage.from(PRODUCT_IMAGE_BUCKET);
   const path = `${tenantId}/${crypto.randomUUID()}.${PRODUCT_IMAGE_TYPES[file.type]}`;
   const { error } = await bucket.upload(path, file, { contentType: file.type });
@@ -150,6 +151,7 @@ async function saveProductMaterials(
   productId: string,
   uses: MaterialUse[],
 ): Promise<boolean> {
+  const supabase = await createAuthClient();
   const { error: clearError } = await supabase
     .from("product_materials")
     .delete()
@@ -194,6 +196,7 @@ export async function createProduct(
   _prev: ProductFormState,
   formData: FormData,
 ): Promise<ProductFormState> {
+  const supabase = await createAuthClient();
   // The tenant and its business type come from the server, never the form;
   // only a mixed business picks per item whether it is a good or a service.
   const tenant = await getCurrentTenant();
@@ -264,6 +267,7 @@ export async function updateProduct(
   _prev: ProductFormState,
   formData: FormData,
 ): Promise<ProductFormState> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const failWith = (formError: string): ProductFormState => ({
     ok: false,
@@ -369,6 +373,7 @@ export async function updateProduct(
 export async function deleteProduct(
   productId: string,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
 
   const { error } = await supabase

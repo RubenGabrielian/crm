@@ -14,12 +14,15 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { UpgradePrompt } from "@/components/billing/pro-gate";
+import { useIsPro } from "@/lib/billing/pro-context";
 import { formatMoney } from "@/lib/format";
 import { createSaleLinkQuery } from "@/lib/orders/sale-link-actions";
 import type { Product } from "@/lib/products/queries";
 
 export function CopyCheckoutLink({ product }: { product: Product }) {
   const [open, setOpen] = useState(false);
+  const isPro = useIsPro();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -32,8 +35,16 @@ export function CopyCheckoutLink({ product }: { product: Product }) {
           <DialogTitle>Վճարման հղում</DialogTitle>
           <DialogDescription>{product.title}</DialogDescription>
         </DialogHeader>
-        {/* Mounted only while open, so each opening starts without a sale. */}
-        <CopyLinkForm product={product} />
+        {isPro ? (
+          // Mounted only while open, so each opening starts without a sale.
+          <CopyLinkForm product={product} />
+        ) : (
+          <UpgradePrompt
+            compact
+            title="Վաճառիր հղումով Numa Pro-ով"
+            description="Ակտիվացրու Pro-ն՝ վճարման հղումը պատճենելու և վաճառելու համար։"
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

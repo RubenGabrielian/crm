@@ -1,6 +1,6 @@
 import "server-only";
 
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 
 export type InventoryRow = {
   productId: string;
@@ -22,6 +22,7 @@ function one<T>(value: T | T[] | null | undefined): T | null {
 export async function listInventory(
   tenantId: string,
 ): Promise<{ rows: InventoryRow[]; error: string | null }> {
+  const supabase = await createAuthClient();
   const { data, error } = await supabase
     .from("products")
     .select(

@@ -2,7 +2,8 @@
 
 import { randomBytes } from "node:crypto";
 import { isDeliveryFee, isSalePercent, signSale } from "./sale-link";
-import { supabase } from "@/lib/supabase";
+import { isCurrentUserPro } from "@/lib/billing/subscription";
+import { createAuthClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 /**
@@ -17,7 +18,11 @@ export async function createSaleLinkQuery(
   delivery: number | null = null,
   note = "",
 ): Promise<{ query: string | null; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
+  if (!(await isCurrentUserPro())) {
+    return { query: null, error: "Հղումը պատճենելու համար ակտիվացրու Numa Pro-ն։" };
+  }
   if (!isSalePercent(percent)) {
     return { query: null, error: "Զեղչը՝ 0-ից 100 ամբողջ թիվ" };
   }

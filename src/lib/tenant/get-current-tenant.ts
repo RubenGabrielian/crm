@@ -2,7 +2,6 @@ import "server-only";
 
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { createAuthClient } from "@/lib/supabase/server";
 import { isBusinessType, type Tenant } from "./features";
 
@@ -17,6 +16,7 @@ export const getCurrentUser = cache(async () => {
 
 /** The business owned by the given user, or null if they haven't created one yet. */
 export async function findTenantByOwner(ownerId: string): Promise<Tenant | null> {
+  const supabase = await createAuthClient();
   const { data, error } = await supabase
     .from("tenants")
     .select("id, name, business_type")

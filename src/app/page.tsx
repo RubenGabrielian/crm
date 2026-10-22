@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -26,7 +27,6 @@ import { Pricing } from "@/components/landing/pricing";
 import { Reveal } from "@/components/landing/reveal";
 import { SalePipeline } from "@/components/landing/sale-pipeline";
 import { REVIEWS } from "@/config/reviews";
-import { NumaLogo } from "@/components/brand/numa-logo";
 
 export const metadata: Metadata = {
   title: "Numa – Վաճառեք Instagram-ում, հաշվարկը թողեք մեզ",
@@ -77,10 +77,10 @@ export default function LandingPage() {
 
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:h-20 sm:px-6">
-          <Logo />
+          <Logo priority className="h-9 sm:h-11" />
           <nav
             aria-label="Էջի բաժիններ"
-            className="hidden items-center gap-7 text-sm lg:flex"
+            className="hidden items-center gap-7 text-sm whitespace-nowrap lg:flex"
           >
             {[
               ["#features", "Հնարավորություններ"],
@@ -335,7 +335,7 @@ export default function LandingPage() {
 
       <footer className="border-t">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-10 text-sm text-muted-foreground sm:px-6">
-          <Logo />
+          <Logo className="h-9" />
           <span className="flex flex-wrap gap-x-6 gap-y-2">
             <a href="#features" className="hover:text-foreground">
               Հնարավորություններ
@@ -354,13 +354,26 @@ export default function LandingPage() {
   );
 }
 
-function Logo() {
+function Logo({
+  className,
+  priority,
+}: {
+  className?: string;
+  priority?: boolean;
+}) {
   return (
     <Link
       href="/"
-      className="flex items-center text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex items-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <NumaLogo size={34} />
+      <Image
+        src="/logo.webp"
+        alt="Numa"
+        width={1133}
+        height={254}
+        priority={priority}
+        className={cn("w-auto", className)}
+      />
     </Link>
   );
 }

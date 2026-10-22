@@ -6,7 +6,8 @@ import { isPaymentMethod } from "@/config/payments";
 import { notifyOrderStatusChange } from "./notify";
 import { verifySale, type LinkSale } from "./sale-link";
 import { getCheckoutProduct } from "@/lib/products/queries";
-import { supabase } from "@/lib/supabase";
+import { requireAdminClient } from "@/lib/supabase/admin";
+import { createAuthClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 import { scheduleFromInput } from "./schedule";
 
@@ -44,6 +45,7 @@ async function currentStatus(
   tenantId: string,
   orderId: string,
 ): Promise<string | null> {
+  const supabase = await createAuthClient();
   const { data } = await supabase
     .from("orders")
     .select("status")
@@ -54,6 +56,10 @@ async function currentStatus(
 }
 
 // ── Public checkout ──────────────────────────────────────────
+/** Shown to buyers when the seller has no Pro, which online orders need. */
+const SELLER_UNAVAILABLE =
+  "Առցանց պատվերն այս պահին հասանելի չէ։ Կապվեք վաճառողի հետ։";
+
 export async function placeOrder(
   productId: string,
   /** From a signed sale link; ignored unless the signature is genuine. */
@@ -63,6 +69,7 @@ export async function placeOrder(
   _prev: OrderFormState,
   formData: FormData,
 ): Promise<OrderFormState> {
+  const supabase = requireAdminClient();
   const read = (name: string) => String(formData.get(name) ?? "").trim();
   const values = {
     name: read("name"),
@@ -80,6 +87,7 @@ export async function placeOrder(
 
   const product = await getCheckoutProduct(productId);
   if (!product) return fail("Այս ապրանքն այլևս հասանելի չէ։");
+  if (!product.sellerIsPro) return fail(SELLER_UNAVAILABLE);
   const needsAddress = product.kind === "product";
 
   const errors: Record<string, string> = {};
@@ -178,6 +186,7 @@ export async function updateOrder(
   _prev: OrderFormState,
   formData: FormData,
 ): Promise<OrderFormState> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const read = (name: string) => String(formData.get(name) ?? "").trim();
   const values = {
@@ -297,6 +306,7 @@ export async function updateOrderStatus(
   orderId: string,
   status: string,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   if (!isOrderStatus(status)) return { ok: false, error: "Անհայտ կարգավիճակ" };
 
@@ -351,6 +361,7 @@ export async function createManualOrder(
   _prev: OrderFormState,
   formData: FormData,
 ): Promise<OrderFormState> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const takesAddress = tenant.businessType !== "service";
   const read = (name: string) => String(formData.get(name) ?? "").trim();
@@ -535,6 +546,7 @@ export async function createManualOrder(
 export async function getOrderDeleteInfo(
   orderId: string,
 ): Promise<{ otherOrders: number; tracksStock: boolean } | null> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const { data: order } = await supabase
     .from("orders")
@@ -571,6 +583,7 @@ export async function deleteOrder(
   /** Remove the customer from CRM too, if this was their only order. */
   deleteCustomer = false,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
 
   const { data, error } = await supabase
@@ -631,6 +644,7 @@ async function deleteCustomerWithoutOrders(
   tenantId: string,
   customerId: string,
 ): Promise<string | null> {
+  const supabase = await createAuthClient();
   // Checked again here: an order may have arrived since the dialog opened.
   const { count } = await supabase
     .from("orders")
@@ -658,6 +672,7 @@ export async function updateOrderComment(
   orderId: string,
   comment: string,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const text = comment.trim();
   if (text.length > 2000) {
@@ -702,6 +717,7 @@ async function mergeOrderMetadata(
   orderId: string,
   changes: Record<string, unknown>,
 ): Promise<boolean> {
+  const supabase = await createAuthClient();
   const { data: order } = await supabase
     .from("orders")
     .select("metadata")

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 
 export type Material = {
   id: string;
@@ -20,6 +20,7 @@ export type Material = {
 export async function listMaterials(
   tenantId: string,
 ): Promise<{ materials: Material[]; error: string | null }> {
+  const supabase = await createAuthClient();
   const { data, error } = await supabase
     .from("materials")
     .select(

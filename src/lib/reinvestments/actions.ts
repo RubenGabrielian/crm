@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { isReinvestmentStatus } from "@/config/reinvestments";
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 export type ReinvestmentFormState = {
@@ -20,6 +20,7 @@ export async function addReinvestment(
   _prev: ReinvestmentFormState,
   formData: FormData,
 ): Promise<ReinvestmentFormState> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const read = (name: string) => String(formData.get(name) ?? "").trim();
   const values = {
@@ -72,6 +73,7 @@ export async function addReinvestment(
 }
 
 export async function updateReinvestmentStatus(id: string, status: string): Promise<Result> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const failed = { ok: false, error: "Չհաջողվեց փոխել կարգավիճակը։ Փորձեք կրկին։" };
   if (!isReinvestmentStatus(status)) return failed;
@@ -93,6 +95,7 @@ export async function updateReinvestmentStatus(id: string, status: string): Prom
 }
 
 export async function deleteReinvestment(id: string): Promise<Result> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
 
   const { error } = await supabase

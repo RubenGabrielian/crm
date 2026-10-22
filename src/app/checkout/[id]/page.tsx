@@ -86,11 +86,18 @@ export default async function CheckoutPage({
             </p>
           </header>
 
-          <CheckoutForm
-            product={{ ...product, deliveryFee }}
-            sale={sale}
-            linkRef={ref}
-          />
+          {product.sellerIsPro ? (
+            <CheckoutForm
+              product={{ ...product, deliveryFee }}
+              sale={sale}
+              linkRef={ref}
+            />
+          ) : (
+            // Online orders need the seller's Pro; placeOrder refuses them too.
+            <p className="rounded-2xl bg-muted px-4 py-3 text-sm text-muted-foreground">
+              Առցանց պատվերն այս պահին հասանելի չէ։ Կապվեք վաճառողի հետ։
+            </p>
+          )}
         </div>
       </div>
     </main>

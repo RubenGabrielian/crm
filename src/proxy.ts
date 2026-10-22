@@ -52,6 +52,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except the public checkout, Next.js internals and static files.
-  matcher: ["/((?!checkout|_next/static|_next/image|favicon.ico|.*\\.[a-zA-Z0-9]+$).*)"],
+  // Everything except the public checkout, incoming webhooks (they carry no
+  // session), Next.js internals and static files.
+  matcher: ["/((?!checkout|api/webhooks|_next/static|_next/image|favicon.ico|.*\\.[a-zA-Z0-9]+$).*)"],
 };

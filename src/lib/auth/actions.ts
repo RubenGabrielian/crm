@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { createAuthClient } from "@/lib/supabase/server";
 import { resendConfigured, sendCodeEmail } from "./email";
@@ -250,6 +249,7 @@ export async function signOut() {
 
 /** Onboarding: create the signed-in user's business. */
 export async function createTenant(name: string, businessType: string): Promise<Result> {
+  const supabase = await createAuthClient();
   const user = await getCurrentUser();
   if (!user) redirect("/auth/login");
   if (await findTenantByOwner(user.id)) redirect("/dashboard");

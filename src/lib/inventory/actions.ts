@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 export type StockChange = "receive" | "gift";
@@ -12,6 +12,7 @@ export async function adjustStock(
   kind: StockChange,
   quantity: number,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
 
   if (!Number.isInteger(quantity) || quantity < 1) {
@@ -46,6 +47,7 @@ export async function setStockCounts(
   productId: string,
   counts: { available: number; sold: number; gifted: number },
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   for (const value of Object.values(counts)) {
     if (!Number.isInteger(value) || value < 0) {

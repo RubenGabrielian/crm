@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ProGate } from "@/components/billing/pro-gate";
 import { Header } from "./header";
 import { NavigationProvider, PageContent } from "./navigation-progress";
 import { Sidebar } from "./sidebar";
@@ -16,7 +17,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Header />
           <main className="flex-1 px-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
             <div className="mx-auto w-full max-w-6xl">
-              <PageContent>{children}</PageContent>
+              <PageContent>
+                <ProGate>{children}</ProGate>
+              </PageContent>
             </div>
           </main>
         </div>

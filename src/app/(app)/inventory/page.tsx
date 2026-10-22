@@ -14,6 +14,8 @@ import { formatNumber } from "@/lib/format";
 import { listInventory } from "@/lib/inventory/queries";
 import { listMaterials } from "@/lib/materials/queries";
 import { hasFeature } from "@/lib/tenant/features";
+import { DEMO_MATERIALS, demoInventory } from "@/lib/billing/demo-data";
+import { isCurrentUserPro } from "@/lib/billing/subscription";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 // Reads live data for the current tenant on every request.
@@ -24,8 +26,14 @@ export default async function InventoryPage() {
   // Hiding the menu item is not access control; block the URL too.
   if (!hasFeature(tenant.businessType, "inventory")) notFound();
 
-  const [{ rows, error }, { materials, error: materialsError }] =
-    await Promise.all([listInventory(tenant.id), listMaterials(tenant.id)]);
+  // Free accounts see the page with sample data (ProGate labels it as a demo).
+  const isPro = await isCurrentUserPro();
+  const [{ rows, error }, { materials, error: materialsError }] = isPro
+    ? await Promise.all([listInventory(tenant.id), listMaterials(tenant.id)])
+    : [
+        { rows: demoInventory(tenant.businessType), error: null },
+        { materials: DEMO_MATERIALS, error: null },
+      ];
   if (materialsError) console.error("listMaterials failed:", materialsError);
   if (error) {
     console.error("listInventory failed:", error);

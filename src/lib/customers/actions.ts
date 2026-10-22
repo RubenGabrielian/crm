@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 export type CustomerFormState = {
@@ -27,6 +27,7 @@ export async function updateCustomer(
   _prev: CustomerFormState,
   formData: FormData,
 ): Promise<CustomerFormState> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const read = (name: string) => String(formData.get(name) ?? "").trim();
   const values = {
@@ -96,6 +97,7 @@ export async function updateCustomerComment(
   customerId: string,
   comment: string,
 ): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const text = comment.trim();
   if (text.length > 2000) {

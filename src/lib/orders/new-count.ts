@@ -1,10 +1,11 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 /** How many of the current tenant's orders are still in the "new" status. */
 export async function getNewOrderCount(): Promise<number> {
+  const supabase = await createAuthClient();
   const tenant = await getCurrentTenant();
   const { count, error } = await supabase
     .from("orders")

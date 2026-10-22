@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { CustomerCommentDialog } from "@/components/customers/customer-comment-dialog";
 import { EditCustomerDialog } from "@/components/customers/edit-customer-dialog";
@@ -15,6 +15,7 @@ import {
 import { getCustomer } from "@/lib/customers/queries";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/format";
 import { listOrders } from "@/lib/orders/queries";
+import { isCurrentUserPro } from "@/lib/billing/subscription";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 import { ITEM_LABELS } from "@/lib/tenant/features";
 
@@ -23,6 +24,8 @@ export const instant = false;
 
 export default async function CustomerPage({ params }: PageProps<"/customers/[id]">) {
   const { id } = await params;
+  // Free accounts only get the demo customer list; nothing of this page is loaded.
+  if (!(await isCurrentUserPro())) redirect("/customers");
   const tenant = await getCurrentTenant();
   const isShop = tenant.businessType !== "service";
 

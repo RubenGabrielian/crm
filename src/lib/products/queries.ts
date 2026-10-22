@@ -1,6 +1,8 @@
 import "server-only";
 
-import { supabase } from "@/lib/supabase";
+import { isOwnerPro } from "@/lib/billing/subscription";
+import { requireAdminClient } from "@/lib/supabase/admin";
+import { createAuthClient } from "@/lib/supabase/server";
 import { itemKind, type BusinessType, type ItemKind } from "@/lib/tenant/features";
 
 export type Product = {
@@ -25,6 +27,8 @@ export type CheckoutProduct = {
   /** Charged once per order; taken from the product's delivery cost field. */
   deliveryFee: number;
   tenantName: string;
+  /** False when the seller has no Pro: the checkout then takes no orders. */
+  sellerIsPro: boolean;
   businessType: BusinessType;
   /** Goods are delivered (address needed); services are not. */
   kind: ItemKind;
@@ -42,6 +46,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function listProducts(
   tenantId: string,
 ): Promise<{ products: Product[]; error: string | null }> {
+  const supabase = await createAuthClient();
   const { data, error } = await supabase
     .from("products")
     .select(
@@ -75,12 +80,13 @@ export async function listProducts(
 export async function getCheckoutProduct(
   id: string,
 ): Promise<CheckoutProduct | null> {
+  const supabase = requireAdminClient();
   if (!UUID.test(id)) return null;
 
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id, title, price, image_url, metadata, tenants(name, business_type), inventory(stock_quantity)",
+      "id, title, price, image_url, metadata, tenants(name, business_type, owner_id), inventory(stock_quantity)",
     )
     .eq("id", id)
     .eq("is_active", true)
@@ -105,6 +111,7 @@ export async function getCheckoutProduct(
     deliveryFee:
       Number.isFinite(deliveryFee) && deliveryFee > 0 ? deliveryFee : 0,
     tenantName: tenant.name,
+    sellerIsPro: await isOwnerPro(tenant.owner_id),
     businessType,
     kind: itemKind(businessType, stock),
   };

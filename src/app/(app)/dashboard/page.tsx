@@ -28,6 +28,8 @@ import {
 import { expenseCategoryLabel } from "@/config/expenses";
 import { ORDER_STATUSES, ORDER_STATUS_LABELS } from "@/config/orders";
 import { getAnalytics, type Analytics } from "@/lib/analytics/queries";
+import { demoAnalytics, demoInventory } from "@/lib/billing/demo-data";
+import { isCurrentUserPro } from "@/lib/billing/subscription";
 import { resolveRange } from "@/lib/analytics/range";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { listInventory } from "@/lib/inventory/queries";
@@ -66,12 +68,19 @@ export default async function DashboardPage({
   });
   const today = resolveRange({ range: "today" }).to;
 
-  const [{ analytics, error }, inventory] = await Promise.all([
-    getAnalytics(tenant.id, range),
-    tracksStock
-      ? listInventory(tenant.id)
-      : Promise.resolve({ rows: [], error: null }),
-  ]);
+  // Free accounts see the page with sample data (ProGate labels it as a demo).
+  const isPro = await isCurrentUserPro();
+  const [{ analytics, error }, inventory] = isPro
+    ? await Promise.all([
+        getAnalytics(tenant.id, range),
+        tracksStock
+          ? listInventory(tenant.id)
+          : Promise.resolve({ rows: [], error: null }),
+      ])
+    : [
+        { analytics: demoAnalytics(range, tenant.businessType), error: null },
+        { rows: tracksStock ? demoInventory(tenant.businessType) : [], error: null },
+      ];
 
   const ordersLabel = isShop ? "Պատվերներ" : "Գրանցումներ";
 

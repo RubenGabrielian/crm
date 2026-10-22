@@ -22,6 +22,8 @@ import { resolveRange } from "@/lib/analytics/range";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { listProducts } from "@/lib/products/queries";
 import { listReinvestments } from "@/lib/reinvestments/queries";
+import { demoReinvestments } from "@/lib/billing/demo-data";
+import { isCurrentUserPro } from "@/lib/billing/subscription";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 import { ITEM_LABELS } from "@/lib/tenant/features";
 
@@ -39,10 +41,13 @@ export default async function ReinvestmentsPage() {
   const tenant = await getCurrentTenant();
   const today = resolveRange({ range: "today" }).to;
 
-  const [{ reinvestments, error }, { products }] = await Promise.all([
-    listReinvestments(tenant.id),
-    listProducts(tenant.id),
-  ]);
+  // Free accounts see the page with sample data (ProGate labels it as a demo).
+  const [{ reinvestments, error }, { products }] = (await isCurrentUserPro())
+    ? await Promise.all([listReinvestments(tenant.id), listProducts(tenant.id)])
+    : [
+        { reinvestments: demoReinvestments(today, tenant.businessType), error: null },
+        { products: [] },
+      ];
   const productOptions = products.map(({ id, title }) => ({ id, title }));
   const total = reinvestments.reduce((sum, item) => sum + item.amount, 0);
 

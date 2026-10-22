@@ -1,6 +1,6 @@
 import "server-only";
 
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 
 export type Customer = {
   id: string;
@@ -18,6 +18,7 @@ export type Customer = {
 export async function listCustomers(
   tenantId: string,
 ): Promise<{ customers: Customer[]; error: string | null }> {
+  const supabase = await createAuthClient();
   const { data, error } = await supabase
     .from("customers")
     .select("id, name, phone, email, comment, created_at, orders(order_total, created_at, metadata)")
@@ -74,6 +75,7 @@ export async function getCustomer(
   tenantId: string,
   customerId: string,
 ): Promise<CustomerProfile | null> {
+  const supabase = await createAuthClient();
   if (!UUID.test(customerId)) return null;
 
   const { data, error } = await supabase

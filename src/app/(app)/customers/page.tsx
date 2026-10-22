@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/table";
 import { listCustomers, type Customer } from "@/lib/customers/queries";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/format";
+import { demoCustomers } from "@/lib/billing/demo-data";
+import { isCurrentUserPro } from "@/lib/billing/subscription";
 import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
 
 // Reads live data for the current tenant on every request.
@@ -47,7 +49,10 @@ export default async function CustomersPage({
   await connection();
   const tenant = await getCurrentTenant();
   const isShop = tenant.businessType !== "service";
-  const { customers: allCustomers, error } = await listCustomers(tenant.id);
+  // Free accounts see the page with sample data (ProGate labels it as a demo).
+  const { customers: allCustomers, error } = (await isCurrentUserPro())
+    ? await listCustomers(tenant.id)
+    : { customers: demoCustomers(), error: null };
 
   const query = await searchParams;
   const sort: SortKey =

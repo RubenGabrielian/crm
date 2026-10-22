@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { ReinvestmentStatus } from "@/config/reinvestments";
-import { supabase } from "@/lib/supabase";
+import { createAuthClient } from "@/lib/supabase/server";
 
 export type Reinvestment = {
   id: string;
@@ -21,6 +21,7 @@ function one<T>(value: T | T[] | null | undefined): T | null {
 export async function listReinvestments(
   tenantId: string,
 ): Promise<{ reinvestments: Reinvestment[]; error: string | null }> {
+  const supabase = await createAuthClient();
   const { data, error } = await supabase
     .from("reinvestments")
     .select("id, invest_date, purpose, amount, status, products(title)")
