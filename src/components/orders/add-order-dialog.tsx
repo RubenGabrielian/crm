@@ -15,7 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { SearchSelect } from "@/components/ui/search-select";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { TruncatedText } from "@/components/ui/truncated-text";
 import type { CustomerOption } from "@/lib/customers/actions";
 import { formatMoney } from "@/lib/format";
 import { useNavLabels } from "@/lib/navigation/labels-context";
@@ -248,7 +250,7 @@ function AddOrderForm({
                   className="grid grid-cols-[1fr_4.5rem_6.5rem_2.25rem] items-start gap-2"
                 >
                   <Field data-invalid={productError ? true : undefined}>
-                    <SelectMenu
+                    <SearchSelect
                       aria-label={`${itemLabel} ${index + 1}`}
                       value={line.productId}
                       onChange={(productId) => {
@@ -527,8 +529,10 @@ function AddOrderForm({
             >
               {chosen.map(({ line, product, quantity, price }) => (
                 <Fragment key={line.key}>
-                  <dt className="truncate text-muted-foreground">
-                    {product!.title}, {formatMoney(price)} × {quantity}
+                  <dt className="min-w-0 text-muted-foreground">
+                    <TruncatedText className="block">
+                      {`${product!.title}, ${formatMoney(price)} × ${quantity}`}
+                    </TruncatedText>
                   </dt>
                   <dd className="text-right">
                     {formatMoney(price * quantity)}

@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { TruncatedText } from "@/components/ui/truncated-text";
 
 export type SelectMenuOption = {
   value: string;
@@ -74,14 +75,11 @@ export function SelectMenu({
               className={cn("size-2 shrink-0 rounded-full", current.dot)}
             />
           )}
-          <span
-            className={cn(
-              "min-w-0 flex-1 truncate",
-              !shown && "text-muted-foreground",
-            )}
+          <TruncatedText
+            className={cn("min-w-0 flex-1", !shown && "text-muted-foreground")}
           >
             {shown || placeholder}
-          </span>
+          </TruncatedText>
           <ChevronDown
             className="size-4 shrink-0 text-muted-foreground transition-transform group-data-popup-open/select:rotate-180"
             aria-hidden
@@ -124,7 +122,9 @@ export function SelectMenu({
                     className={cn("size-2 shrink-0 rounded-full", option.dot)}
                   />
                 )}
-                <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                <TruncatedText className="min-w-0 flex-1">
+                  {option.label}
+                </TruncatedText>
                 {option.hint && (
                   <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                     {option.hint}
