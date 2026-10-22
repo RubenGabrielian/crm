@@ -26,7 +26,7 @@ export async function listInventory(
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id, title, image_url, inventory(stock_quantity, gift_quantity, sold_adjustment), orders(qty)",
+      "id, title, image_url, inventory(stock_quantity, gift_quantity, sold_adjustment), orders(qty, status)",
     )
     .eq("tenant_id", tenantId)
     .eq("is_active", true)
@@ -39,10 +39,13 @@ export async function listInventory(
     const inventory = one(product.inventory);
     if (!inventory) continue; // stock is not tracked for this product
 
-    // Stock is taken at the moment an order is placed, so every order counts.
+    // Stock is taken at the moment an order is placed, so every order counts,
+    // except preorders, which take none until they are confirmed.
     // Plus the admin's correction from the warehouse page.
     const sold =
-      (product.orders ?? []).reduce((sum, order) => sum + order.qty, 0) +
+      (product.orders ?? [])
+        .filter((order) => order.status !== "preorder")
+        .reduce((sum, order) => sum + order.qty, 0) +
       (inventory.sold_adjustment ?? 0);
     const gifted = inventory.gift_quantity;
     const available = inventory.stock_quantity;

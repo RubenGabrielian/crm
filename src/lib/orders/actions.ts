@@ -311,16 +311,29 @@ export async function updateOrderStatus(
   if (!isOrderStatus(status)) return { ok: false, error: "Անհայտ կարգավիճակ" };
 
   const previousStatus = await currentStatus(tenant.id, orderId);
+  if (previousStatus === null) {
+    return { ok: false, error: "Պատվերը չի գտնվել։ Թարմացրեք էջը։" };
+  }
 
-  const { data, error } = await supabase
-    .from("orders")
-    .update({ status })
-    .eq("id", orderId)
-    .eq("tenant_id", tenant.id)
-    .select("id");
+  // Into or out of "preorder", stock moves too, so the database does it.
+  const { error } =
+    previousStatus === "preorder" || status === "preorder"
+      ? await supabase.rpc("set_order_status", {
+          p_order_id: orderId,
+          p_tenant_id: tenant.id,
+          p_status: status,
+        })
+      : await supabase
+          .from("orders")
+          .update({ status })
+          .eq("id", orderId)
+          .eq("tenant_id", tenant.id);
 
-  if (error || data.length === 0) {
-    if (error) console.error("updating order status failed:", error);
+  if (error) {
+    if (error.message.includes("out_of_stock")) {
+      return { ok: false, error: NOT_ENOUGH_STOCK };
+    }
+    console.error("updating order status failed:", error);
     return { ok: false, error: "Չհաջողվեց փոխել կարգավիճակը։ Փորձեք կրկին։" };
   }
 
@@ -376,7 +389,10 @@ export async function createManualOrder(
     payment_method: read("payment_method"),
     paid: read("paid"),
     scheduled_at: read("scheduled_at"),
+    preorder: read("preorder"),
   };
+  // A preorder takes no stock, so out-of-stock items can be ordered.
+  const preorder = values.preorder === "on";
   const fail = (formError: string): OrderFormState => ({
     ok: false,
     values,
@@ -444,7 +460,11 @@ export async function createManualOrder(
       const stockRow = Array.isArray(product.inventory)
         ? product.inventory[0]
         : product.inventory;
-      if (stockRow && (wanted.get(product.id) ?? 0) > stockRow.stock_quantity)
+      if (
+        !preorder &&
+        stockRow &&
+        (wanted.get(product.id) ?? 0) > stockRow.stock_quantity
+      )
         errors[`line-${index}-qty`] = `Առկա է ${stockRow.stock_quantity}`;
       parsed.push({ productId: product.id, title: product.title, qty, price, listPrice });
     }
@@ -468,6 +488,8 @@ export async function createManualOrder(
       p_address: takesAddress ? values.address : "",
       p_qty: line.qty,
       p_discount_percent: discountPercent,
+      // Sent only for preorders, so plain orders don't depend on migration 0020.
+      ...(preorder ? { p_preorder: true } : {}),
     });
 
     if (error || !orderId) {
@@ -550,7 +572,7 @@ export async function getOrderDeleteInfo(
   const tenant = await getCurrentTenant();
   const { data: order } = await supabase
     .from("orders")
-    .select("customer_id, product_id")
+    .select("customer_id, product_id, status")
     .eq("id", orderId)
     .eq("tenant_id", tenant.id)
     .maybeSingle();
@@ -573,7 +595,11 @@ export async function getOrderDeleteInfo(
     console.error("loading order delete info failed:", orders.error ?? stock.error);
     return null;
   }
-  return { otherOrders: orders.count ?? 0, tracksStock: (stock.count ?? 0) > 0 };
+  // A preorder took no stock, so there is nothing to put back.
+  return {
+    otherOrders: orders.count ?? 0,
+    tracksStock: order.status !== "preorder" && (stock.count ?? 0) > 0,
+  };
 }
 
 export async function deleteOrder(
@@ -591,7 +617,7 @@ export async function deleteOrder(
     .delete()
     .eq("id", orderId)
     .eq("tenant_id", tenant.id)
-    .select("product_id, qty, customer_id");
+    .select("product_id, qty, customer_id, status");
 
   if (error || data.length === 0) {
     if (error) console.error("deleting order failed:", error);
@@ -601,7 +627,8 @@ export async function deleteOrder(
   revalidateOrderPages();
   revalidatePath("/dashboard");
 
-  if (restock) {
+  // A preorder took no stock, so there is nothing to put back.
+  if (restock && data[0].status !== "preorder") {
     const { product_id, qty } = data[0];
     // Products without stock tracking (services) have nothing to return.
     const { error: stockError } = await supabase.rpc("adjust_stock", {

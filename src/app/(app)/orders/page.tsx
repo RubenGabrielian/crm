@@ -303,7 +303,7 @@ function CalendarView({
   }
   const days = new Map<string, DaySummary>();
   for (const [key, list] of byDay) {
-    const byStatus = { new: 0, confirmed: 0, completed: 0 };
+    const byStatus = { new: 0, preorder: 0, confirmed: 0, completed: 0 };
     for (const order of list) byStatus[order.status] += 1;
     days.set(key, {
       count: list.length,

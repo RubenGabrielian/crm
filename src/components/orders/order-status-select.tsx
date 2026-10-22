@@ -13,9 +13,10 @@ import { useRefreshNewOrders } from "@/components/layout/new-orders";
 import { useTenant } from "@/lib/tenant/tenant-context";
 
 // One hue per status so they can be told apart at a glance:
-// amber = needs attention, blue = in progress, green = done.
+// amber = needs attention, violet = waiting for stock, blue = in progress, green = done.
 const STATUS_STYLES: Record<OrderStatus, string> = {
   new: "bg-amber-100 text-amber-900",
+  preorder: "bg-violet-100 text-violet-900",
   confirmed: "bg-blue-100 text-blue-900",
   completed: "bg-emerald-100 text-emerald-900",
 };

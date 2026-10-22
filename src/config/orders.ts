@@ -1,12 +1,13 @@
 import type { BusinessType } from "@/lib/tenant/features";
 
-export const ORDER_STATUSES = ["new", "confirmed", "completed"] as const;
+/** A preorder holds no stock until it moves on to "confirmed" or "completed". */
+export const ORDER_STATUSES = ["new", "preorder", "confirmed", "completed"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_STATUS_LABELS: Record<BusinessType, Record<OrderStatus, string>> = {
-  ecommerce: { new: "Նոր", confirmed: "Հաստատված", completed: "Առաքված" },
-  service: { new: "Նոր", confirmed: "Հաստատված", completed: "Ավարտված" },
-  mixed: { new: "Նոր", confirmed: "Հաստատված", completed: "Ավարտված" },
+  ecommerce: { new: "Նոր", preorder: "Նախապատվեր", confirmed: "Հաստատված", completed: "Առաքված" },
+  service: { new: "Նոր", preorder: "Նախապատվեր", confirmed: "Հաստատված", completed: "Ավարտված" },
+  mixed: { new: "Նոր", preorder: "Նախապատվեր", confirmed: "Հաստատված", completed: "Ավարտված" },
 };
 
 export function isOrderStatus(value: unknown): value is OrderStatus {

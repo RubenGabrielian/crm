@@ -26,6 +26,7 @@ const CELL_HEIGHT = "h-[clamp(3.25rem,calc((100dvh-24rem)/6),6.5rem)]";
 
 export const STATUS_DOT: Record<OrderStatus, string> = {
   new: "bg-amber-400",
+  preorder: "bg-violet-500",
   confirmed: "bg-blue-500",
   completed: "bg-emerald-500",
 };

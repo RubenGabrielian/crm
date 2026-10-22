@@ -116,6 +116,9 @@ function AddOrderForm({
   const [paid, setPaid] = useState("no");
   const [discount, setDiscount] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
+  // A preorder takes no stock, so out-of-stock items can be picked.
+  const [preorder, setPreorder] = useState(false);
+  const tracksStock = products.some((item) => item.stock !== null);
 
   function updateLine(key: number, change: Partial<Line>) {
     setLines((current) =>
@@ -132,7 +135,9 @@ function AddOrderForm({
     const price = line.price === "" ? (product?.price ?? 0) : Math.max(Number(line.price) || 0, 0);
     if (product) used.set(product.id, (used.get(product.id) ?? 0) + quantity);
     const overStock =
-      product?.stock != null && (used.get(product.id) ?? 0) > product.stock;
+      !preorder &&
+      product?.stock != null &&
+      (used.get(product.id) ?? 0) > product.stock;
     return { line, product, quantity, price, overStock };
   });
   const chosen = rows.filter((row) => row.product);
@@ -182,7 +187,9 @@ function AddOrderForm({
           const productError = errors[`line-${index}-product`];
           const qtyError =
             errors[`line-${index}-qty`] ??
-            (lineOver ? `Առկա է ${product?.stock}` : undefined);
+            (lineOver
+              ? `Առկա է ${product?.stock}։ Նշեք «Նախապատվեր»։`
+              : undefined);
           const priceError = errors[`line-${index}-price`];
           return (
             <div
@@ -209,7 +216,11 @@ function AddOrderForm({
                     Ընտրեք
                   </option>
                   {products.map((item) => (
-                    <option key={item.id} value={item.id} disabled={item.stock === 0}>
+                    <option
+                      key={item.id}
+                      value={item.id}
+                      disabled={item.stock === 0 && !preorder}
+                    >
                       {item.title}
                       {item.stock === 0 ? " (սպառված է)" : ""}
                     </option>
@@ -285,6 +296,25 @@ function AddOrderForm({
             : "Ավելացնել ևս մեկը"}
         </Button>
       </fieldset>
+
+      {tracksStock && (
+        <label className="flex cursor-pointer items-start gap-2.5 text-sm">
+          <input
+            type="checkbox"
+            name="preorder"
+            checked={preorder}
+            onChange={(event) => setPreorder(event.currentTarget.checked)}
+            className="mt-0.5 size-4 accent-[var(--primary)]"
+          />
+          <span>
+            <span className="font-medium">Նախապատվեր</span>
+            <span className="block text-muted-foreground">
+              Ապրանքը դեռ չկա կամ սպառված է։ Պահեստից կհանվի, երբ պատվերը
+              դարձնեք «Հաստատված» կամ «Առաքված»։
+            </span>
+          </span>
+        </label>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
