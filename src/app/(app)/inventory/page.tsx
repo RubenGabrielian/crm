@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { TriangleAlert, Warehouse } from "lucide-react";
 import { EditStockDialog } from "@/components/inventory/edit-stock-dialog";
 import { StockChangeDialog } from "@/components/inventory/stock-change-dialog";
-import { StockTable, type StockRow } from "@/components/inventory/stock-table";
+import { PaginatedStockTable } from "@/components/inventory/paginated-stock-table";
+import type { StockRow } from "@/components/inventory/stock-table";
 import { ExcelImportDialog } from "@/components/import/excel-import-dialog";
 import { EmptyState } from "@/components/layout/empty-state";
 import {
@@ -134,7 +135,7 @@ export default async function InventoryPage() {
             count={productRows.length}
             text="Վաճառքից դուրս գրվածը հաշվվում է պատվերներից ավտոմատ։"
           />
-          <StockTable rows={productRows} nameLabel="Ապրանք" />
+          <PaginatedStockTable rows={productRows} nameLabel="Ապրանք" />
         </section>
       )}
 
@@ -153,7 +154,7 @@ export default async function InventoryPage() {
             մեջ նշեք, թե որքան է ծախսվում ամեն վաճառքից։
           </p>
         ) : (
-          <StockTable rows={materialRows} nameLabel="Նյութ" />
+          <PaginatedStockTable rows={materialRows} nameLabel="Նյութ" />
         )}
       </section>
     </div>

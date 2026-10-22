@@ -12,7 +12,7 @@ export function parsePage(value: string | string[] | undefined): number {
 }
 
 /** Page numbers to show, with null for a gap: 1 … 4 5 6 … 12 */
-function pageList(page: number, totalPages: number): (number | null)[] {
+export function pageList(page: number, totalPages: number): (number | null)[] {
   const wanted = new Set([1, totalPages, page - 1, page, page + 1]);
   const pages: (number | null)[] = [];
   for (let n = 1; n <= totalPages; n++) {
