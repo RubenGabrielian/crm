@@ -1,4 +1,5 @@
 import { GraduationCap, Package, TriangleAlert } from "lucide-react";
+import { ExcelImportDialog } from "@/components/import/excel-import-dialog";
 import { EmptyState } from "@/components/layout/empty-state";
 import { AddProductDialog } from "@/components/products/product-dialogs";
 import { ProductsTable } from "@/components/products/products-table";
@@ -45,7 +46,17 @@ export default async function CatalogPage() {
           <p className="text-sm text-muted-foreground">
             Ընդամենը՝ {products.length}
           </p>
-          <AddProductDialog />
+          <div className="flex flex-wrap justify-end gap-2">
+            <ExcelImportDialog
+              target="catalog"
+              description={
+                tenant.businessType === "service"
+                  ? "Ավելացրեք շատ դասընթացներ միանգամից։ Նույն անվանումով դասընթացը կթարմացվի։"
+                  : "Ավելացրեք շատ ապրանքներ միանգամից։ Նույն անվանումով ապրանքը կթարմացվի։"
+              }
+            />
+            <AddProductDialog />
+          </div>
         </div>
 
         {products.length === 0 ? (

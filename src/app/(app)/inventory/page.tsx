@@ -3,6 +3,7 @@ import { TriangleAlert, Warehouse } from "lucide-react";
 import { EditStockDialog } from "@/components/inventory/edit-stock-dialog";
 import { StockChangeDialog } from "@/components/inventory/stock-change-dialog";
 import { StockTable, type StockRow } from "@/components/inventory/stock-table";
+import { ExcelImportDialog } from "@/components/import/excel-import-dialog";
 import { EmptyState } from "@/components/layout/empty-state";
 import {
   AddMaterialDialog,
@@ -52,7 +53,15 @@ export default async function InventoryPage() {
         icon={Warehouse}
         title="Պահեստը դատարկ է"
         description="Ապրանքների մնացորդը կհայտնվի այստեղ, երբ ավելացնեք առաջին ապրանքը։ Փաթեթավորումը և այլ նյութերը կարող եք ավելացնել հենց հիմա։"
-        action={<AddMaterialDialog />}
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <AddMaterialDialog />
+            <ExcelImportDialog
+              target="warehouse"
+              description="Գրեք ստացված քանակները բոլոր ապրանքների և նյութերի համար մեկ ֆայլով։ Նոր նյութերը կավելանան։"
+            />
+          </div>
+        }
       />
     );
   }
@@ -112,6 +121,12 @@ export default async function InventoryPage() {
 
   return (
     <div className="flex flex-col gap-10">
+      <div className="-mb-6 flex justify-end">
+        <ExcelImportDialog
+            target="warehouse"
+            description="Գրեք ստացված քանակները բոլոր ապրանքների և նյութերի համար մեկ ֆայլով։ Նոր նյութերը կավելանան։"
+          />
+      </div>
       {productRows.length > 0 && (
         <section className="flex flex-col gap-4">
           <SectionHeading
