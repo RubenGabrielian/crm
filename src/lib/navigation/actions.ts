@@ -34,6 +34,11 @@ export async function renameNavItem(
     return { ok: false, error: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
   }
 
+  // Pages read names from the session token, which keeps the old metadata
+  // until it is reissued; reissue it now so the change shows everywhere.
+  const { error: refreshError } = await auth.auth.refreshSession();
+  if (refreshError) console.error("refreshing session failed:", refreshError);
+
   revalidatePath("/", "layout");
   return { ok: true, error: null };
 }
@@ -57,6 +62,11 @@ export async function renameCommentLabel(
     console.error("saving comment name failed:", error);
     return { ok: false, error: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
   }
+
+  // Pages read names from the session token, which keeps the old metadata
+  // until it is reissued; reissue it now so the change shows everywhere.
+  const { error: refreshError } = await auth.auth.refreshSession();
+  if (refreshError) console.error("refreshing session failed:", refreshError);
 
   revalidatePath("/", "layout");
   return { ok: true, error: null };

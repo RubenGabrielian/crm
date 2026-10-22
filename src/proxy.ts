@@ -26,10 +26,11 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // getUser() checks the session with Supabase, so a forged cookie doesn't pass.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() verifies the token's signature locally (the project signs
+  // with ES256), so a forged cookie doesn't pass and no request goes to
+  // Supabase Auth on every page. It also refreshes an expired session.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
   // The landing page and the promo video page are public for everyone.

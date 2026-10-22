@@ -1,18 +1,15 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { Search, TriangleAlert, Users } from "lucide-react";
-import { cn } from "cn";
+import { TriangleAlert, Users } from "lucide-react";
 import { CommentLabelHeader } from "@/components/customers/comment-label-header";
 import { CustomerCommentDialog } from "@/components/customers/customer-comment-dialog";
-import { CustomerProductFilter } from "@/components/customers/customer-product-filter";
+import { CustomerToolbar } from "@/components/customers/customer-toolbar";
 import { EmptyState } from "@/components/layout/empty-state";
 import {
   PAGE_SIZE,
   Pagination,
   parsePage,
 } from "@/components/layout/pagination";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -21,6 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  isCustomerSearchField,
+  type CustomerSearchField,
+} from "@/config/customers";
 import { listCustomers, type Customer } from "@/lib/customers/queries";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/format";
 import { demoCustomers } from "@/lib/billing/demo-data";
@@ -67,6 +68,9 @@ export default async function CustomersPage({
       ? (query.sort as SortKey)
       : "recent";
   const search = typeof query.q === "string" ? query.q.trim() : "";
+  const searchBy: CustomerSearchField = isCustomerSearchField(query.by)
+    ? query.by
+    : "all";
   // Only customers who ordered this product, when one is picked.
   const product =
     typeof query.product === "string" &&
@@ -80,27 +84,28 @@ export default async function CustomersPage({
     spent: "Ամենամեծ գումար",
     average: "Ամենամեծ միջին գումար",
   };
-  const hrefFor = (key: SortKey) => {
-    const params = new URLSearchParams();
-    if (key !== "recent") params.set("sort", key);
-    if (search) params.set("q", search);
-    if (product) params.set("product", product);
-    const text = params.toString();
-    return text ? `/customers?${text}` : "/customers";
-  };
 
   const needle = search.toLowerCase();
-  const digits = search.replace(/\D/g, "");
+  // "091 12 34 56" should find "+37491123456": the leading 0 is dropped.
+  const digits = search.replace(/\D/g, "").replace(/^0+/, "");
+  const want = (field: CustomerSearchField) =>
+    searchBy === "all" || searchBy === field;
   const ofProduct = product
     ? allCustomers.filter((customer) => customer.productIds.includes(product))
     : allCustomers;
   let customers = needle
     ? ofProduct.filter(
         (customer) =>
-          customer.name.toLowerCase().includes(needle) ||
-          customer.email?.toLowerCase().includes(needle) ||
-          customer.comment?.toLowerCase().includes(needle) ||
-          (digits.length > 0 && customer.phone?.includes(digits)),
+          (want("name") && customer.name.toLowerCase().includes(needle)) ||
+          (want("email") &&
+            customer.email?.toLowerCase().includes(needle)) ||
+          (want("comment") &&
+            customer.comment?.toLowerCase().includes(needle)) ||
+          (want("address") &&
+            customer.lastAddress?.toLowerCase().includes(needle)) ||
+          (want("phone") &&
+            digits.length > 0 &&
+            customer.phone?.includes(digits)),
       )
     : ofProduct;
   const compare = SORTS[sort];
@@ -143,75 +148,25 @@ export default async function CustomersPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <nav
-          aria-label="Դասավորել"
-          className="flex flex-wrap rounded-3xl bg-card p-1 text-sm font-medium shadow-soft"
-        >
-          {(Object.keys(SORTS) as SortKey[]).map((key) => (
-            <Link
-              key={key}
-              href={hrefFor(key)}
-              aria-current={sort === key ? "true" : undefined}
-              className={cn(
-                "rounded-full px-3.5 py-1.5 whitespace-nowrap text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
-                sort === key &&
-                  "bg-primary text-primary-foreground hover:text-primary-foreground",
-              )}
-            >
-              {sortLabels[key]}
-            </Link>
-          ))}
-        </nav>
+      <CustomerToolbar
+        search={search}
+        searchBy={searchBy}
+        showAddress={isShop}
+        sort={sort}
+        sortLabels={sortLabels}
+        product={product}
+        products={products.map(({ id, title }) => ({ id, title }))}
+        itemLabel={ITEM_LABELS[tenant.businessType]}
+        allItemsLabel={
+          tenant.businessType === "service"
+            ? "Բոլոր դասընթացները"
+            : tenant.businessType === "mixed"
+              ? "Բոլոր ապրանքներն ու ծառայությունները"
+              : "Բոլոր ապրանքները"
+        }
+      />
 
-        <form
-          action="/customers"
-          role="search"
-          className="flex items-center gap-2"
-        >
-          {sort !== "recent" && (
-            <input type="hidden" name="sort" value={sort} />
-          )}
-          {product && <input type="hidden" name="product" value={product} />}
-          <label htmlFor="customer-search" className="sr-only">
-            Որոնել հաճախորդ
-          </label>
-          <Input
-            id="customer-search"
-            name="q"
-            type="search"
-            defaultValue={search}
-            placeholder="Անուն, հեռախոս, մեկնաբանություն"
-            className="w-64"
-          />
-          <Button
-            type="submit"
-            variant="outline"
-            size="icon"
-            aria-label="Որոնել"
-          >
-            <Search />
-          </Button>
-        </form>
-
-        {products.length > 0 && (
-          <CustomerProductFilter
-            value={product}
-            products={products.map(({ id, title }) => ({ id, title }))}
-            itemLabel={ITEM_LABELS[tenant.businessType]}
-            allItemsLabel={
-              tenant.businessType === "service"
-                ? "Բոլոր դասընթացները"
-                : tenant.businessType === "mixed"
-                  ? "Բոլոր ապրանքներն ու ծառայությունները"
-                  : "Բոլոր ապրանքները"
-            }
-            keep={{ sort: sort === "recent" ? undefined : sort, q: search || undefined }}
-          />
-        )}
-      </div>
-
-      <p className="text-sm text-muted-foreground">
+      <p className="-mt-2 text-sm text-muted-foreground">
         {search || product
           ? `Գտնվեց՝ ${formatNumber(found)} / ${formatNumber(allCustomers.length)}`
           : `Ընդամենը՝ ${formatNumber(found)}`}
@@ -313,6 +268,7 @@ export default async function CustomersPage({
         params={{
           sort: sort === "recent" ? undefined : sort,
           q: search || undefined,
+          by: search && searchBy !== "all" ? searchBy : undefined,
           product: product || undefined,
         }}
         page={page}

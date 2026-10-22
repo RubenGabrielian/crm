@@ -5,13 +5,27 @@ import { redirect } from "next/navigation";
 import { createAuthClient } from "@/lib/supabase/server";
 import { isBusinessType, type Tenant } from "./features";
 
-/** The signed-in user, verified with Supabase. Null when nobody is signed in. */
-export const getCurrentUser = cache(async () => {
+export type CurrentUser = {
+  id: string;
+  email: string | undefined;
+  user_metadata: Record<string, unknown>;
+};
+
+/**
+ * The signed-in user, from their session token. getClaims() verifies the
+ * token's signature locally (no request to Supabase Auth), so it is fast on
+ * every page. Null when nobody is signed in.
+ */
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const auth = await createAuthClient();
-  const {
-    data: { user },
-  } = await auth.auth.getUser();
-  return user;
+  const { data, error } = await auth.auth.getClaims();
+  if (error || !data) return null;
+  const { claims } = data;
+  return {
+    id: claims.sub,
+    email: typeof claims.email === "string" ? claims.email : undefined,
+    user_metadata: (claims.user_metadata ?? {}) as Record<string, unknown>,
+  };
 });
 
 /** The business owned by the given user, or null if they haven't created one yet. */
