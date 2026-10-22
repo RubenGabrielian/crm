@@ -329,6 +329,8 @@ export async function updateProduct(
     const imageUrl = await uploadProductImage(tenant.id, form.imageFile);
     if (!imageUrl) return fail(UPLOAD_FAILED);
     changes.image_url = imageUrl;
+  } else if (formData.get("remove_image") === "1") {
+    changes.image_url = null;
   }
 
   const { error } = await supabase

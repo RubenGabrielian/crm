@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { ImageOff, Trash2, Upload } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -121,33 +122,11 @@ export function ProductForm({
           />
         )}
 
-        <Field data-invalid={shownImageError ? true : undefined}>
-          <FieldLabel htmlFor="product-image">
-            Նկար
-            <span className="font-normal text-muted-foreground">
-              (ոչ պարտադիր)
-            </span>
-          </FieldLabel>
-          <Input
-            id="product-image"
-            name="image"
-            type="file"
-            accept={Object.keys(PRODUCT_IMAGE_TYPES).join(",")}
-            onChange={(event) => checkImage(event.currentTarget)}
-            aria-invalid={shownImageError ? true : undefined}
-            aria-describedby={
-              shownImageError ? "product-image-error" : undefined
-            }
-          />
-          {product?.imageUrl && !shownImageError && (
-            <FieldDescription>
-              Թողեք դատարկ՝ ներկայիս նկարը պահելու համար։
-            </FieldDescription>
-          )}
-          {shownImageError && (
-            <FieldError id="product-image-error">{shownImageError}</FieldError>
-          )}
-        </Field>
+        <ProductImageField
+          currentUrl={product?.imageUrl ?? null}
+          error={shownImageError}
+          onPick={checkImage}
+        />
       </FieldGroup>
 
       {state.formError && <FieldError>{state.formError}</FieldError>}
@@ -262,6 +241,102 @@ function ProductFieldInput({
         aria-describedby={error ? errorId : undefined}
       />
       {error && <FieldError id={errorId}>{error}</FieldError>}
+    </Field>
+  );
+}
+
+/**
+ * Picture of the product: shows the current one (or the newly picked file),
+ * lets the admin pick another and remove it. A removed picture is sent as
+ * remove_image; an empty file input keeps the current one.
+ */
+function ProductImageField({
+  currentUrl,
+  error,
+  onPick,
+}: {
+  currentUrl: string | null;
+  error: string | undefined | null;
+  /** Validates the picked file; clears the input when it is not allowed. */
+  onPick: (input: HTMLInputElement) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [removed, setRemoved] = useState(false);
+
+  // Free the preview's object URL when it is replaced or the form closes.
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
+  const shown = preview ?? (removed ? null : currentUrl);
+
+  function pick(input: HTMLInputElement) {
+    onPick(input);
+    const file = input.files?.[0];
+    setPreview(file ? URL.createObjectURL(file) : null);
+    if (file) setRemoved(false);
+  }
+
+  function remove() {
+    if (inputRef.current) inputRef.current.value = "";
+    setPreview(null);
+    setRemoved(true);
+  }
+
+  return (
+    <Field data-invalid={error ? true : undefined}>
+      <FieldLabel htmlFor="product-image">
+        Նկար
+        <span className="font-normal text-muted-foreground">(ոչ պարտադիր)</span>
+      </FieldLabel>
+      <div className="flex items-center gap-3">
+        <span className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-muted text-muted-foreground">
+          {shown ? (
+            <Image src={shown} alt="" fill sizes="80px" unoptimized={shown === preview} className="object-cover" />
+          ) : (
+            <ImageOff className="size-5" aria-hidden />
+          )}
+        </span>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+          >
+            <Upload />
+            {shown ? "Փոխել նկարը" : "Ընտրել նկար"}
+          </Button>
+          {shown && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={remove}
+            >
+              <Trash2 />
+              Հեռացնել
+            </Button>
+          )}
+        </div>
+      </div>
+      <input
+        ref={inputRef}
+        id="product-image"
+        name="image"
+        type="file"
+        accept={Object.keys(PRODUCT_IMAGE_TYPES).join(",")}
+        onChange={(event) => pick(event.currentTarget)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? "product-image-error" : undefined}
+        className="sr-only"
+      />
+      {removed && <input type="hidden" name="remove_image" value="1" />}
+      {error && <FieldError id="product-image-error">{error}</FieldError>}
     </Field>
   );
 }
