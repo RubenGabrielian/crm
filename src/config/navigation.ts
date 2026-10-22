@@ -32,6 +32,8 @@ type NavConfigItem = {
 export type NavItem = {
   href: string;
   label: string;
+  /** The built-in name, shown as a hint when renaming. */
+  defaultLabel: string;
   icon: LucideIcon;
   showsNewOrders: boolean;
 };
@@ -64,12 +66,23 @@ function resolve<T>(value: PerType<T>, type: BusinessType): T {
   return isPerType(value) ? value[type] : value;
 }
 
-export function getNavigation(type: BusinessType): NavItem[] {
+/** Every menu item's path; custom names are saved per path. */
+export const NAV_HREFS = NAVIGATION.map((item) => item.href);
+
+/** Longest name a user can give a menu item. */
+export const NAV_LABEL_MAX = 30;
+
+/** The user's own names for menu items, by path (e.g. "/orders" → "Իմ պատվերները"). */
+export type NavLabels = Record<string, string>;
+
+/** Menu for this business type, with the user's own names where they set one. */
+export function getNavigation(type: BusinessType, labels: NavLabels = {}): NavItem[] {
   return NAVIGATION.filter(
     (item) => !item.requires || hasFeature(type, item.requires),
   ).map((item) => ({
     href: item.href,
-    label: resolve(item.label, type),
+    label: labels[item.href] || resolve(item.label, type),
+    defaultLabel: resolve(item.label, type),
     icon: resolve(item.icon, type),
     showsNewOrders: item.showsNewOrders ?? false,
   }));

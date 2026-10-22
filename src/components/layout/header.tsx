@@ -14,13 +14,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getNavigation, isActivePath } from "@/config/navigation";
 import { signOut } from "@/lib/auth/actions";
+import { useNavLabels } from "@/lib/navigation/labels-context";
 import { useTenant } from "@/lib/tenant/tenant-context";
 import { MobileNav } from "./mobile-nav";
 
 export function Header() {
   const tenant = useTenant();
   const pathname = usePathname();
-  const current = getNavigation(tenant.businessType).find((item) =>
+  const { labels } = useNavLabels();
+  const current = getNavigation(tenant.businessType, labels).find((item) =>
     isActivePath(pathname, item.href),
   );
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Tags, Trash2 } from "lucide-react";
+import { Check, Pencil, Tags, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,12 +14,29 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { OrderSource } from "@/lib/orders/queries";
-import { addOrderSource, deleteOrderSource } from "@/lib/orders/source-actions";
+import {
+  addOrderSource,
+  deleteOrderSource,
+  renameOrderSource,
+} from "@/lib/orders/source-actions";
 
 export function ManageSourcesDialog({ sources }: { sources: OrderSource[] }) {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // The source being renamed, and its new name.
+  const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
+
+  function rename(event: React.FormEvent) {
+    event.preventDefault();
+    if (!editing) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await renameOrderSource(editing.id, editing.name);
+      if (result.ok) setEditing(null);
+      else setError(result.error);
+    });
+  }
 
   function add(event: React.FormEvent) {
     event.preventDefault();
@@ -56,24 +73,80 @@ export function ManageSourcesDialog({ sources }: { sources: OrderSource[] }) {
 
         {sources.length > 0 ? (
           <ul className="divide-y rounded-lg border">
-            {sources.map((source) => (
-              <li
-                key={source.id}
-                className="flex items-center justify-between gap-3 py-1 pr-1 pl-3"
-              >
-                <span className="min-w-0 truncate text-sm">{source.name}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-destructive"
-                  aria-label={`Ջնջել՝ ${source.name}`}
-                  disabled={pending}
-                  onClick={() => remove(source.id)}
+            {sources.map((source) =>
+              editing?.id === source.id ? (
+                <li key={source.id} className="py-1 pr-1 pl-1">
+                  <form onSubmit={rename} className="flex items-center gap-1">
+                    <Input
+                      value={editing.name}
+                      onChange={(event) =>
+                        setEditing({ id: source.id, name: event.currentTarget.value })
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                          // Close only the rename, not the whole dialog.
+                          event.stopPropagation();
+                          setEditing(null);
+                        }
+                      }}
+                      maxLength={40}
+                      autoFocus
+                      autoComplete="off"
+                      aria-label={`Նոր անվանում՝ ${source.name}`}
+                      className="h-9"
+                    />
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Պահպանել"
+                      disabled={pending || !editing.name.trim()}
+                    >
+                      <Check />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Չեղարկել"
+                      onClick={() => setEditing(null)}
+                    >
+                      <X />
+                    </Button>
+                  </form>
+                </li>
+              ) : (
+                <li
+                  key={source.id}
+                  className="flex items-center justify-between gap-3 py-1 pr-1 pl-3"
                 >
-                  <Trash2 />
-                </Button>
-              </li>
-            ))}
+                  <span className="min-w-0 flex-1 truncate text-sm">{source.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground"
+                    aria-label={`Վերանվանել՝ ${source.name}`}
+                    disabled={pending}
+                    onClick={() => {
+                      setError(null);
+                      setEditing({ id: source.id, name: source.name });
+                    }}
+                  >
+                    <Pencil />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive"
+                    aria-label={`Ջնջել՝ ${source.name}`}
+                    disabled={pending}
+                    onClick={() => remove(source.id)}
+                  >
+                    <Trash2 />
+                  </Button>
+                </li>
+              ),
+            )}
           </ul>
         ) : (
           <p className="text-sm text-muted-foreground">
