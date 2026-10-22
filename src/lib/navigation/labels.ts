@@ -15,6 +15,18 @@ export function cleanNavLabels(value: unknown): NavLabels {
   return labels;
 }
 
+/** Built-in name of the customer comment, used until the user renames it. */
+export const DEFAULT_COMMENT_LABEL = "Մեկնաբանություն";
+
+/** The user's own name for the customer comment (e.g. "Նախընտրություններ"). */
+export async function getCommentLabel(): Promise<string> {
+  const user = await getCurrentUser();
+  const label = user?.user_metadata?.comment_label;
+  return typeof label === "string" && label.trim()
+    ? label.trim().slice(0, NAV_LABEL_MAX)
+    : DEFAULT_COMMENT_LABEL;
+}
+
 /**
  * The signed-in user's own menu names. Saved in their Supabase user metadata,
  * so they belong to that person only.

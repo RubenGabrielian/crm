@@ -119,3 +119,70 @@ export async function updateCustomerComment(
   revalidatePath("/customers", "layout");
   return { ok: true, error: null };
 }
+
+export type CustomerOption = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  comment: string | null;
+  /** Delivery address from the customer's latest order that has one. */
+  lastAddress: string | null;
+};
+
+/**
+ * Customers matching a name or phone, for picking one in the new-order form.
+ * An empty search lists the newest customers.
+ */
+export async function searchCustomers(term: string): Promise<CustomerOption[]> {
+  const supabase = await createAuthClient();
+  const tenant = await getCurrentTenant();
+  const text = term.trim().replace(/["\\%_,()]/g, "").slice(0, 60);
+  const digits = text.replace(/\D/g, "");
+
+  let query = supabase
+    .from("customers")
+    .select("id, name, phone, email, comment")
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false })
+    .limit(8);
+  if (text) {
+    const conditions = [`name.ilike."%${text}%"`];
+    // "091 12 34 56" should find "+37491123456": the leading 0 is dropped.
+    const core = digits.replace(/^0+/, "");
+    if (core.length >= 3) conditions.push(`phone.ilike."%${core}%"`);
+    query = query.or(conditions.join(","));
+  }
+  const { data, error } = await query;
+  if (error) {
+    console.error("searching customers failed:", error);
+    return [];
+  }
+  if (data.length === 0) return [];
+
+  const { data: orders } = await supabase
+    .from("orders")
+    .select("customer_id, metadata")
+    .eq("tenant_id", tenant.id)
+    .in(
+      "customer_id",
+      data.map((row) => row.id),
+    )
+    .not("metadata->>delivery_address", "is", null)
+    .order("created_at", { ascending: false });
+  const addresses = new Map<string, string>();
+  for (const order of orders ?? []) {
+    const address = (order.metadata as Record<string, unknown>)?.delivery_address;
+    if (typeof address === "string" && !addresses.has(order.customer_id))
+      addresses.set(order.customer_id, address);
+  }
+
+  return data.map((row) => ({
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    email: row.email,
+    comment: row.comment,
+    lastAddress: addresses.get(row.id) ?? null,
+  }));
+}

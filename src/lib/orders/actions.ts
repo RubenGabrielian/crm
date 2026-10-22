@@ -390,7 +390,10 @@ export async function createManualOrder(
     paid: read("paid"),
     scheduled_at: read("scheduled_at"),
     preorder: read("preorder"),
+    customer_comment: read("customer_comment"),
   };
+  // The customer's comment is only written when the admin changed it here.
+  const commentChanged = formData.get("customer_comment_changed") === "1";
   // A preorder takes no stock, so out-of-stock items can be ordered.
   const preorder = values.preorder === "on";
   const fail = (formError: string): OrderFormState => ({
@@ -413,6 +416,8 @@ export async function createManualOrder(
   if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
     errors.email = "Մուտքագրեք ճիշտ էլ. հասցե";
   }
+  if (values.customer_comment.length > 2000)
+    errors.customer_comment = "Առավելագույնը 2000 նիշ";
 
   const discountPercent =
     values.discount_percent === "" ? 0 : Number(values.discount_percent);
@@ -476,6 +481,7 @@ export async function createManualOrder(
 
   const groupId = parsed.length > 1 ? crypto.randomUUID() : null;
   let deliveryCharged = false;
+  let firstOrderId: string | null = null;
 
   for (const [index, line] of parsed.entries()) {
     // Same path as the public checkout: stock and materials are taken, and
@@ -510,6 +516,7 @@ export async function createManualOrder(
       );
     }
 
+    firstOrderId ??= orderId;
     const columns: Record<string, unknown> = {};
     if (line.price !== line.listPrice) {
       columns.unit_price = line.price;
@@ -553,6 +560,27 @@ export async function createManualOrder(
       scheduled_at: scheduledAt,
       group_id: groupId,
     });
+  }
+
+  // place_order matched or created the customer by phone; note on them.
+  if (commentChanged && firstOrderId) {
+    const { data: placed } = await supabase
+      .from("orders")
+      .select("customer_id")
+      .eq("id", firstOrderId)
+      .maybeSingle();
+    const { error: commentError } = placed
+      ? await supabase
+          .from("customers")
+          .update({ comment: values.customer_comment || null })
+          .eq("id", placed.customer_id)
+          .eq("tenant_id", tenant.id)
+      : { error: null };
+    if (commentError) {
+      console.error("saving customer comment failed:", commentError);
+      revalidateOrderPages();
+      return fail("Պատվերը պահպանվեց, բայց հաճախորդի մեկնաբանությունը՝ ոչ։ Ավելացրեք այն CRM-ում։");
+    }
   }
 
   revalidateOrderPages();

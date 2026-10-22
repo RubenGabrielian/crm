@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCustomer } from "@/lib/customers/queries";
+import { getCommentLabel } from "@/lib/navigation/labels";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/format";
 import { listOrders } from "@/lib/orders/queries";
 import { isCurrentUserPro } from "@/lib/billing/subscription";
@@ -101,7 +102,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
               )}
             </Detail>
           )}
-          <Detail label="Մեկնաբանություն" wide>
+          <Detail label={await getCommentLabel()} wide>
             <CustomerCommentDialog
               customerId={customer.id}
               customerName={customer.name}

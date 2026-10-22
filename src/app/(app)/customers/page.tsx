@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Search, TriangleAlert, Users } from "lucide-react";
 import { cn } from "cn";
+import { CommentLabelHeader } from "@/components/customers/comment-label-header";
 import { CustomerCommentDialog } from "@/components/customers/customer-comment-dialog";
 import { CustomerProductFilter } from "@/components/customers/customer-product-filter";
 import { EmptyState } from "@/components/layout/empty-state";
@@ -235,7 +236,9 @@ export default async function CustomersPage({
                 <TableHead className="px-4">Հաճախորդ</TableHead>
                 <TableHead className="px-4">Կապ</TableHead>
                 {isShop && <TableHead className="px-4">Հասցե</TableHead>}
-                <TableHead className="px-4">Մեկնաբանություն</TableHead>
+                <TableHead className="px-4">
+                  <CommentLabelHeader />
+                </TableHead>
                 <TableHead className={numeric}>
                   {isShop ? "Պատվերներ" : "Գրանցումներ"}
                 </TableHead>

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { FieldError } from "@/components/ui/field";
 import { updateCustomerComment } from "@/lib/customers/actions";
+import { useNavLabels } from "@/lib/navigation/labels-context";
 
 /** Shows the comment (or an "add" button); clicking it opens the editor. */
 export function CustomerCommentDialog({
@@ -27,6 +28,7 @@ export function CustomerCommentDialog({
   comment: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const { commentLabel } = useNavLabels();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -47,7 +49,7 @@ export function CustomerCommentDialog({
       )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Մեկնաբանություն</DialogTitle>
+          <DialogTitle>{commentLabel}</DialogTitle>
           <DialogDescription>{customerName}</DialogDescription>
         </DialogHeader>
         {/* Mounted only while open, so each opening starts from the saved text. */}

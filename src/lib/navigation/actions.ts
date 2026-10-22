@@ -37,3 +37,27 @@ export async function renameNavItem(
   revalidatePath("/", "layout");
   return { ok: true, error: null };
 }
+
+/**
+ * Renames the customer comment ("Մեկնաբանություն") for the signed-in user
+ * only. An empty name brings back the built-in one.
+ */
+export async function renameCommentLabel(
+  label: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const text = label.trim().replace(/\s+/g, " ");
+  if (text.length > NAV_LABEL_MAX)
+    return { ok: false, error: `Առավելագույնը ${NAV_LABEL_MAX} նիշ` };
+
+  const auth = await createAuthClient();
+  const { error } = await auth.auth.updateUser({
+    data: { comment_label: text || null },
+  });
+  if (error) {
+    console.error("saving comment name failed:", error);
+    return { ok: false, error: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true, error: null };
+}
