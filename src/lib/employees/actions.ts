@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { createAuthClient } from "@/lib/supabase/server";
+import { sendEmployeeInvite } from "./invite";
 import { getCurrentUser, requireOwner } from "@/lib/tenant/get-current-tenant";
 import { cleanPermissions, isPagePermission } from "@/lib/tenant/permissions";
 
@@ -112,6 +113,11 @@ export async function saveEmployee(
       return { ok: false, values, errors: {}, formError: SAVE_FAILED };
     }
     await ensureAccount(data.id, values.email, values.full_name);
+    await sendEmployeeInvite({
+      to: values.email,
+      fullName: values.full_name,
+      businessName: tenant.name,
+    });
   }
 
   revalidatePath("/employees");
