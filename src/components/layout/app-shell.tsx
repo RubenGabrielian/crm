@@ -16,7 +16,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex min-h-dvh flex-col lg:pl-[16.75rem]">
           <Header />
           <main className="flex-1 px-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
-            <div className="mx-auto w-full max-w-6xl">
+            {/* A page marked data-wide (the catalog table) may use the full width. */}
+            <div className="mx-auto w-full max-w-6xl has-[[data-wide]]:max-w-none">
               <PageContent>
                 <ProGate>{children}</ProGate>
               </PageContent>

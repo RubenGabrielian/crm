@@ -386,17 +386,19 @@ export async function updateProduct(
   return { ok: true, values: {}, errors: {}, formError: null };
 }
 
-export async function deleteProduct(
-  productId: string,
-): Promise<{ ok: boolean; error: string | null }> {
-  const supabase = await createAuthClient();
-  const tenant = await requirePermission("catalog_edit");
+const DELETE_FAILED = "Չհաջողվեց ջնջել։ Փորձեք կրկին։";
 
+/** Deletes one product of the tenant, or archives it when it has orders. */
+async function removeProduct(
+  supabase: Awaited<ReturnType<typeof createAuthClient>>,
+  tenantId: string,
+  productId: string,
+): Promise<boolean> {
   const { error } = await supabase
     .from("products")
     .delete()
     .eq("id", productId)
-    .eq("tenant_id", tenant.id);
+    .eq("tenant_id", tenantId);
 
   if (error?.code === "23503") {
     // The product has orders. Deleting it would break order history, so it is
@@ -405,16 +407,106 @@ export async function deleteProduct(
       .from("products")
       .update({ is_active: false })
       .eq("id", productId)
-      .eq("tenant_id", tenant.id);
+      .eq("tenant_id", tenantId);
     if (archiveError) {
       console.error("archiving product failed:", archiveError);
-      return { ok: false, error: "Չհաջողվեց ջնջել։ Փորձեք կրկին։" };
+      return false;
     }
   } else if (error) {
     console.error("deleting product failed:", error);
-    return { ok: false, error: "Չհաջողվեց ջնջել։ Փորձեք կրկին։" };
+    return false;
+  }
+  return true;
+}
+
+export async function deleteProduct(
+  productId: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
+  const tenant = await requirePermission("catalog_edit");
+
+  const ok = await removeProduct(supabase, tenant.id, productId);
+  revalidateProductPages();
+  return ok ? { ok: true, error: null } : { ok: false, error: DELETE_FAILED };
+}
+
+// Ids per query: keeps the request URL short enough for hundreds of products.
+const DELETE_CHUNK = 100;
+
+/** Products in `ids` that orders or reinvestments point to, so can't be deleted. */
+async function referencedProducts(
+  supabase: Awaited<ReturnType<typeof createAuthClient>>,
+  tenantId: string,
+  ids: string[],
+): Promise<Set<string>> {
+  const used = new Set<string>();
+  for (const table of ["orders", "reinvestments"] as const) {
+    const { data } = await supabase
+      .from(table)
+      .select("product_id")
+      .eq("tenant_id", tenantId)
+      .in("product_id", ids);
+    for (const row of data ?? []) if (row.product_id) used.add(row.product_id);
+  }
+  return used;
+}
+
+/**
+ * Deletes several products at once, up to the whole catalog. Products that
+ * have orders are archived instead, like a single delete.
+ */
+export async function deleteProducts(
+  productIds: string[],
+): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
+  const tenant = await requirePermission("catalog_edit");
+  const ids = [...new Set(productIds.map(String))].filter(Boolean);
+  if (ids.length === 0) return { ok: true, error: null };
+
+  let failed = 0;
+  for (let start = 0; start < ids.length; start += DELETE_CHUNK) {
+    const chunk = ids.slice(start, start + DELETE_CHUNK);
+    const used = await referencedProducts(supabase, tenant.id, chunk);
+    const archive = chunk.filter((id) => used.has(id));
+    const remove = chunk.filter((id) => !used.has(id));
+
+    if (archive.length > 0) {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_active: false })
+        .in("id", archive)
+        .eq("tenant_id", tenant.id);
+      if (error) {
+        console.error("archiving products failed:", error);
+        failed += archive.length;
+      }
+    }
+    if (remove.length === 0) continue;
+
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .in("id", remove)
+      .eq("tenant_id", tenant.id);
+    if (error?.code === "23503") {
+      // An order arrived after the check above (or the lookup was cut short):
+      // fall back to one by one, which archives the ones in use.
+      for (const id of remove) {
+        if (!(await removeProduct(supabase, tenant.id, id))) failed += 1;
+      }
+    } else if (error) {
+      console.error("deleting products failed:", error);
+      failed += remove.length;
+    }
   }
 
   revalidateProductPages();
-  return { ok: true, error: null };
+  if (failed === 0) return { ok: true, error: null };
+  return {
+    ok: false,
+    error:
+      failed === ids.length
+        ? DELETE_FAILED
+        : `${failed} հատը չհաջողվեց ջնջել։ Փորձեք կրկին։`,
+  };
 }

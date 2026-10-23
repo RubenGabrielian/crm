@@ -71,7 +71,7 @@ export default async function CatalogPage({
 
   return (
     <MaterialsProvider materials={materialOptions}>
-      <div className="flex flex-col gap-5">
+      <div data-wide className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           {products.length > 0 ? (
             <CatalogSearch
@@ -127,6 +127,7 @@ export default async function CatalogPage({
         ) : (
           <ProductsTable
             products={pageProducts}
+            allIds={found.map((product) => product.id)}
             businessType={tenant.businessType}
             showCost={can(access, "cost_view")}
           />
