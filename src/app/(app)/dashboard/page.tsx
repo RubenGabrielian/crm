@@ -35,7 +35,9 @@ import { resolveRange } from "@/lib/analytics/range";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { listInventory } from "@/lib/inventory/queries";
 import { hasFeature, ITEM_LABELS } from "@/lib/tenant/features";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { EmployeeHome } from "@/components/dashboard/employee-home";
+import { getCurrentMembership } from "@/lib/tenant/get-current-tenant";
+import { can } from "@/lib/tenant/permissions";
 
 // Reads live data for the current tenant on every request.
 export const instant = false;
@@ -59,7 +61,11 @@ export default async function DashboardPage({
   const pick = (value: string | string[] | undefined) =>
     Array.isArray(value) ? value[0] : value;
 
-  const tenant = await getCurrentTenant();
+  const { tenant, access } = await getCurrentMembership();
+  // Open to everyone; people who may not see the money get a work overview.
+  if (!can(access, "dashboard")) {
+    return <EmployeeHome tenant={tenant} access={access} />;
+  }
   const isShop = tenant.businessType !== "service";
   const tracksStock = hasFeature(tenant.businessType, "inventory");
   const range = resolveRange({

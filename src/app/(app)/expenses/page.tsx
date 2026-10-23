@@ -35,7 +35,7 @@ import {
   monthlyCharges,
 } from "@/lib/expenses/queries";
 import { formatMoney, formatNumber } from "@/lib/format";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 
 /** A tile is also a filter: "all" shows every expense. */
 type Tile = "all" | CostType;
@@ -63,7 +63,7 @@ export default async function ExpensesPage({
   const pick = (value: string | string[] | undefined) =>
     Array.isArray(value) ? value[0] : value;
 
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("expenses");
   const range = resolveRange(
     { range: pick(params.range), from: pick(params.from), to: pick(params.to) },
     "30d",

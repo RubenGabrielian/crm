@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAuthClient } from "@/lib/supabase/server";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 
 type Result = { ok: boolean; error: string | null };
 
@@ -14,7 +14,7 @@ export async function updateOrderSource(
   source: string,
 ): Promise<Result> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
   const name = source.trim();
   const failed = {
     ok: false,
@@ -50,7 +50,7 @@ export async function updateOrderSource(
 
 export async function addOrderSource(name: string): Promise<Result> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
   const trimmed = name.trim().replace(/\s+/g, " ");
 
   if (!trimmed) return { ok: false, error: "Մուտքագրեք անվանումը" };
@@ -79,7 +79,7 @@ export async function renameOrderSource(
   name: string,
 ): Promise<Result> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
   const trimmed = name.trim().replace(/\s+/g, " ");
 
   if (!trimmed) return { ok: false, error: "Մուտքագրեք անվանումը" };
@@ -131,7 +131,7 @@ export async function renameOrderSource(
 /** Removes the option from the list. Orders that already use it keep the name. */
 export async function deleteOrderSource(sourceId: string): Promise<Result> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
 
   const { error } = await supabase
     .from("order_sources")

@@ -31,7 +31,8 @@ import {
 } from "@/lib/products/actions";
 import type { Product } from "@/lib/products/queries";
 import { itemKind, type ItemKind } from "@/lib/tenant/features";
-import { useTenant } from "@/lib/tenant/tenant-context";
+import { COST_FIELDS } from "@/lib/tenant/permissions";
+import { useCan, useTenant } from "@/lib/tenant/tenant-context";
 import { MaterialUsesField } from "@/components/materials/material-uses-field";
 
 const INITIAL_STATE: ProductFormState = {
@@ -69,7 +70,12 @@ export function ProductForm({
       : itemKind(businessType, 0),
   );
   const choosesKind = businessType === "mixed" && !product;
-  const fields = [...BASE_PRODUCT_FIELDS, ...productFields(businessType, kind)];
+  // Without "cost_view" the cost price is neither shown nor sent; the server
+  // keeps the saved one.
+  const showCost = useCan("cost_view");
+  const fields = [...BASE_PRODUCT_FIELDS, ...productFields(businessType, kind)].filter(
+    (field) => showCost || !COST_FIELDS.includes(field.name),
+  );
 
   const [state, formAction, pending] = useActionState(
     async (prev: ProductFormState, formData: FormData) => {

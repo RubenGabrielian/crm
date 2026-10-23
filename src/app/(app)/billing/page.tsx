@@ -8,6 +8,7 @@ import {
   syncSubscriptionFromLemonSqueezy,
   type Subscription,
 } from "@/lib/billing/subscription";
+import { requireOwner } from "@/lib/tenant/get-current-tenant";
 
 // Depends on the signed-in user's subscription.
 export const instant = false;
@@ -20,6 +21,8 @@ const dateFormat = new Intl.DateTimeFormat("hy-AM", {
 });
 
 export default async function BillingPage({ searchParams }: PageProps<"/billing">) {
+  // The subscription is the owner's business; employees don't see it.
+  await requireOwner();
   const { paid, error } = await searchParams;
   const subscription = await getCurrentSubscription();
   const isPro = isProSubscription(subscription);

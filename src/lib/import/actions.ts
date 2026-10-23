@@ -12,7 +12,7 @@ import {
   type ProductFormState,
 } from "@/lib/products/actions";
 import { listProducts } from "@/lib/products/queries";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 import { IMPORT_MAX_ROWS, readRows, readUpload, type SheetRow } from "./excel";
 import {
   CATALOG_SHEET,
@@ -72,7 +72,7 @@ export async function importCatalog(
   _prev: ImportState,
   formData: FormData,
 ): Promise<ImportState> {
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("catalog_edit");
   const type = tenant.businessType;
   const upload = await readUpload(formData.get("file"));
   if (!upload.ok) return failed(upload.error);
@@ -171,7 +171,7 @@ export async function importWarehouse(
 ): Promise<ImportState> {
   if (!(await isCurrentUserPro()))
     return failed("Պահեստի ներմուծումը հասանելի է Numa Pro-ով։");
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("inventory");
   const upload = await readUpload(formData.get("file"));
   if (!upload.ok) return failed(upload.error);
 

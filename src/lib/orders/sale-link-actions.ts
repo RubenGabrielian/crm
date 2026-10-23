@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { isDeliveryFee, isSalePercent, signSale } from "./sale-link";
 import { isCurrentUserPro } from "@/lib/billing/subscription";
 import { createAuthClient } from "@/lib/supabase/server";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 
 /**
  * Query string ("?sale=15&delivery=0&sig=…&ref=…") for a checkout link with a
@@ -19,7 +19,7 @@ export async function createSaleLinkQuery(
   note = "",
 ): Promise<{ query: string | null; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("catalog", "orders");
   if (!(await isCurrentUserPro())) {
     return { query: null, error: "Հղումը պատճենելու համար ակտիվացրու Numa Pro-ն։" };
   }

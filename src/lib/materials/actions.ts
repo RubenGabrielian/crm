@@ -8,7 +8,11 @@ import {
   PRODUCT_IMAGE_TYPES,
 } from "@/config/product-images";
 import { createAuthClient } from "@/lib/supabase/server";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import {
+  getCurrentAccess,
+  requirePermission,
+} from "@/lib/tenant/get-current-tenant";
+import { can } from "@/lib/tenant/permissions";
 
 export type MaterialFormState = {
   ok: boolean;
@@ -93,7 +97,7 @@ export async function createMaterial(
   formData: FormData,
 ): Promise<MaterialFormState> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("inventory", "catalog_edit");
   const { values, errors, quantity, unitCost, imageFile } = readForm(formData);
   if (quantity < 0) errors.quantity = "Մուտքագրեք 0 կամ ավելի";
   if (Object.keys(errors).length > 0)
@@ -130,7 +134,7 @@ export async function updateMaterial(
   formData: FormData,
 ): Promise<MaterialFormState> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("inventory", "catalog_edit");
   const {
     values,
     errors,
@@ -160,7 +164,8 @@ export async function updateMaterial(
       name: values.name,
       unit: values.unit,
       stock_quantity: quantity,
-      unit_cost: unitCost,
+      // Someone who can't see the cost can't change it either.
+      ...(can(await getCurrentAccess(), "cost_view") ? { unit_cost: unitCost } : {}),
       used_in_sales: usedInSales,
       used_in_gifts: usedInGifts,
       ...image,
@@ -184,7 +189,7 @@ export async function receiveMaterial(
   quantity: number,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("inventory", "catalog_edit");
   if (!Number.isFinite(quantity) || quantity <= 0) {
     return { ok: false, error: "Մուտքագրեք 0-ից մեծ թիվ" };
   }
@@ -206,7 +211,7 @@ export async function deleteMaterial(
   materialId: string,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("inventory", "catalog_edit");
   const { error } = await supabase
     .from("materials")
     .delete()

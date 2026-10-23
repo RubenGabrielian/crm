@@ -12,7 +12,11 @@ import { listMaterials } from "@/lib/materials/queries";
 import { listProducts } from "@/lib/products/queries";
 import { MaterialsProvider } from "@/components/materials/materials-context";
 import { formatNumber } from "@/lib/format";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import {
+  getCurrentAccess,
+  requirePermission,
+} from "@/lib/tenant/get-current-tenant";
+import { can } from "@/lib/tenant/permissions";
 
 // Reads live data for the current tenant on every request.
 export const instant = false;
@@ -24,7 +28,9 @@ export default async function CatalogPage({
 }: PageProps<"/catalog">) {
   // Search and page come from the URL, so this page is rendered per request.
   await connection();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("catalog");
+  const access = await getCurrentAccess();
+  const canEdit = can(access, "catalog_edit");
   const [{ products, error }, { materials }] = await Promise.all([
     listProducts(tenant.id),
     tenant.businessType !== "service"
@@ -79,17 +85,19 @@ export default async function CatalogPage({
           ) : (
             <span />
           )}
-          <div className="flex flex-wrap justify-end gap-2">
-            <ExcelImportDialog
-              target="catalog"
-              description={
-                tenant.businessType === "service"
-                  ? "Ավելացրեք շատ դասընթացներ միանգամից։ Նույն անվանումով դասընթացը կթարմացվի։"
-                  : "Ավելացրեք շատ ապրանքներ միանգամից։ Նույն անվանումով ապրանքը կթարմացվի։"
-              }
-            />
-            <AddProductDialog />
-          </div>
+          {canEdit && (
+            <div className="flex flex-wrap justify-end gap-2">
+              <ExcelImportDialog
+                target="catalog"
+                description={
+                  tenant.businessType === "service"
+                    ? "Ավելացրեք շատ դասընթացներ միանգամից։ Նույն անվանումով դասընթացը կթարմացվի։"
+                    : "Ավելացրեք շատ ապրանքներ միանգամից։ Նույն անվանումով ապրանքը կթարմացվի։"
+                }
+              />
+              <AddProductDialog />
+            </div>
+          )}
         </div>
 
         {products.length > 0 && (
@@ -120,6 +128,7 @@ export default async function CatalogPage({
           <ProductsTable
             products={pageProducts}
             businessType={tenant.businessType}
+            showCost={can(access, "cost_view")}
           />
         )}
         <Pagination

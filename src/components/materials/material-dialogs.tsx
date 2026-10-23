@@ -34,6 +34,7 @@ import {
   type MaterialFormState,
 } from "@/lib/materials/actions";
 import type { Material } from "@/lib/materials/queries";
+import { useCan } from "@/lib/tenant/tenant-context";
 
 const INITIAL_STATE: MaterialFormState = {
   ok: false,
@@ -107,6 +108,7 @@ function MaterialForm({
     INITIAL_STATE,
   );
   const { values, errors } = state;
+  const showCost = useCan("cost_view");
   // Live total, so the admin sees what "used" will become while typing.
   const [sales, setSales] = useState(
     values.used_in_sales ?? String(material?.usedInSales ?? 0),
@@ -145,31 +147,33 @@ function MaterialForm({
           {errors.unit && <FieldError>{errors.unit}</FieldError>}
         </Field>
       </div>
-      <Field data-invalid={errors.unit_cost ? true : undefined}>
-        <FieldLabel htmlFor="material-unit-cost">
-          Մեկ միավորի արժեք (֏)
-        </FieldLabel>
-        <Input
-          id="material-unit-cost"
-          name="unit_cost"
-          type="number"
-          inputMode="decimal"
-          min={0}
-          step="any"
-          defaultValue={
-            values.unit_cost ?? (material ? String(material.unitCost) : "")
-          }
-          placeholder="0"
-          aria-invalid={errors.unit_cost ? true : undefined}
-        />
-        {!errors.unit_cost && (
-          <FieldDescription>
-            Օրինակ՝ 1 տոպրակը 300 ֏, կամ 1 գրամ սինտեպոնը 3,5 ֏։ Մտնում է
-            ապրանքի փոփոխական ծախսի մեջ։
-          </FieldDescription>
-        )}
-        {errors.unit_cost && <FieldError>{errors.unit_cost}</FieldError>}
-      </Field>
+      {showCost && (
+        <Field data-invalid={errors.unit_cost ? true : undefined}>
+          <FieldLabel htmlFor="material-unit-cost">
+            Մեկ միավորի արժեք (֏)
+          </FieldLabel>
+          <Input
+            id="material-unit-cost"
+            name="unit_cost"
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="any"
+            defaultValue={
+              values.unit_cost ?? (material ? String(material.unitCost) : "")
+            }
+            placeholder="0"
+            aria-invalid={errors.unit_cost ? true : undefined}
+          />
+          {!errors.unit_cost && (
+            <FieldDescription>
+              Օրինակ՝ 1 տոպրակը 300 ֏, կամ 1 գրամ սինտեպոնը 3,5 ֏։ Մտնում է
+              ապրանքի փոփոխական ծախսի մեջ։
+            </FieldDescription>
+          )}
+          {errors.unit_cost && <FieldError>{errors.unit_cost}</FieldError>}
+        </Field>
+      )}
       <Field data-invalid={errors.quantity ? true : undefined}>
         <FieldLabel htmlFor="material-quantity">
           {material ? "Առկա քանակ" : "Սկզբնական քանակ"}

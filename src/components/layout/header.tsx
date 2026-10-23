@@ -15,14 +15,15 @@ import {
 import { getNavigation, isActivePath } from "@/config/navigation";
 import { signOut } from "@/lib/auth/actions";
 import { useNavLabels } from "@/lib/navigation/labels-context";
-import { useTenant } from "@/lib/tenant/tenant-context";
+import { useAccess, useTenant } from "@/lib/tenant/tenant-context";
 import { MobileNav } from "./mobile-nav";
 
 export function Header() {
   const tenant = useTenant();
+  const access = useAccess();
   const pathname = usePathname();
   const { labels } = useNavLabels();
-  const current = getNavigation(tenant.businessType, labels).find((item) =>
+  const current = getNavigation(tenant.businessType, labels, access).find((item) =>
     isActivePath(pathname, item.href),
   );
 
@@ -50,6 +51,11 @@ export function Header() {
             <DropdownMenuGroup>
               <DropdownMenuLabel className="truncate">
                 {tenant.name}
+                {access.role === "employee" && (
+                  <span className="block truncate text-xs font-normal text-muted-foreground">
+                    {access.name} · Աշխատակից
+                  </span>
+                )}
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

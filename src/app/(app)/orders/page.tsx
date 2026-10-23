@@ -49,7 +49,7 @@ import {
   type Order,
 } from "@/lib/orders/queries";
 import { listProducts } from "@/lib/products/queries";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 import { ITEM_LABELS } from "@/lib/tenant/features";
 
 // Reads live data for the current tenant on every request.
@@ -58,7 +58,7 @@ export const instant = false;
 export default async function OrdersPage({
   searchParams,
 }: PageProps<"/orders">) {
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
   const isShop = tenant.businessType !== "service";
   const itemLabel = ITEM_LABELS[tenant.businessType];
   const query = await searchParams;

@@ -18,13 +18,13 @@ import { listMaterials } from "@/lib/materials/queries";
 import { hasFeature } from "@/lib/tenant/features";
 import { DEMO_MATERIALS, demoInventory } from "@/lib/billing/demo-data";
 import { isCurrentUserPro } from "@/lib/billing/subscription";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 
 // Reads live data for the current tenant on every request.
 export const instant = false;
 
 export default async function InventoryPage() {
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("inventory");
   // Hiding the menu item is not access control; block the URL too.
   if (!hasFeature(tenant.businessType, "inventory")) notFound();
 

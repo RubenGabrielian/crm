@@ -5,7 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { findProSubscriptionByEmail, saveSubscription } from "./lemonsqueezy";
 import { requireAdminClient } from "@/lib/supabase/admin";
 import { createAuthClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/tenant/get-current-tenant";
+import { getCurrentMembership, getCurrentUser } from "@/lib/tenant/get-current-tenant";
 
 export type Subscription = {
   status: string;
@@ -52,6 +52,17 @@ export const getCurrentSubscription = cache(async (): Promise<Subscription | nul
   return readSubscription(auth, user.id);
 });
 
+/**
+ * The subscription the signed-in user's business runs on: their own for an
+ * owner, the owner's for an employee (read with the secret key, since RLS
+ * only shows people their own row).
+ */
+export const getBusinessSubscription = cache(async (): Promise<Subscription | null> => {
+  const { access, ownerId } = await getCurrentMembership();
+  if (access.role === "owner") return getCurrentSubscription();
+  return ownerId ? readSubscription(requireAdminClient(), ownerId) : null;
+});
+
 async function readSubscription(
   supabase: SupabaseClient,
   userId: string,
@@ -75,9 +86,12 @@ async function readSubscription(
   };
 }
 
-/** Whether the signed-in user has Pro. Server actions check this before paid features. */
+/**
+ * Whether the signed-in user's business has Pro. Server actions check this
+ * before paid features.
+ */
 export async function isCurrentUserPro(): Promise<boolean> {
-  return hasProAccess(await getCurrentSubscription());
+  return hasProAccess(await getBusinessSubscription());
 }
 
 /**

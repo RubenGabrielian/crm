@@ -4,6 +4,15 @@ import { isOwnerPro } from "@/lib/billing/subscription";
 import { requireAdminClient } from "@/lib/supabase/admin";
 import { createAuthClient } from "@/lib/supabase/server";
 import { itemKind, type BusinessType, type ItemKind } from "@/lib/tenant/features";
+import { getCurrentAccess } from "@/lib/tenant/get-current-tenant";
+import { COST_FIELDS, can } from "@/lib/tenant/permissions";
+
+/** Product metadata without cost prices, for people not allowed to see them. */
+function withoutCost(metadata: Record<string, unknown>): Record<string, unknown> {
+  const visible = { ...metadata };
+  for (const key of COST_FIELDS) delete visible[key];
+  return visible;
+}
 
 export type Product = {
   id: string;
@@ -59,13 +68,17 @@ export async function listProducts(
 
   if (error) return { products: [], error: error.message };
 
+  // Cost prices never leave the server for employees who may not see them.
+  const showCost = can(await getCurrentAccess(), "cost_view");
   const products = data.map((row) => ({
     id: row.id,
     title: row.title,
     price: Number(row.price),
     isActive: row.is_active,
     imageUrl: row.image_url,
-    metadata: (row.metadata ?? {}) as Record<string, unknown>,
+    metadata: showCost
+      ? ((row.metadata ?? {}) as Record<string, unknown>)
+      : withoutCost((row.metadata ?? {}) as Record<string, unknown>),
     stock: one(row.inventory)?.stock_quantity ?? null,
     materials: (row.product_materials ?? []).map((item) => ({
       materialId: item.material_id,

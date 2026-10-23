@@ -12,7 +12,7 @@ import { FREE_EXPENSE_LIMIT } from "@/lib/billing/limits";
 import { isCurrentUserPro } from "@/lib/billing/subscription";
 import { countAllExpenses } from "@/lib/expenses/queries";
 import { createAuthClient } from "@/lib/supabase/server";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 
 export type ExpenseFormState = {
   ok: boolean;
@@ -33,7 +33,7 @@ export async function addExpense(
   formData: FormData,
 ): Promise<ExpenseFormState> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("expenses");
   const read = (name: string) => String(formData.get(name) ?? "").trim();
   const values = {
     date: read("date"),
@@ -131,7 +131,7 @@ export async function setExpensePaid(
   paid: boolean,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("expenses");
 
   const { data, error } = await supabase
     .from("expenses")
@@ -153,7 +153,7 @@ export async function deleteExpense(
   expenseId: string,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("expenses");
 
   const { error } = await supabase
     .from("expenses")
@@ -180,7 +180,7 @@ export async function removeRecurringExpense(
   today: string,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("expenses");
   const failed = { ok: false, error: "Չհաջողվեց պահպանել։ Փորձեք կրկին։" };
 
   if (mode === "delete") {
@@ -227,7 +227,7 @@ export async function setExpenseCostType(
   costType: CostType,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("expenses");
   if (!isCostType(costType)) return { ok: false, error: "Անհայտ տեսակ" };
 
   const { data, error } = await supabase

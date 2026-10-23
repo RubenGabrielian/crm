@@ -2,8 +2,16 @@ import "server-only";
 
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { getAdminClient } from "@/lib/supabase/admin";
 import { createAuthClient } from "@/lib/supabase/server";
 import { isBusinessType, type Tenant } from "./features";
+import {
+  canAny,
+  cleanPermissions,
+  homePath,
+  type Access,
+  type Permission,
+} from "./permissions";
 
 export type CurrentUser = {
   id: string;
@@ -45,15 +53,112 @@ export async function findTenantByOwner(ownerId: string): Promise<Tenant | null>
   return { id: data.id, name: data.name, businessType: data.business_type };
 }
 
+/** The business the signed-in user works at, and what they may do there. */
+export type Membership = {
+  tenant: Tenant;
+  /** Whose subscription the business runs on. */
+  ownerId: string | null;
+  access: Access;
+};
+
 /**
- * The signed-in user's business. Every admin page and action goes through
- * this: no session sends you to login, no business sends you to onboarding.
+ * The business where this user is an employee, or null. The first time an
+ * employee signs in, their row (found by the verified email) is tied to their
+ * account, so from then on the database knows them by user id.
  */
-export const getCurrentTenant = cache(async (): Promise<Tenant> => {
+export async function findMembership(user: CurrentUser): Promise<Membership | null> {
+  const supabase = await createAuthClient();
+  const select = "full_name, permissions, tenants(id, name, business_type, owner_id)";
+
+  let { data, error } = await supabase
+    .from("tenant_members")
+    .select(select)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!data && !error && user.email) {
+    const admin = getAdminClient();
+    if (admin) {
+      const { data: linked, error: linkError } = await admin
+        .from("tenant_members")
+        .update({ user_id: user.id })
+        .eq("email", user.email.toLowerCase())
+        .is("user_id", null)
+        .select("id");
+      if (linkError) console.error("linking employee failed:", linkError);
+      if (linked?.length) {
+        ({ data, error } = await supabase
+          .from("tenant_members")
+          .select(select)
+          .eq("user_id", user.id)
+          .maybeSingle());
+      }
+    }
+  }
+
+  if (error) {
+    console.error("loading membership failed:", error);
+    return null;
+  }
+  // One member row belongs to one business.
+  const tenant = data?.tenants as unknown as
+    | { id: string; name: string; business_type: string; owner_id: string | null }
+    | null
+    | undefined;
+  if (!data || !tenant || !isBusinessType(tenant.business_type)) return null;
+  return {
+    tenant: { id: tenant.id, name: tenant.name, businessType: tenant.business_type },
+    ownerId: tenant.owner_id,
+    access: {
+      role: "employee",
+      name: data.full_name,
+      permissions: cleanPermissions(data.permissions ?? []),
+    },
+  };
+}
+
+/**
+ * The signed-in user's business, owned or worked at. Every admin page and
+ * action goes through this: no session sends you to login, no business sends
+ * you to onboarding.
+ */
+export const getCurrentMembership = cache(async (): Promise<Membership> => {
   const user = await getCurrentUser();
   if (!user) redirect("/auth/login");
 
   const tenant = await findTenantByOwner(user.id);
-  if (!tenant) redirect("/onboarding");
-  return tenant;
+  if (tenant) return { tenant, ownerId: user.id, access: { role: "owner" } };
+
+  const membership = await findMembership(user);
+  if (!membership) redirect("/onboarding");
+  return membership;
 });
+
+/** The signed-in user's business. */
+export const getCurrentTenant = cache(
+  async (): Promise<Tenant> => (await getCurrentMembership()).tenant,
+);
+
+/** What the signed-in user may see and do. */
+export async function getCurrentAccess(): Promise<Access> {
+  return (await getCurrentMembership()).access;
+}
+
+/**
+ * The signed-in user's business, if they have any of these permissions;
+ * otherwise sends them to a page they may open. Pages and actions call this.
+ */
+export async function requirePermission(
+  ...permissions: Permission[]
+): Promise<Tenant> {
+  const { tenant, access } = await getCurrentMembership();
+  if (!canAny(access, permissions)) redirect(homePath());
+  return tenant;
+}
+
+/** For owner-only pages and actions (employees, billing). */
+export async function requireOwner(): Promise<Tenant> {
+  const { tenant, access } = await getCurrentMembership();
+  if (access.role !== "owner") redirect(homePath());
+  return tenant;
+}

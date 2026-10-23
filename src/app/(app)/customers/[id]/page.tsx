@@ -17,7 +17,7 @@ import { getCommentLabel } from "@/lib/navigation/labels";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/format";
 import { listOrders } from "@/lib/orders/queries";
 import { isCurrentUserPro } from "@/lib/billing/subscription";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 import { ITEM_LABELS } from "@/lib/tenant/features";
 
 // Reads live data for the current tenant on every request.
@@ -27,7 +27,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   const { id } = await params;
   // Free accounts only get the demo customer list; nothing of this page is loaded.
   if (!(await isCurrentUserPro())) redirect("/customers");
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("customers");
   const isShop = tenant.businessType !== "service";
 
   const customer = await getCustomer(tenant.id, id);

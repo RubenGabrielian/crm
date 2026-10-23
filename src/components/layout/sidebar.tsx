@@ -14,7 +14,7 @@ import {
 import { renameNavItem } from "@/lib/navigation/actions";
 import { useNavLabels } from "@/lib/navigation/labels-context";
 import { BUSINESS_TYPE_LABELS } from "@/lib/tenant/features";
-import { useTenant } from "@/lib/tenant/tenant-context";
+import { useAccess, useTenant } from "@/lib/tenant/tenant-context";
 import { useNewOrderCount } from "./new-orders";
 
 export function Sidebar({
@@ -25,9 +25,10 @@ export function Sidebar({
   onNavigate?: () => void;
 }) {
   const tenant = useTenant();
+  const access = useAccess();
   const pathname = usePathname();
   const { labels } = useNavLabels();
-  const items = getNavigation(tenant.businessType, labels);
+  const items = getNavigation(tenant.businessType, labels, access);
   const newOrders = useNewOrderCount();
   // The item being renamed; only one at a time.
   const [editing, setEditing] = useState<string | null>(null);

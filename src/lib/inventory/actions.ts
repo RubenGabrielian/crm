@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAuthClient } from "@/lib/supabase/server";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 
 export type StockChange = "receive" | "gift";
 
@@ -13,7 +13,7 @@ export async function adjustStock(
   quantity: number,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("inventory");
 
   if (!Number.isInteger(quantity) || quantity < 1) {
     return { ok: false, error: "Մուտքագրեք 1 կամ ավելի ամբողջ թիվ" };
@@ -48,7 +48,7 @@ export async function setStockCounts(
   counts: { available: number; sold: number; gifted: number },
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("inventory");
   for (const value of Object.values(counts)) {
     if (!Number.isInteger(value) || value < 0) {
       return { ok: false, error: "Մուտքագրեք 0 կամ ավելի ամբողջ թվեր" };

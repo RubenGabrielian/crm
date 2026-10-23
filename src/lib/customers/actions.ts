@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isCurrentUserPro } from "@/lib/billing/subscription";
 import { createAuthClient } from "@/lib/supabase/server";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 
 export type CustomerFormState = {
   ok: boolean;
@@ -73,7 +73,7 @@ export async function createCustomer(
   formData: FormData,
 ): Promise<CustomerFormState> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("customers");
   const { values, errors, fields } = readCustomerForm(formData);
   if (!(await isCurrentUserPro())) {
     return { ok: false, values, errors: {}, formError: "CRM-ը հասանելի է Pro փաթեթով։" };
@@ -116,7 +116,7 @@ export async function updateCustomer(
   formData: FormData,
 ): Promise<CustomerFormState> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("customers");
   const { values, errors, fields } = readCustomerForm(formData);
   if (!fields) return { ok: false, values, errors, formError: null };
 
@@ -156,7 +156,7 @@ export async function updateCustomerComment(
   comment: string,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("customers");
   const text = comment.trim();
   if (text.length > 2000) {
     return { ok: false, error: "Մեկնաբանությունը չափազանց երկար է (առավելագույնը 2000 նիշ)" };
@@ -194,7 +194,7 @@ export type CustomerOption = {
  */
 export async function searchCustomers(term: string): Promise<CustomerOption[]> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("customers", "orders");
   const text = term.trim().replace(/["\\%_,()]/g, "").slice(0, 60);
   const digits = text.replace(/\D/g, "");
 

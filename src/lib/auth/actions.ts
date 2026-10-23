@@ -7,7 +7,11 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { createAuthClient } from "@/lib/supabase/server";
 import { resendConfigured, sendCodeEmail } from "./email";
 import { isBusinessType } from "@/lib/tenant/features";
-import { findTenantByOwner, getCurrentUser } from "@/lib/tenant/get-current-tenant";
+import {
+  findMembership,
+  findTenantByOwner,
+  getCurrentUser,
+} from "@/lib/tenant/get-current-tenant";
 
 type Result = { ok: boolean; error: string | null };
 
@@ -253,6 +257,8 @@ export async function createTenant(name: string, businessType: string): Promise<
   const user = await getCurrentUser();
   if (!user) redirect("/auth/login");
   if (await findTenantByOwner(user.id)) redirect("/dashboard");
+  // Employees work in the owner's business and can't start their own.
+  if (await findMembership(user)) redirect("/dashboard");
 
   const trimmed = name.trim();
   if (!trimmed) return { ok: false, error: "Մուտքագրեք բիզնեսի անվանումը" };

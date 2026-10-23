@@ -18,7 +18,11 @@ import {
   type BusinessType,
   type ItemKind,
 } from "@/lib/tenant/features";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import {
+  getCurrentAccess,
+  requirePermission,
+} from "@/lib/tenant/get-current-tenant";
+import { COST_FIELDS, can } from "@/lib/tenant/permissions";
 
 export type ProductFormState = {
   ok: boolean;
@@ -49,12 +53,18 @@ function parseField(field: ProductField, raw: string): Parsed {
   return { value: number };
 }
 
-function parseProductForm(
-  formData: FormData,
-  businessType: BusinessType,
-  kind: ItemKind,
-) {
-  const typeFields = productFields(businessType, kind);
+/**
+ * The fields this person fills in. Without "cost_view" the cost price is left
+ * out: not asked for on a new item, kept as it was on an edited one.
+ */
+async function editableFields(businessType: BusinessType, kind: ItemKind) {
+  const showCost = can(await getCurrentAccess(), "cost_view");
+  return productFields(businessType, kind).filter(
+    (field) => showCost || !COST_FIELDS.includes(field.name),
+  );
+}
+
+function parseProductForm(formData: FormData, typeFields: ProductField[]) {
   const values: Record<string, string> = {};
   const errors: Record<string, string> = {};
   const parsed: Record<string, string | number | null> = {};
@@ -199,14 +209,17 @@ export async function createProduct(
   const supabase = await createAuthClient();
   // The tenant and its business type come from the server, never the form;
   // only a mixed business picks per item whether it is a good or a service.
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("catalog_edit");
   const kind: ItemKind =
     tenant.businessType === "mixed"
       ? formData.get("kind") === "service"
         ? "service"
         : "product"
       : itemKind(tenant.businessType, null);
-  const form = parseProductForm(formData, tenant.businessType, kind);
+  const form = parseProductForm(
+    formData,
+    await editableFields(tenant.businessType, kind),
+  );
   const { values } = form;
   const materials = parseMaterials(formData);
   if (materials && "error" in materials)
@@ -268,7 +281,7 @@ export async function updateProduct(
   formData: FormData,
 ): Promise<ProductFormState> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("catalog_edit");
   const failWith = (formError: string): ProductFormState => ({
     ok: false,
     values: {},
@@ -295,7 +308,8 @@ export async function updateProduct(
     : existing.inventory;
   const kind = itemKind(tenant.businessType, stockRow?.stock_quantity ?? null);
 
-  const form = parseProductForm(formData, tenant.businessType, kind);
+  const fields = await editableFields(tenant.businessType, kind);
+  const form = parseProductForm(formData, fields);
   const { values } = form;
   const materials = parseMaterials(formData);
   if (materials && "error" in materials)
@@ -315,7 +329,7 @@ export async function updateProduct(
   const metadata = {
     ...((existing.metadata ?? {}) as Record<string, unknown>),
   };
-  for (const field of productFields(tenant.businessType, kind)) {
+  for (const field of fields) {
     if (field.target === "metadata") delete metadata[field.name];
   }
   Object.assign(metadata, form.metadata);
@@ -376,7 +390,7 @@ export async function deleteProduct(
   productId: string,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("catalog_edit");
 
   const { error } = await supabase
     .from("products")

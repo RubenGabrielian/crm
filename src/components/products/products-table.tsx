@@ -14,6 +14,7 @@ import {
 import { formatMoney, formatNumber } from "@/lib/format";
 import type { Product } from "@/lib/products/queries";
 import { itemKind, type BusinessType } from "@/lib/tenant/features";
+import { COST_FIELDS } from "@/lib/tenant/permissions";
 import { ProductRowActions } from "./product-row-actions";
 import { ProductThumb } from "./product-thumb";
 
@@ -29,11 +30,16 @@ function formatCell(field: ProductField, product: Product) {
 export function ProductsTable({
   products,
   businessType,
+  showCost,
 }: {
   products: Product[];
   businessType: BusinessType;
+  /** False for employees who may not see cost prices: the column is left out. */
+  showCost: boolean;
 }) {
-  const fields = productColumns(businessType);
+  const fields = productColumns(businessType).filter(
+    (field) => showCost || !COST_FIELDS.includes(field.name),
+  );
   const showsKind = businessType === "mixed";
 
   return (

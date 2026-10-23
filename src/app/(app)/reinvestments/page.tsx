@@ -24,7 +24,7 @@ import { listProducts } from "@/lib/products/queries";
 import { listReinvestments } from "@/lib/reinvestments/queries";
 import { demoReinvestments } from "@/lib/billing/demo-data";
 import { isCurrentUserPro } from "@/lib/billing/subscription";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 import { ITEM_LABELS } from "@/lib/tenant/features";
 
 function displayDate(date: string) {
@@ -38,7 +38,7 @@ export const instant = false;
 export default async function ReinvestmentsPage() {
   // "Today" is used as the default date in the form.
   await connection();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("reinvestments");
   const today = resolveRange({ range: "today" }).to;
 
   // Free accounts see the page with sample data (ProGate labels it as a demo).

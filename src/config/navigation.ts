@@ -7,6 +7,7 @@ import {
   Receipt,
   ShoppingBag,
   Sprout,
+  UserCog,
   Users,
   Warehouse,
   type LucideIcon,
@@ -16,6 +17,7 @@ import {
   type BusinessType,
   type Feature,
 } from "@/lib/tenant/features";
+import { canOpenPath, type Access } from "@/lib/tenant/permissions";
 
 type PerType<T> = T | Record<BusinessType, T>;
 
@@ -55,6 +57,7 @@ const NAVIGATION: NavConfigItem[] = [
   { href: "/customers", label: "CRM", icon: Users },
   { href: "/expenses", label: "Ծախսեր", icon: Receipt },
   { href: "/reinvestments", label: "Վերաներդրում", icon: Sprout },
+  { href: "/employees", label: "Աշխատակիցներ", icon: UserCog },
   { href: "/billing", label: "Բաժանորդագրություն", icon: CreditCard },
 ];
 
@@ -75,10 +78,19 @@ export const NAV_LABEL_MAX = 30;
 /** The user's own names for menu items, by path (e.g. "/orders" → "Իմ պատվերները"). */
 export type NavLabels = Record<string, string>;
 
-/** Menu for this business type, with the user's own names where they set one. */
-export function getNavigation(type: BusinessType, labels: NavLabels = {}): NavItem[] {
+/**
+ * Menu for this business type, with the user's own names where they set one.
+ * An employee sees only the pages they were given.
+ */
+export function getNavigation(
+  type: BusinessType,
+  labels: NavLabels = {},
+  access: Access = { role: "owner" },
+): NavItem[] {
   return NAVIGATION.filter(
-    (item) => !item.requires || hasFeature(type, item.requires),
+    (item) =>
+      (!item.requires || hasFeature(type, item.requires)) &&
+      canOpenPath(access, item.href),
   ).map((item) => ({
     href: item.href,
     label: labels[item.href] || resolve(item.label, type),

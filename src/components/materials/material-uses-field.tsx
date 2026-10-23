@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { formatMoney } from "@/lib/format";
+import { useCan } from "@/lib/tenant/tenant-context";
 import { useMaterials } from "./materials-context";
 
 type Row = { key: number; materialId: string; quantity: string };
@@ -31,6 +32,7 @@ export function MaterialUsesField({
   error?: string;
 }) {
   const materials = useMaterials();
+  const showCost = useCan("cost_view");
   const [rows, setRows] = useState<Row[]>(() =>
     initial.map((use, index) => ({
       key: index,
@@ -167,7 +169,7 @@ export function MaterialUsesField({
               })}
             </ul>
           )}
-          {rows.length > 0 && (
+          {rows.length > 0 && showCost && (
             <p className="text-xs tabular-nums text-muted-foreground">
               Նյութերի արժեքը մեկ հատի համար՝{" "}
               <span className="font-semibold text-foreground">

@@ -9,14 +9,19 @@ import {
 } from "@/lib/import/templates";
 import { listInventory } from "@/lib/inventory/queries";
 import { listMaterials } from "@/lib/materials/queries";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import {
+  getCurrentAccess,
+  requirePermission,
+} from "@/lib/tenant/get-current-tenant";
+import { can } from "@/lib/tenant/permissions";
 
 /**
  * Warehouse template, filled with the business's products and materials and
  * their current stock, so the admin only types what arrived.
  */
 export async function GET() {
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("inventory");
+  const showCost = can(await getCurrentAccess(), "cost_view");
   const [{ rows }, { materials }] = await Promise.all([
     listInventory(tenant.id),
     listMaterials(tenant.id),
@@ -37,7 +42,7 @@ export async function GET() {
     materials.map((material) => [
       material.name,
       material.unit,
-      material.unitCost,
+      showCost ? material.unitCost : null,
       material.available,
       null,
     ]),

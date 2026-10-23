@@ -29,7 +29,7 @@ import { demoCustomers } from "@/lib/billing/demo-data";
 import { isCurrentUserPro } from "@/lib/billing/subscription";
 import { listProducts } from "@/lib/products/queries";
 import { ITEM_LABELS } from "@/lib/tenant/features";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 
 // Reads live data for the current tenant on every request.
 export const instant = false;
@@ -53,7 +53,7 @@ export default async function CustomersPage({
 }: PageProps<"/customers">) {
   // Sorting and search come from the URL, so this page is rendered per request.
   await connection();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("customers");
   const isShop = tenant.businessType !== "service";
   // Free accounts see the page with sample data (ProGate labels it as a demo).
   const isPro = await isCurrentUserPro();

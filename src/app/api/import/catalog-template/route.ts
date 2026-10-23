@@ -11,11 +11,11 @@ import {
   catalogExamples,
   catalogNotes,
 } from "@/lib/import/templates";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 
 /** Empty catalog template for the signed-in business, with examples and notes. */
 export async function GET() {
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("catalog_edit");
   const type = tenant.businessType;
   const columns = catalogColumns(type);
 

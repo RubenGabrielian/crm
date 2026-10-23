@@ -4,6 +4,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { OnboardingForm } from "@/components/auth/onboarding-form";
 import { StepIndicator } from "@/components/auth/step-indicator";
 import {
+  findMembership,
   findTenantByOwner,
   getCurrentUser,
 } from "@/lib/tenant/get-current-tenant";
@@ -16,8 +17,9 @@ export const instant = false;
 export default async function OnboardingPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/auth/login");
-  // Already set up: nothing to do here.
+  // Already set up, or works at someone else's business: nothing to do here.
   if (await findTenantByOwner(user.id)) redirect("/dashboard");
+  if (await findMembership(user)) redirect("/dashboard");
 
   return (
     <AuthShell>

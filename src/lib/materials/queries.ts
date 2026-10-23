@@ -1,13 +1,18 @@
 import "server-only";
 
 import { createAuthClient } from "@/lib/supabase/server";
+import { getCurrentAccess } from "@/lib/tenant/get-current-tenant";
+import { can } from "@/lib/tenant/permissions";
 
 export type Material = {
   id: string;
   name: string;
   unit: string;
   imageUrl: string | null;
-  /** Price of one unit, part of each product's variable cost. */
+  /**
+   * Price of one unit, part of each product's variable cost. 0 for people
+   * without "cost_view", who never get the real value.
+   */
   unitCost: number;
   /** Can be negative when sales used more than was entered. */
   available: number;
@@ -30,6 +35,7 @@ export async function listMaterials(
     .order("created_at");
 
   if (error) return { materials: [], error: error.message };
+  const showCost = can(await getCurrentAccess(), "cost_view");
 
   return {
     materials: data.map((row) => {
@@ -41,7 +47,7 @@ export async function listMaterials(
         name: row.name,
         unit: row.unit,
         imageUrl: row.image_url,
-        unitCost: Number(row.unit_cost),
+        unitCost: showCost ? Number(row.unit_cost) : 0,
         available,
         usedInSales,
         usedInGifts,

@@ -8,7 +8,7 @@ import { verifySale, type LinkSale } from "./sale-link";
 import { getCheckoutProduct } from "@/lib/products/queries";
 import { requireAdminClient } from "@/lib/supabase/admin";
 import { createAuthClient } from "@/lib/supabase/server";
-import { getCurrentTenant } from "@/lib/tenant/get-current-tenant";
+import { requirePermission } from "@/lib/tenant/get-current-tenant";
 import { scheduleFromInput } from "./schedule";
 
 export type OrderFormState = {
@@ -187,7 +187,7 @@ export async function updateOrder(
   formData: FormData,
 ): Promise<OrderFormState> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
   const read = (name: string) => String(formData.get(name) ?? "").trim();
   const values = {
     phone: read("phone"),
@@ -307,7 +307,7 @@ export async function updateOrderStatus(
   status: string,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
   if (!isOrderStatus(status)) return { ok: false, error: "Անհայտ կարգավիճակ" };
 
   const previousStatus = await currentStatus(tenant.id, orderId);
@@ -375,7 +375,7 @@ export async function createManualOrder(
   formData: FormData,
 ): Promise<OrderFormState> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
   const takesAddress = tenant.businessType !== "service";
   const read = (name: string) => String(formData.get(name) ?? "").trim();
   const values = {
@@ -597,7 +597,7 @@ export async function getOrderDeleteInfo(
   orderId: string,
 ): Promise<{ otherOrders: number; tracksStock: boolean } | null> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
   const { data: order } = await supabase
     .from("orders")
     .select("customer_id, product_id, status")
@@ -638,7 +638,7 @@ export async function deleteOrder(
   deleteCustomer = false,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
 
   const { data, error } = await supabase
     .from("orders")
@@ -728,7 +728,7 @@ export async function updateOrderComment(
   comment: string,
 ): Promise<{ ok: boolean; error: string | null }> {
   const supabase = await createAuthClient();
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
   const text = comment.trim();
   if (text.length > 2000) {
     return {
@@ -800,7 +800,7 @@ export async function updateOrderPayment(
   orderId: string,
   change: { method?: string | null; paid?: boolean },
 ): Promise<{ ok: boolean; error: string | null }> {
-  const tenant = await getCurrentTenant();
+  const tenant = await requirePermission("orders");
   const changes: Record<string, unknown> = {};
   if (change.method !== undefined) {
     if (change.method !== null && !isPaymentMethod(change.method)) {
