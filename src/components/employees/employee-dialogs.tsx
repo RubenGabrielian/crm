@@ -210,7 +210,7 @@ function EmployeeForm({
         <fieldset className="grid gap-1">
           <legend className="mb-1 text-sm font-semibold">Գումարների շարժ</legend>
           <p className="mb-1 text-xs text-muted-foreground">
-            Եկամուտ, շահույթ, ծախսեր և վերաներդրումներ։ Չնշելու դեպքում
+            Եկամուտ, շահույթ և ծախսեր։ Չնշելու դեպքում
             աշխատակիցը դրանք չի տեսնի։
           </p>
           {moneyPages.map((page) =>

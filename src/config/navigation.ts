@@ -6,7 +6,6 @@ import {
   Package,
   Receipt,
   ShoppingBag,
-  Sprout,
   UserCog,
   Users,
   Warehouse,
@@ -56,7 +55,6 @@ const NAVIGATION: NavConfigItem[] = [
   { href: "/inventory", label: "Պահեստ", icon: Warehouse, requires: "inventory" },
   { href: "/customers", label: "CRM", icon: Users },
   { href: "/expenses", label: "Ծախսեր", icon: Receipt },
-  { href: "/reinvestments", label: "Վերաներդրում", icon: Sprout },
   { href: "/employees", label: "Աշխատակիցներ", icon: UserCog },
   { href: "/billing", label: "Բաժանորդագրություն", icon: CreditCard },
 ];

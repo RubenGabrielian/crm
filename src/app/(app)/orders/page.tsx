@@ -305,10 +305,14 @@ export default async function OrdersPage({
             ))}
           {orders.length > 0 && (
             <OrdersTable
+              // A new search or filter starts a fresh selection.
+              key={JSON.stringify(searchParamsToKeep)}
               orders={orders}
               isShop={isShop}
               itemLabel={itemLabel}
               sourceNames={sourceNames}
+              total={total}
+              selectAllParams={searchParamsToKeep}
             />
           )}
           <Pagination
@@ -416,6 +420,7 @@ function CalendarView({
           </div>
           {dayOrders.length > 0 ? (
             <OrdersTable
+              key={dayKey(shownDay)}
               orders={dayOrders}
               isShop={isShop}
               itemLabel={itemLabel}

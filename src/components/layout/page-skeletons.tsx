@@ -301,20 +301,6 @@ export function ExpensesSkeleton() {
   );
 }
 
-export function ReinvestmentsSkeleton() {
-  return (
-    <Loading>
-      <Toolbar />
-      <StatTiles count={4} index={1} accent />
-      <TableCard
-        cells={["text", "stack", "text", "num", "pill", "actions"]}
-        rows={5}
-        index={5}
-      />
-    </Loading>
-  );
-}
-
 export function DetailSkeleton() {
   return (
     <Loading>
@@ -359,6 +345,5 @@ export function PageSkeleton({ pathname }: { pathname: string }) {
   if (pathname.startsWith("/catalog")) return <CatalogSkeleton />;
   if (pathname.startsWith("/inventory")) return <InventorySkeleton />;
   if (pathname.startsWith("/expenses")) return <ExpensesSkeleton />;
-  if (pathname.startsWith("/reinvestments")) return <ReinvestmentsSkeleton />;
   return <OrdersSkeleton />;
 }

@@ -16,7 +16,11 @@ import {
 } from "@/components/ui/dialog";
 import { FieldError } from "@/components/ui/field";
 import { useRefreshNewOrders } from "@/components/layout/new-orders";
-import { deleteOrder, getOrderDeleteInfo } from "@/lib/orders/actions";
+import {
+  deleteOrder,
+  deleteOrders,
+  getOrderDeleteInfo,
+} from "@/lib/orders/actions";
 import type { Order } from "@/lib/orders/queries";
 import { useTenant } from "@/lib/tenant/tenant-context";
 
@@ -135,6 +139,104 @@ export function DeleteOrderDialog({ order }: { order: Order }) {
             }
           />
         </fieldset>
+
+        {error && <FieldError>{error}</FieldError>}
+
+        <DialogFooter>
+          <DialogClose render={<Button type="button" variant="outline" />}>
+            Չեղարկել
+          </DialogClose>
+          <Button
+            variant="destructive"
+            disabled={pending}
+            onClick={confirmDelete}
+          >
+            {pending ? "Ջնջվում է…" : "Ջնջել"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Confirms deleting every selected order; `onDeleted` clears the selection. */
+export function DeleteSelectedOrdersDialog({
+  orderIds,
+  everything,
+  onDeleted,
+}: {
+  orderIds: string[];
+  /** Every listed order is selected, not just some. */
+  everything: boolean;
+  onDeleted: () => void;
+}) {
+  const { businessType } = useTenant();
+  const isShop = businessType !== "service";
+  const count = orderIds.length;
+  const word = isShop ? "պատվեր" : "գրանցում";
+
+  const [open, setOpen] = useState(false);
+  // Off by default: most old orders were handed over, their stock is gone.
+  const [restock, setRestock] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const refreshNewOrders = useRefreshNewOrders();
+
+  function confirmDelete() {
+    startTransition(async () => {
+      const result = await deleteOrders(orderIds, isShop && restock);
+      refreshNewOrders();
+      if (result.ok) {
+        setOpen(false);
+        onDeleted();
+      } else setError(result.error);
+    });
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) {
+          setError(null);
+          setRestock(false);
+        }
+      }}
+    >
+      <DialogTrigger render={<Button variant="destructive" size="sm" />}>
+        <Trash2 />
+        {everything ? `Ջնջել բոլորը (${count})` : `Ջնջել (${count})`}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="leading-snug">
+            {everything
+              ? `Ջնջե՞լ բոլոր ${count} ${word}ը`
+              : `Ջնջե՞լ ընտրված ${count} ${word}ը`}
+          </DialogTitle>
+          <DialogDescription>
+            Դրանք կհեռացվեն ցանկից և հաշվարկներից, և հնարավոր չի լինի
+            վերականգնել։ Հաճախորդները կմնան CRM-ում։
+          </DialogDescription>
+        </DialogHeader>
+
+        {isShop && (
+          <label className="flex cursor-pointer items-start gap-2.5 text-sm">
+            <input
+              type="checkbox"
+              checked={restock}
+              onChange={(event) => setRestock(event.currentTarget.checked)}
+              className="mt-0.5 size-4 accent-[var(--primary)]"
+            />
+            <span>
+              <span className="font-medium">Վերադարձնել քանակները պահեստ</span>
+              <span className="block text-muted-foreground">
+                Նշեք միայն եթե ապրանքները դեռ չեն հանձնվել հաճախորդներին։
+              </span>
+            </span>
+          </label>
+        )}
 
         {error && <FieldError>{error}</FieldError>}
 

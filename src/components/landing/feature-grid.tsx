@@ -7,7 +7,6 @@ import {
   ClipboardList,
   HeartHandshake,
   Receipt,
-  Sprout,
   Users,
   Warehouse,
   Waypoints,
@@ -45,11 +44,6 @@ const FEATURES: { icon: LucideIcon; title: string; text: string }[] = [
     icon: HeartHandshake,
     title: "CRM",
     text: "Ճանաչիր հաճախորդներիդ և զարգացրու նրանց հետ հարաբերությունները։ Օգտագործիր գնումների պատմությունն ու նախասիրությունները՝ անհատական առաջարկներ անելու և կրկնակի գնումները խթանելու համար։",
-  },
-  {
-    icon: Sprout,
-    title: "Վերաներդրում",
-    text: "Պլանավորիր՝ բիզնեսից ստացված գումարի որ մասն ես ուղղելու զարգացմանը։ Առանձնացրու ապրանքների համալրման, գովազդի և մյուս նպատակների համար նախատեսվող գումարները։",
   },
   {
     icon: BarChart3,

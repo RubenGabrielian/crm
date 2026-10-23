@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
     staleTimes: { dynamic: 30 },
     agentUpgrade: "security",
   },
+  // The reinvestments page was removed: that money is recorded as expenses.
+  async redirects() {
+    return [{ source: "/reinvestments", destination: "/expenses", permanent: true }];
+  },
   images: {
     remotePatterns: supabaseUrl
       ? [new URL(`${supabaseUrl}/storage/v1/object/public/**`)]

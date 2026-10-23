@@ -1,11 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isOrderStatus, type OrderStatus } from "@/config/orders";
+import {
+  isOrderSearchField,
+  isOrderStatus,
+  parseOrderFilters,
+  type OrderStatus,
+} from "@/config/orders";
 import { isPaymentMethod } from "@/config/payments";
 import { notifyOrderStatusChange } from "./notify";
 import { verifySale, type LinkSale } from "./sale-link";
 import { getCheckoutProduct } from "@/lib/products/queries";
+import { listOrderIds } from "./queries";
 import { requireAdminClient } from "@/lib/supabase/admin";
 import { createAuthClient } from "@/lib/supabase/server";
 import { requirePermission } from "@/lib/tenant/get-current-tenant";
@@ -691,6 +697,110 @@ export async function deleteOrder(
     if (customerError) return { ok: false, error: customerError };
   }
 
+  return { ok: true, error: null };
+}
+
+/**
+ * Ids of every order the list shows for this search and these filters, on all
+ * pages: what "select all" picks. `params` are the page's URL parameters.
+ */
+export async function selectAllOrderIds(
+  params: Record<string, string | undefined>,
+): Promise<{ ids: string[]; error: string | null }> {
+  const tenant = await requirePermission("orders");
+  const term = params.q?.trim() ?? "";
+  const by = isOrderSearchField(params.by) ? params.by : "all";
+  const { ids, error } = await listOrderIds(tenant.id, {
+    search: term ? { by, term } : undefined,
+    filters: parseOrderFilters(params),
+  });
+  if (error) {
+    console.error("listing order ids failed:", error);
+    return { ids: [], error: "Չհաջողվեց ընտրել։ Փորձեք կրկին։" };
+  }
+  return { ids, error: null };
+}
+
+// Ids per query: keeps the request URL short enough for thousands of orders.
+const DELETE_CHUNK = 100;
+
+/**
+ * Deletes several orders at once. With `restock`, their quantities (and the
+ * materials they used) go back to stock, summed per product. Customers stay.
+ */
+export async function deleteOrders(
+  orderIds: string[],
+  restock: boolean,
+): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createAuthClient();
+  const tenant = await requirePermission("orders");
+  const ids = [...new Set(orderIds.map(String))].filter(Boolean);
+  if (ids.length === 0) return { ok: true, error: null };
+
+  const returned = new Map<string, number>();
+  let failed = 0;
+  for (let start = 0; start < ids.length; start += DELETE_CHUNK) {
+    const chunk = ids.slice(start, start + DELETE_CHUNK);
+    const { data, error } = await supabase
+      .from("orders")
+      .delete()
+      .in("id", chunk)
+      .eq("tenant_id", tenant.id)
+      .select("product_id, qty, status");
+    if (error) {
+      console.error("deleting orders failed:", error);
+      failed += chunk.length;
+      continue;
+    }
+    // A preorder took no stock, so there is nothing to put back.
+    for (const row of data) {
+      if (row.status === "preorder") continue;
+      returned.set(row.product_id, (returned.get(row.product_id) ?? 0) + row.qty);
+    }
+  }
+
+  revalidateOrderPages();
+  revalidatePath("/dashboard");
+
+  let stockFailed = false;
+  if (restock) {
+    for (const [productId, qty] of returned) {
+      // Products without stock tracking (services) have nothing to return.
+      const { error: stockError } = await supabase.rpc("adjust_stock", {
+        p_tenant_id: tenant.id,
+        p_product_id: productId,
+        p_received: qty,
+        p_gifted: 0,
+      });
+      const { error: materialError } = await supabase.rpc("consume_materials", {
+        p_product_id: productId,
+        p_qty: -qty,
+      });
+      if (materialError)
+        console.error("returning materials failed:", materialError);
+      if (stockError && !stockError.message.includes("product_not_found")) {
+        console.error("restocking after orders delete failed:", stockError);
+        stockFailed = true;
+      }
+    }
+  }
+
+  if (failed > 0) {
+    return {
+      ok: false,
+      error:
+        failed === ids.length
+          ? "Չհաջողվեց ջնջել։ Փորձեք կրկին։"
+          : `${failed} հատը չհաջողվեց ջնջել։ Փորձեք կրկին։`,
+    };
+  }
+  if (stockFailed) {
+    return {
+      ok: false,
+      error:
+        "Ջնջվեցին, բայց քանակի մի մասը չվերադարձվեց պահեստ։ Ուղղեք այն «Պահեստ» բաժնում։",
+    };
+  }
   return { ok: true, error: null };
 }
 

@@ -9,7 +9,6 @@ export const PAGE_PERMISSIONS = [
   "inventory",
   "customers",
   "expenses",
-  "reinvestments",
 ] as const;
 
 export type PagePermission = (typeof PAGE_PERMISSIONS)[number];
@@ -28,8 +27,8 @@ export const PERMISSIONS: readonly Permission[] = [
 /** Product metadata keys hidden from people without "cost_view". */
 export const COST_FIELDS = ["unit_cost"];
 
-/** Pages that show the money: income, profit, expenses, reinvestments. */
-export const MONEY_PAGES: readonly PagePermission[] = ["dashboard", "expenses", "reinvestments"];
+/** Pages that show the money: income, profit, expenses. */
+export const MONEY_PAGES: readonly PagePermission[] = ["dashboard", "expenses"];
 
 export function isPermission(value: unknown): value is Permission {
   return PERMISSIONS.includes(value as Permission);

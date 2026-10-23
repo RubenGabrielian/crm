@@ -167,34 +167,41 @@ function filterGroups(filters: OrderFilters): string[] {
   return groups;
 }
 
-export async function listOrders(
+export type OrderListFilter = {
+  customerId?: string;
+  page?: number;
+  pageSize?: number;
+  search?: { by: OrderSearchField; term: string };
+  /** created_at range, ISO timestamps: from inclusive, to exclusive. */
+  from?: string;
+  to?: string;
+  filters?: OrderFilters;
+};
+
+const ORDER_COLUMNS =
+  "id, created_at, customer_id, qty, unit_price, discount_percent, discount_amount, product_total, delivery_fee, order_total, status, source, metadata, customers(name, phone), products(title)";
+
+/**
+ * The tenant's orders matching the search and filters, newest first, without
+ * paging. Null when the search matched nothing in any field. Wrapped in an
+ * object: returning the query itself from an async function would run it.
+ */
+async function matchingOrders<Columns extends string>(
   tenantId: string,
-  filter: {
-    customerId?: string;
-    page?: number;
-    pageSize?: number;
-    search?: { by: OrderSearchField; term: string };
-    /** created_at range, ISO timestamps: from inclusive, to exclusive. */
-    from?: string;
-    to?: string;
-    filters?: OrderFilters;
-  } = {},
-): Promise<{ orders: Order[]; total: number; error: string | null }> {
+  filter: OrderListFilter,
+  columns: Columns,
+  count?: "exact",
+) {
   const supabase = await createAuthClient();
   const term = filter.search?.term.trim() ?? "";
   const conditions = term
     ? await searchConditions(tenantId, filter.search!.by, term)
     : [];
-  // A search that matched nothing in any field has no results.
-  if (term && conditions.length === 0)
-    return { orders: [], total: 0, error: null };
+  if (term && conditions.length === 0) return null;
 
   let query = supabase
     .from("orders")
-    .select(
-      "id, created_at, customer_id, qty, unit_price, discount_percent, discount_amount, product_total, delivery_fee, order_total, status, source, metadata, customers(name, phone), products(title)",
-      { count: "exact" },
-    )
+    .select(columns, count ? { count } : undefined)
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false })
     // Same-time orders (e.g. imported by date) keep a stable order across pages.
@@ -225,6 +232,17 @@ export async function listOrders(
   if (groups.length === 1) query = query.or(groups[0]);
   else if (groups.length > 1)
     query = query.or(`and(${groups.map((group) => `or(${group})`).join(",")})`);
+  return { query };
+}
+
+export async function listOrders(
+  tenantId: string,
+  filter: OrderListFilter = {},
+): Promise<{ orders: Order[]; total: number; error: string | null }> {
+  const matching = await matchingOrders(tenantId, filter, ORDER_COLUMNS, "exact");
+  // A search that matched nothing in any field has no results.
+  if (!matching) return { orders: [], total: 0, error: null };
+  let { query } = matching;
   if (filter.page && filter.pageSize) {
     const from = (filter.page - 1) * filter.pageSize;
     query = query.range(from, from + filter.pageSize - 1);
@@ -292,4 +310,22 @@ export async function listOrderSources(
     return [];
   }
   return data;
+}
+
+/** Ids of every order matching the search and filters, across all pages. */
+export async function listOrderIds(
+  tenantId: string,
+  filter: OrderListFilter = {},
+): Promise<{ ids: string[]; error: string | null }> {
+  const ids: string[] = [];
+  // The API returns at most 1000 rows per request, so read in pages.
+  const BATCH = 1000;
+  for (let from = 0; ; from += BATCH) {
+    const matching = await matchingOrders(tenantId, filter, "id");
+    if (!matching) return { ids: [], error: null };
+    const { data, error } = await matching.query.range(from, from + BATCH - 1);
+    if (error) return { ids: [], error: error.message };
+    ids.push(...data.map((row) => row.id));
+    if (data.length < BATCH) return { ids, error: null };
+  }
 }

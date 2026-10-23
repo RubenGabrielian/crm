@@ -1,7 +1,13 @@
+"use client";
+
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { CalendarClock } from "lucide-react";
 import { cn } from "cn";
-import { DeleteOrderDialog } from "@/components/orders/delete-order-dialog";
+import {
+  DeleteOrderDialog,
+  DeleteSelectedOrdersDialog,
+} from "@/components/orders/delete-order-dialog";
 import { EditOrderDialog } from "@/components/orders/edit-order-dialog";
 import { OrderCommentDialog } from "@/components/orders/order-comment-dialog";
 import { OrderPaymentSelect } from "@/components/orders/order-payment-select";
@@ -15,7 +21,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Checkbox,
+  SELECTABLE_ROW,
+  SelectionBar,
+} from "@/components/ui/selection";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/format";
+import { selectAllOrderIds } from "@/lib/orders/actions";
 import type { Order } from "@/lib/orders/queries";
 
 /** The orders table with inline status, source, payment and row actions. */
@@ -24,23 +36,94 @@ export function OrdersTable({
   isShop,
   itemLabel,
   sourceNames,
+  total = orders.length,
+  selectAllParams,
 }: {
   orders: Order[];
   isShop: boolean;
   /** Column title for what was ordered, e.g. "Ապրանք". */
   itemLabel: string;
   sourceNames: string[];
+  /** Orders on all pages; defaults to the ones shown. */
+  total?: number;
+  /**
+   * The list's search and filters, for selecting the orders on other pages
+   * too. Without it "select all" picks only the orders shown.
+   */
+  selectAllParams?: Record<string, string | undefined>;
 }) {
   const numeric = "px-2 text-right tabular-nums";
+
+  // Kept across pages. The page remounts this table when the search or
+  // filters change, which starts a fresh selection.
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  const [selectError, setSelectError] = useState<string | null>(null);
+  const [selectingAll, startSelectingAll] = useTransition();
+  const pageIds = orders.map((order) => order.id);
+  const pageSelected = pageIds.filter((id) => picked.has(id)).length;
+  const allOnPage = pageIds.length > 0 && pageSelected === pageIds.length;
+
+  function toggle(ids: string[], on: boolean) {
+    setPicked((current) => {
+      const next = new Set(current);
+      for (const id of ids) {
+        if (on) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  }
+
+  function selectAll() {
+    setSelectError(null);
+    if (!selectAllParams) return toggle(pageIds, true);
+    startSelectingAll(async () => {
+      const result = await selectAllOrderIds(selectAllParams);
+      if (result.error) setSelectError(result.error);
+      else setPicked(new Set(result.ids));
+    });
+  }
 
   return (
       <div
         className="overflow-hidden rounded-3xl bg-card p-3 shadow-soft"
       >
+        {picked.size > 0 && (
+          <SelectionBar
+            selected={picked.size}
+            total={Math.max(total, picked.size)}
+            wholePage={allOnPage && picked.size === pageIds.length}
+            onSelectAll={selectAll}
+            selectingAll={selectingAll}
+            onClear={() => {
+              setPicked(new Set());
+              setSelectError(null);
+            }}
+          >
+            <DeleteSelectedOrdersDialog
+              orderIds={[...picked]}
+              everything={picked.size >= total}
+              onDeleted={() => setPicked(new Set())}
+            />
+          </SelectionBar>
+        )}
+        {selectError && (
+          <p role="alert" className="mb-3 px-4 text-sm text-destructive">
+            {selectError}
+          </p>
+        )}
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="px-2 pl-4">Ամսաթիվ</TableHead>
+              <TableHead className="w-10 pl-4">
+                <Checkbox
+                  label="Ընտրել էջի բոլորը"
+                  checked={allOnPage}
+                  indeterminate={pageSelected > 0 && !allOnPage}
+                  onChange={(on) => toggle(pageIds, on)}
+                />
+              </TableHead>
+              <TableHead className="px-2">Ամսաթիվ</TableHead>
               <TableHead className="px-2">Հաճախորդ</TableHead>
               <TableHead className="px-2">
                 {itemLabel}
@@ -59,8 +142,19 @@ export function OrdersTable({
           </TableHeader>
           <TableBody>
             {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell className="px-2 pl-4 tabular-nums" title={order.id}>
+              <TableRow
+                key={order.id}
+                data-state={picked.has(order.id) ? "selected" : undefined}
+                className={SELECTABLE_ROW}
+              >
+                <TableCell className="w-10 pl-4">
+                  <Checkbox
+                    label={`Ընտրել #${order.id.slice(0, 8).toUpperCase()}`}
+                    checked={picked.has(order.id)}
+                    onChange={(on) => toggle([order.id], on)}
+                  />
+                </TableCell>
+                <TableCell className="px-2 tabular-nums" title={order.id}>
                   <span className="block">
                     {formatDateTime(order.createdAt)}
                   </span>

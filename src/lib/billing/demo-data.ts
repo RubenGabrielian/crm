@@ -5,7 +5,6 @@ import { daysBetween, type DateRange } from "@/lib/analytics/range";
 import type { Customer } from "@/lib/customers/queries";
 import type { InventoryRow } from "@/lib/inventory/queries";
 import type { Material } from "@/lib/materials/queries";
-import type { Reinvestment } from "@/lib/reinvestments/queries";
 import type { BusinessType } from "@/lib/tenant/features";
 
 /*
@@ -176,16 +175,4 @@ export function demoCustomers(): Customer[] {
     lastOrderAt: daysAgo(customer.ago),
     productIds: [],
   }));
-}
-
-export function demoReinvestments(today: string, type: BusinessType): Reinvestment[] {
-  const titles = demoTitles(type);
-  const before = (days: number) =>
-    new Date(Date.parse(today) - days * 86_400_000).toISOString().slice(0, 10);
-  return [
-    { purpose: "Նոր խմբաքանակ", productTitle: titles[0], amount: 180_000, status: "done" as const, date: before(20) },
-    { purpose: "Լուսանկարահանում", productTitle: titles[1], amount: 60_000, status: "done" as const, date: before(12) },
-    { purpose: "Instagram գովազդ", productTitle: null, amount: 45_000, status: "in_progress" as const, date: before(5) },
-    { purpose: "Նոր փաթեթավորում", productTitle: null, amount: 90_000, status: "planned" as const, date: before(-7) },
-  ].map((item, index) => ({ ...item, id: `demo-reinvestment-${index + 1}` }));
 }
