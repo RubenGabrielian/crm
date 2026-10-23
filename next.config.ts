@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
     // Pages opened in the last 30 s show again instantly instead of reloading.
     // Saving anything (server actions call revalidatePath) clears this cache.
     staleTimes: { dynamic: 30 },
+    agentUpgrade: "security",
   },
   images: {
     remotePatterns: supabaseUrl
